@@ -17,6 +17,8 @@
   <title>FlexRoute</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -54,13 +56,23 @@
     ::-webkit-scrollbar-track { background: #040812; }
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    .leaflet-container {
+      background: #0b1325 !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: #0f172a !important;
+      color: #f1f5f9 !important;
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      border-radius: 12px !important;
+    }
   </style>
 </head>
 <body class="min-h-screen pb-36 selection:bg-cyan-400 selection:text-slate-950">
 
   <!-- INDICADOR DE ACTUALIZACIÓN EN ESQUINA -->
   <div class="fixed top-1 right-2 z-50 pointer-events-none text-[10px] text-slate-500/80 font-mono">
-    Actualizado: 03:16 PM - 11/08/2026
+    Actualizado: 03:24 PM - 11/08/2026
   </div>
 
   <!-- TOP COCKPIT HEADER -->
@@ -157,25 +169,35 @@
           <div class="flex items-center justify-between">
             <h2 class="text-sm font-extrabold text-white">Conexión Multiparada con Google Maps</h2>
             <span class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
-              SIN RECORTE DE PARADAS
+              RUTA COMPLETA
             </span>
           </div>
           <p class="text-[11px] text-slate-400">
-            Genera enlaces directos hacia la app oficial de Google Maps divididos automáticamente en tramos de máximo 9 paradas intermedias cuando supera el límite móvil.
+            Envía todas las paradas activas en un solo enlace directo hacia la app oficial de Google Maps.
           </p>
           <div id="multi-stop-links-container" class="space-y-2"></div>
         </div>
 
-        <!-- 3. MAPA TÁCTICO INTERACTIVO SVG -->
+        <!-- 3. MAPA TÁCTICO REAL DE GOOGLE MAPS -->
         <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+          <div class="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-xs font-black uppercase tracking-wider text-slate-200">
-              Mapa Táctico Interactivo (Toca un Pin)
+              Mapa Táctico Google Maps (Toca un Pin)
             </h3>
-            <span id="map-route-badge" class="text-[10px] text-cyan-400 font-bold">Vista Vectorial</span>
+            <div class="flex items-center gap-1">
+              <button id="gmap-mode-streets" onclick="setGoogleMapLayer('streets')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                Mapa
+              </button>
+              <button id="gmap-mode-hybrid" onclick="setGoogleMapLayer('hybrid')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">
+                Satélite
+              </button>
+              <button onclick="fitGoogleMapToRoute()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800">
+                Centrar
+              </button>
+            </div>
           </div>
           <div class="p-2 bg-[#050914]">
-            <svg id="tactical-svg-map" viewBox="0 0 620 340" class="w-full h-64 rounded-xl bg-[#030710] border border-slate-800/80 select-none"></svg>
+            <div id="tactical-google-map" class="w-full h-80 rounded-xl border border-slate-800/80 z-10"></div>
             <div id="map-selected-bar" class="mt-2 px-3 py-2 rounded-xl bg-slate-900/95 border border-slate-800 flex items-center justify-between gap-2"></div>
           </div>
         </div>
@@ -546,52 +568,23 @@
         ...(finalDest ? [finalDest] : [])
       ];
 
-      const MAX_POINTS_PER_URL = 11; // 1 Origen + 9 Waypoints + 1 Destino
-      const batches = [];
+      const origin = encodeURIComponent(allAddresses[0]);
+      const destination = encodeURIComponent(allAddresses[allAddresses.length - 1]);
+      const waypoints = allAddresses
+        .slice(1, allAddresses.length - 1)
+        .map((a) => encodeURIComponent(a))
+        .join('|');
+      const url = waypoints
+        ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`
+        : `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
 
-      if (allAddresses.length <= MAX_POINTS_PER_URL) {
-        const origin = encodeURIComponent(allAddresses[0]);
-        const destination = encodeURIComponent(allAddresses[allAddresses.length - 1]);
-        const waypoints = allAddresses
-          .slice(1, allAddresses.length - 1)
-          .map((a) => encodeURIComponent(a))
-          .join('|');
-        const url = waypoints
-          ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`
-          : `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
-
-        batches.push({
+      return [
+        {
           title: 'Abrir Ruta Completa en Google Maps',
           subtitle: `${activeStops.length} paradas en orden táctico${finalDest ? ' + cierre' : ''}`,
           url
-        });
-      } else {
-        let start = 0;
-        let leg = 1;
-        while (start < allAddresses.length - 1) {
-          const end = Math.min(start + MAX_POINTS_PER_URL - 1, allAddresses.length - 1);
-          const segment = allAddresses.slice(start, end + 1);
-          const origin = encodeURIComponent(segment[0]);
-          const destination = encodeURIComponent(segment[segment.length - 1]);
-          const waypoints = segment
-            .slice(1, segment.length - 1)
-            .map((a) => encodeURIComponent(a))
-            .join('|');
-          const url = waypoints
-            ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`
-            : `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
-
-          batches.push({
-            title: `Abrir Tramo ${leg} en Google Maps`,
-            subtitle: `Puntos ${start + 1} al ${end + 1} de ${allAddresses.length} (máx. 9 paradas intermedias)`,
-            url
-          });
-          start = end;
-          leg++;
         }
-      }
-
-      return batches;
+      ];
     }
 
     function loadPresetRoute(presetId) {
@@ -688,6 +681,10 @@
     function selectStop(stopId) {
       state.selectedStopId = stopId;
       renderAll();
+      const stop = state.stops.find((s) => s.id === stopId);
+      if (stop && googleMapInstance) {
+        googleMapInstance.panTo([stop.lat, stop.lng], { animate: true });
+      }
     }
 
     function moveStopInSequence(index, direction, ev) {
@@ -1386,85 +1383,173 @@
       }
     }
 
+    let googleMapInstance = null;
+    let googleTileLayer = null;
+    let googleMarkersLayer = null;
+    let googleRoutePolyline = null;
+    let currentGoogleLayerMode = 'streets';
+    let lastFittedPreset = null;
+
+    function initGoogleMapIfNeeded() {
+      const container = document.getElementById('tactical-google-map');
+      if (!container || !window.L) return null;
+      if (googleMapInstance) return googleMapInstance;
+
+      googleMapInstance = L.map(container, {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([25.795, -80.155], 12);
+
+      googleTileLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20
+      }).addTo(googleMapInstance);
+
+      googleMarkersLayer = L.layerGroup().addTo(googleMapInstance);
+      return googleMapInstance;
+    }
+
+    function setGoogleMapLayer(mode) {
+      currentGoogleLayerMode = mode;
+      const map = initGoogleMapIfNeeded();
+      if (!map) return;
+
+      if (googleTileLayer) {
+        map.removeLayer(googleTileLayer);
+      }
+      // lyrs=m: Google Maps Calles estándar | lyrs=y: Google Maps Satélite Híbrido con nombres de calles
+      const lyrs = mode === 'hybrid' ? 'y' : 'm';
+      googleTileLayer = L.tileLayer(`https://mt1.google.com/vt/lyrs=${lyrs}&x={x}&y={y}&z={z}`, {
+        maxZoom: 20
+      }).addTo(map);
+
+      const btnStreets = document.getElementById('gmap-mode-streets');
+      const btnHybrid = document.getElementById('gmap-mode-hybrid');
+      if (btnStreets && btnHybrid) {
+        if (mode === 'hybrid') {
+          btnHybrid.className = 'px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+          btnStreets.className = 'px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800';
+        } else {
+          btnStreets.className = 'px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+          btnHybrid.className = 'px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800';
+        }
+      }
+    }
+
+    function fitGoogleMapToRoute() {
+      const map = initGoogleMapIfNeeded();
+      if (!map || state.stops.length === 0) return;
+      const boundsPoints = state.stops.map((s) => [s.lat, s.lng]);
+      boundsPoints.push([25.8219, -80.2618]); // Parada 1 Estación Hialeah
+      if (state.endMode === 'brickell') {
+        boundsPoints.push([25.7617, -80.1918]);
+      }
+      map.fitBounds(boundsPoints, { padding: [28, 28] });
+    }
+
     function renderSvgMap() {
-      const svg = document.getElementById('tactical-svg-map');
       const selectedBar = document.getElementById('map-selected-bar');
-      if (!svg || state.stops.length === 0) return;
+      if (state.stops.length === 0) return;
 
-      const lats = state.stops.map((s) => s.lat);
-      const lngs = state.stops.map((s) => s.lng);
-      const minLat = Math.min(...lats);
-      const maxLat = Math.max(...lats);
-      const minLng = Math.min(...lngs);
-      const maxLng = Math.max(...lngs);
+      const map = initGoogleMapIfNeeded();
+      if (map && googleMarkersLayer) {
+        googleMarkersLayer.clearLayers();
+        if (googleRoutePolyline) {
+          map.removeLayer(googleRoutePolyline);
+          googleRoutePolyline = null;
+        }
 
-      const padX = 55;
-      const padY = 40;
-      const width = 620;
-      const height = 340;
+        const routeCoords = [];
+        // Punto de salida P1 (Estación Hialeah)
+        const p1Coords = [25.8219, -80.2618];
+        routeCoords.push(p1Coords);
 
-      const project = (lat, lng) => {
-        const xRatio = maxLng === minLng ? 0.5 : (lng - minLng) / (maxLng - minLng);
-        const yRatio = maxLat === minLat ? 0.5 : (maxLat - lat) / (maxLat - minLat);
-        return {
-          x: Math.round(padX + xRatio * (width - padX * 2)),
-          y: Math.round(padY + yRatio * (height - padY * 2))
-        };
-      };
+        const p1Icon = L.divIcon({
+          className: '',
+          html: `<div style="width:28px;height:28px;border-radius:9999px;background:#f59e0b;border:2.5px solid #ffffff;color:#040812;font-weight:900;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.45);">P1</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+        L.marker(p1Coords, { icon: p1Icon })
+          .bindPopup(`<div class="text-xs font-bold">Parada 1 (Salida)<br/><span class="font-normal text-slate-300">${state.pickupAddress}</span></div>`)
+          .addTo(googleMarkersLayer);
 
-      const pts = state.stops.map((s, idx) => ({
-        stop: s,
-        orderIndex: idx + 1,
-        ...project(s.lat, s.lng)
-      }));
+        state.stops.forEach((stop, idx) => {
+          const isSelected = stop.id === state.selectedStopId;
+          const latlng = [stop.lat, stop.lng];
+          routeCoords.push(latlng);
 
-      const polylinePoints = pts.map((p) => `${p.x},${p.y}`).join(' ');
+          const bg = stop.completed
+            ? '#10b981'
+            : stop.urgent
+            ? '#f43f5e'
+            : isSelected
+            ? '#06b6d4'
+            : '#0f172a';
+          const border = isSelected ? '#ffffff' : stop.urgent ? '#fda4af' : '#22d3ee';
+          const size = isSelected ? 34 : 28;
+          const ring = isSelected ? '0 0 0 5px rgba(34,211,238,0.35), 0 4px 12px rgba(0,0,0,0.5)' : '0 3px 8px rgba(0,0,0,0.45)';
 
-      let svgContent = `
-        <defs>
-          <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#22d3ee" />
-            <stop offset="100%" stop-color="#10b981" />
-          </linearGradient>
-        </defs>
-        <g stroke="#0f172a" stroke-width="1">
-          <line x1="0" y1="85" x2="620" y2="85" />
-          <line x1="0" y1="170" x2="620" y2="170" />
-          <line x1="0" y1="255" x2="620" y2="255" />
-          <line x1="155" y1="0" x2="155" y2="340" />
-          <line x1="310" y1="0" x2="310" y2="340" />
-          <line x1="465" y1="0" x2="465" y2="340" />
-        </g>
-        <polyline fill="none" stroke="url(#routeGrad)" stroke-width="3" stroke-dasharray="6 4" points="${polylinePoints}" opacity="0.85" />
-      `;
+          const pinIcon = L.divIcon({
+            className: '',
+            html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};border:2.5px solid ${border};color:#ffffff;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.originalNumber}</div>`,
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2]
+          });
 
-      pts.forEach((p) => {
-        const isSelected = p.stop.id === state.selectedStopId;
-        const fill = p.stop.completed
-          ? '#10b981'
-          : p.stop.urgent
-          ? '#f43f5e'
-          : isSelected
-          ? '#22d3ee'
-          : '#0f172a';
-        const stroke = isSelected ? '#ffffff' : p.stop.urgent ? '#fda4af' : '#22d3ee';
-        const radius = isSelected ? 15 : 12;
+          const marker = L.marker(latlng, {
+            icon: pinIcon,
+            zIndexOffset: isSelected ? 1000 : idx * 10
+          });
 
-        svgContent += `
-          <g class="cursor-pointer" onclick="selectStop('${p.stop.id}')">
-            ${isSelected ? `<circle cx="${p.x}" cy="${p.y}" r="22" fill="rgba(34,211,238,0.18)" />` : ''}
-            <circle cx="${p.x}" cy="${p.y}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="2.5" />
-            <text x="${p.x}" y="${p.y + 4}" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="900">
-              ${p.stop.originalNumber}
-            </text>
-          </g>
-        `;
-      });
+          marker.on('click', () => {
+            state.selectedStopId = stop.id;
+            renderSequencePills();
+            renderStopCards();
+            renderSvgMap();
+          });
 
-      svg.innerHTML = svgContent;
+          marker.bindPopup(`
+            <div style="min-width:170px;">
+              <div style="font-weight:900;font-size:12px;color:#22d3ee;">#${idx + 1} en Ruta • Parada ${stop.originalNumber}</div>
+              <div style="font-weight:800;font-size:12px;margin-top:2px;">${stop.address}${stop.unit ? ' (' + stop.unit + ')' : ''}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">⏰ ${stop.deadline}${stop.gateCode ? ' • Gate: ' + stop.gateCode : ''}</div>
+              <a href="${getSingleStopMapsUrl(stop)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:4px 10px;border-radius:6px;background:#22d3ee;color:#040812;font-weight:900;font-size:11px;text-decoration:none;">Abrir en Google Maps ↗</a>
+            </div>
+          `);
+
+          marker.addTo(googleMarkersLayer);
+        });
+
+        if (state.endMode === 'return_to_start') {
+          routeCoords.push(p1Coords);
+        } else if (state.endMode === 'brickell') {
+          const brickellCoords = [25.7617, -80.1918];
+          routeCoords.push(brickellCoords);
+          const brkIcon = L.divIcon({
+            className: '',
+            html: `<div style="padding:2px 6px;border-radius:8px;background:#06b6d4;border:2px solid #ffffff;color:#040812;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.45);">Brickell</div>`,
+            iconSize: [54, 22],
+            iconAnchor: [27, 11]
+          });
+          L.marker(brickellCoords, { icon: brkIcon }).addTo(googleMarkersLayer);
+        }
+
+        googleRoutePolyline = L.polyline(routeCoords, {
+          color: '#06b6d4',
+          weight: 4,
+          opacity: 0.85,
+          dashArray: '8, 6'
+        }).addTo(map);
+
+        const routeSignature = `${state.activePresetId}-${state.stops.length}`;
+        if (lastFittedPreset !== routeSignature) {
+          lastFittedPreset = routeSignature;
+          fitGoogleMapToRoute();
+        }
+      }
 
       const selectedStop = state.stops.find((s) => s.id === state.selectedStopId) || state.stops[0];
-      if (selectedStop) {
+      if (selectedStop && selectedBar) {
         selectedBar.innerHTML = `
           <div class="min-w-0">
             <div class="flex items-center gap-2">
