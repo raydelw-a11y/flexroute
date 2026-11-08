@@ -121,8 +121,8 @@
           <span>Video / Capturas Flex</span>
         </button>
 
-        <!-- SELECTOR DE RUTA PRECARGADA -->
-        <div class="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+        <!-- SELECTOR DE RUTA PRECARGADA + RUTAS REGISTRADAS CON FECHA Y HORARIO -->
+        <div id="saved-routes-bar" class="flex flex-wrap items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
           <button id="preset-btn-miami-beach" onclick="loadPresetRoute('miami-beach')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">
             Ruta 1 (11)
           </button>
@@ -188,17 +188,26 @@
             </div>
           </div>
 
-          <!-- SELECTOR DE FECHA, HORA DE COMIENZO Y HORA DE TERMINAR DE LA RUTA -->
+          <!-- SELECTOR DE FECHA, HORA DE COMIENZO, HORA DE TERMINAR Y BOTÓN REGISTRAR RUTA ARRIBA -->
           <div class="pt-2.5 border-t border-slate-800/90 space-y-2">
-            <div class="flex items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <span class="text-xs font-bold text-slate-300">📅 Fecha y Horario de la Ruta:</span>
-              <button
-                type="button"
-                onclick="setRouteScheduleToNow()"
-                class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 border border-slate-700"
-              >
-                Ahora
-              </button>
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onclick="setRouteScheduleToNow()"
+                  class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 border border-slate-700"
+                >
+                  Ahora
+                </button>
+                <button
+                  type="button"
+                  onclick="registerCurrentRoute()"
+                  class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-[11px] font-black shadow flex items-center gap-1"
+                >
+                  <span>💾 Registrar Ruta</span>
+                </button>
+              </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
@@ -524,7 +533,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 04:20 PM - 11/08/2026 ↻
+        Actualizado: 04:45 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -605,6 +614,11 @@
     const HOME_CLOSING_COORDS = { lat: 25.5384, lng: -80.3887 };
     const HOME_CLOSING_ZIP_QUERY = '33032';
 
+    // Coordenadas exactas del cruce bloqueado en Venezia Lakes (marcado en rojo por el usuario) y su única salida real al norte por SW 136th St
+    const VENEZIA_LAKES_NORTH_GATE = { lat: 25.64095, lng: -80.40672 }; // SW 132nd Ave & SW 136th St
+    const VENEZIA_LAKES_LINDGREN_CORNER = { lat: 25.64105, lng: -80.41465 }; // SW 136th St & Lindgren Rd (SR 825)
+    const VENEZIA_LAKES_RED_CIRCLE_BLOCKED = { lat: 25.6338, lng: -80.4038 }; // Cruce clausurado SW Caribe Way / SW 144th Ter
+
     let state = {
       activePresetId: 'miami-beach',
       activeVariant: 'option-b',
@@ -619,6 +633,7 @@
         'hialeah-brickell': { date: '2026-11-08', time: '09:54', endTime: '13:30' },
         'custom-imported': { date: '2026-11-08', time: '10:00', endTime: '12:00' }
       },
+      savedRoutes: [],
       closedStreetPairs: {
         '8-6': true,
         '6-8': true
@@ -635,6 +650,11 @@
     const osrmRouteCache = {};
     let osrmFetchInFlightKey = null;
 
+    function isInsideVeneziaLakes(pt) {
+      if (!pt || typeof pt.lat !== 'number' || typeof pt.lng !== 'number') return false;
+      return pt.lat >= 25.6339 && pt.lat <= 25.6408 && pt.lng >= -80.4098 && pt.lng <= -80.4025;
+    }
+
     function isClosedStreetBetweenNumbers(numA, numB) {
       if (!numA || !numB) return false;
       if (!state.closedStreetPairs) {
@@ -646,17 +666,35 @@
     }
 
     function computeClosedStreetBypassPoint(fromPt, toPt) {
+      // Si cualquiera de los dos puntos está en el área de Venezia Lakes / Kendall (DMI9),
+      // obligar a salir/entrar por el norte hacia SW 136th St y Lindgren Rd (nunca cruzar por el círculo rojo del sur/este)
+      if (isInsideVeneziaLakes(fromPt) || isInsideVeneziaLakes(toPt) || (fromPt.lat < 25.66 && toPt.lat < 25.66)) {
+        const fromInside = isInsideVeneziaLakes(fromPt);
+        const wps = fromInside
+          ? [VENEZIA_LAKES_NORTH_GATE, VENEZIA_LAKES_LINDGREN_CORNER]
+          : [VENEZIA_LAKES_LINDGREN_CORNER, VENEZIA_LAKES_NORTH_GATE];
+        return {
+          lat: wps[0].lat,
+          lng: wps[0].lng,
+          extraWaypoints: wps,
+          closedMidLat: VENEZIA_LAKES_RED_CIRCLE_BLOCKED.lat,
+          closedMidLng: VENEZIA_LAKES_RED_CIRCLE_BLOCKED.lng
+        };
+      }
+
       const midLat = (fromPt.lat + toPt.lat) / 2;
       const midLng = (fromPt.lng + toPt.lng) / 2;
       const dLat = toPt.lat - fromPt.lat;
       const dLng = toPt.lng - fromPt.lng;
       const len = Math.hypot(dLat, dLng) || 0.0015;
-      // Desvío perpendicular (~260m / 2-3 cuadras hacia la avenida colectora abierta)
       const offset = Math.max(0.0022, Math.min(0.0042, len * 0.68));
-      const sign = -1; // Desvía por la avenida principal paralela abierta (ej. NW 17th Ave / NW 36th St)
+      const sign = 1; // Desviar por el norte/oeste abierto
+      const bLat = Number((midLat + sign * (-dLng / len) * offset).toFixed(5));
+      const bLng = Number((midLng + sign * (dLat / len) * offset).toFixed(5));
       return {
-        lat: Number((midLat + sign * (-dLng / len) * offset).toFixed(5)),
-        lng: Number((midLng + sign * (dLat / len) * offset).toFixed(5)),
+        lat: bLat,
+        lng: bLng,
+        extraWaypoints: [{ lat: bLat, lng: bLng }],
         closedMidLat: Number(midLat.toFixed(5)),
         closedMidLng: Number(midLng.toFixed(5))
       };
@@ -679,197 +717,29 @@
       );
     }
 
-    function getActiveRouteSchedule() {
-      if (!state.routeSchedules) {
-        state.routeSchedules = {
-          'miami-beach': { date: '2026-11-08', time: '07:49', endTime: '11:30' },
-          'hialeah-brickell': { date: '2026-11-08', time: '09:54', endTime: '13:30' },
-          'custom-imported': { date: '2026-11-08', time: '10:00', endTime: '12:00' }
-        };
+    function getStationCoordinates() {
+      // Si la ruta está en el sur (DMI9 Amazon / Kendall / Three Lakes), usar coordenadas de DMI9 (13450 SW 131st St)
+      const hasSouthStops =
+        Array.isArray(state.stops) &&
+        state.stops.length > 0 &&
+        state.stops.some((s) => typeof s.lat === 'number' && s.lat < 25.68);
+      if (hasSouthStops || /DMI9|131ST|13450/i.test(state.pickupAddress || '')) {
+        return { lat: 25.6442, lng: -80.4112, label: 'P1 (Estación DMI9)' };
       }
-      const key = state.activePresetId || 'miami-beach';
-      if (!state.routeSchedules[key]) {
-        state.routeSchedules[key] = { date: '2026-11-08', time: '10:00', endTime: '12:00' };
-      }
-      if (!state.routeSchedules[key].endTime) {
-        state.routeSchedules[key].endTime =
-          key === 'miami-beach' ? '11:30' : key === 'hialeah-brickell' ? '13:30' : '12:00';
-      }
-      return state.routeSchedules[key];
+      return { lat: 25.8219, lng: -80.2618, label: 'P1 (Estación Salida)' };
     }
 
-    function parseScheduleDateObj(sched, timeField = 'time') {
-      const now = new Date();
-      let y = now.getFullYear();
-      let m = now.getMonth() + 1;
-      let d = now.getDate();
-      if (sched && /^\d{4}-\d{2}-\d{2}$/.test(sched.date)) {
-        [y, m, d] = sched.date.split('-').map(Number);
-      }
-      let hh = timeField === 'endTime' ? 12 : 10;
-      let mm = 0;
-      const rawT = sched && sched[timeField] ? sched[timeField] : null;
-      if (rawT && /^\d{2}:\d{2}$/.test(rawT)) {
-        [hh, mm] = rawT.split(':').map(Number);
-      }
-      return new Date(y, m - 1, d, hh, mm, 0);
-    }
-
-    function formatClock12h(dateObj, withSeconds = false) {
-      if (!dateObj || isNaN(dateObj.getTime())) return '--:--';
-      const hh = dateObj.getHours();
-      const mm = String(dateObj.getMinutes()).padStart(2, '0');
-      const ss = String(dateObj.getSeconds()).padStart(2, '0');
-      const period = hh >= 12 ? 'PM' : 'AM';
-      const h12 = hh % 12 || 12;
-      return withSeconds ? `${h12}:${mm}:${ss} ${period}` : `${h12}:${mm} ${period}`;
-    }
-
-    function formatDurationHuman(totalSeconds, includeSeconds = false) {
-      const sec = Math.max(0, Math.round(totalSeconds));
-      const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec % 60;
-      if (includeSeconds) {
-        if (h > 0) return `${h} h ${String(m).padStart(2, '0')} min ${String(s).padStart(2, '0')} s`;
-        return `${m} min ${String(s).padStart(2, '0')} s`;
-      }
-      if (h > 0) return `${h} h ${m} min`;
-      return `${m} min`;
-    }
-
-    function haversineMiles(lat1, lng1, lat2, lng2) {
-      const R = 3958.8;
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLng = ((lng2 - lng1) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((lat1 * Math.PI) / 180) *
-          Math.cos((lat2 * Math.PI) / 180) *
-          Math.sin(dLng / 2) *
-          Math.sin(dLng / 2);
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    function getLiveTrafficProfile(dateObj, fromPt, toPt) {
-      const dayIdx = dateObj.getDay();
-      const dayName = DAYS_ES[dayIdx] || 'Hoy';
-      const isWeekend = dayIdx === 0 || dayIdx === 6;
-      const hourFloat = dateObj.getHours() + dateObj.getMinutes() / 60 + dateObj.getSeconds() / 3600;
-
-      // Factor base según día de la semana (Viernes más pesado, Domingo más fluido)
-      const dayBaseMap = [0.90, 1.07, 1.09, 1.10, 1.13, 1.19, 0.98];
-      const dayBase = dayBaseMap[dayIdx] || 1.05;
-
-      let timeFactor = 1.0;
-      let label = 'Tráfico Fluido';
-      let dotColor = 'bg-emerald-400';
-      let badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
-
-      if (!isWeekend) {
-        if (hourFloat >= 6.5 && hourFloat < 9.5) {
-          // Hora pico de la mañana (pico máximo ~8:00 AM)
-          const distFromPeak = Math.abs(hourFloat - 8.0);
-          timeFactor = 1.38 - distFromPeak * 0.10;
-          label = 'Hora Pico Mañana';
-          dotColor = 'bg-rose-400';
-          badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
-        } else if (hourFloat >= 9.5 && hourFloat < 11.5) {
-          timeFactor = 1.15;
-          label = 'Tráfico Moderado (Media Mañana)';
-          dotColor = 'bg-amber-400';
-          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
-        } else if (hourFloat >= 11.5 && hourFloat < 14.25) {
-          timeFactor = 1.22;
-          label = 'Tráfico Mediodía Comercial';
-          dotColor = 'bg-amber-400';
-          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
-        } else if (hourFloat >= 14.25 && hourFloat < 15.5) {
-          timeFactor = 1.29;
-          label = 'Tráfico Intenso (Salida Escolar)';
-          dotColor = 'bg-orange-400';
-          badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
-        } else if (hourFloat >= 15.5 && hourFloat < 19.25) {
-          // Hora pico de la tarde (pico máximo ~5:15 PM)
-          const distFromPeak = Math.abs(hourFloat - 17.25);
-          timeFactor = 1.48 - distFromPeak * 0.09;
-          label = 'Hora Pico Tarde (Tráfico Pesado)';
-          dotColor = 'bg-rose-500';
-          badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
-        } else if (hourFloat >= 19.25 && hourFloat < 21.5) {
-          timeFactor = 1.14;
-          label = 'Tráfico Moderado Nocturno';
-          dotColor = 'bg-amber-400';
-          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
-        } else {
-          timeFactor = 0.96;
-          label = 'Vía Despejada Nocturna';
-          dotColor = 'bg-emerald-400';
-          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
-        }
-      } else {
-        // Sábado y Domingo
-        if (hourFloat >= 0 && hourFloat < 9.25) {
-          timeFactor = 0.98;
-          label = 'Mañana Fluida de Fin de Semana';
-          dotColor = 'bg-emerald-400';
-          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
-        } else if (hourFloat >= 9.25 && hourFloat < 11.5) {
-          timeFactor = 1.12;
-          label = 'Tráfico Ligero Fin de Semana';
-          dotColor = 'bg-emerald-400';
-          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
-        } else if (hourFloat >= 11.5 && hourFloat < 14.5) {
-          timeFactor = 1.25;
-          label = 'Tráfico Moderado (Playas / Puentes)';
-          dotColor = 'bg-amber-400';
-          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
-        } else if (hourFloat >= 14.5 && hourFloat < 19.75) {
-          timeFactor = dayIdx === 6 ? 1.35 : 1.28;
-          label = 'Tráfico Intenso Tarde Fin de Semana';
-          dotColor = 'bg-orange-400';
-          badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
-        } else if (hourFloat >= 19.75 && hourFloat < 23.0) {
-          timeFactor = dayIdx === 6 ? 1.24 : 1.12;
-          label = 'Tráfico Nocturno Fin de Semana';
-          dotColor = 'bg-amber-400';
-          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
-        } else {
-          timeFactor = 0.97;
-          label = 'Tráfico Fluido';
-        }
-      }
-
-      // Recargo por cruce de puentes (I-395 / Venetian / I-195) o zonas densas (Brickell / Collins)
-      let corridorFactor = 0;
-      if (fromPt && toPt) {
-        const crossesBay = (fromPt.lng < -80.175 && toPt.lng >= -80.175) || (fromPt.lng >= -80.175 && toPt.lng < -80.175);
-        if (crossesBay) corridorFactor += 0.07;
-        const inDenseZone = toPt.lng > -80.132 || (toPt.lat < 25.772 && toPt.lng > -80.205);
-        if (inDenseZone) corridorFactor += 0.04;
-      }
-
-      // Micro-fluctuación de sensores en vivo
-      const livePulse = Math.sin(Math.floor(Date.now() / 12000)) * 0.012;
-      const multiplier = Math.max(0.95, Number((dayBase * timeFactor + corridorFactor + livePulse).toFixed(3)));
-      const surgePct = Math.max(0, Math.round((multiplier - 1) * 100));
-
-      return {
-        dayName,
-        isWeekend,
-        multiplier,
-        surgePct,
-        label,
-        dotColor,
-        badgeCls
-      };
-    }
-
-    function getActiveWaypointsList() {
+    function getActiveWaypointsList(includeClosing = false) {
       const completedStops = state.stops.filter((s) => s.completed);
       const activeStops = state.stops.filter((s) => !s.completed);
+      const stationCoords = getStationCoordinates();
 
-      let originPt = { lat: 25.8219, lng: -80.2618, label: 'P1 (Estación Salida)', originalNumber: 1 };
+      let originPt = {
+        lat: stationCoords.lat,
+        lng: stationCoords.lng,
+        label: stationCoords.label,
+        originalNumber: 1
+      };
       if (completedStops.length > 0) {
         const lastDone = completedStops[completedStops.length - 1];
         originPt = {
@@ -886,19 +756,29 @@
       activeStops.forEach((s) => {
         const prevWp = waypoints[waypoints.length - 1];
         const prevNum = prevWp ? prevWp.originalNumber : null;
-        if (prevNum && isClosedStreetBetweenNumbers(prevNum, s.originalNumber)) {
+        const crossesVeneziaPerimeter =
+          prevWp && isInsideVeneziaLakes(prevWp) !== isInsideVeneziaLakes(s);
+        const needsDetour =
+          (prevNum && isClosedStreetBetweenNumbers(prevNum, s.originalNumber)) || crossesVeneziaPerimeter;
+
+        if (needsDetour && prevWp) {
           const bypass = computeClosedStreetBypassPoint(prevWp, s);
-          waypoints.push({
-            lat: bypass.lat,
-            lng: bypass.lng,
-            isDetourBypass: true,
-            fromNum: prevNum,
-            toNum: s.originalNumber,
-            label: `Desvío Calle Clausurada (${prevNum} → ${s.originalNumber})`
+          const extraWps = Array.isArray(bypass.extraWaypoints)
+            ? bypass.extraWaypoints
+            : [{ lat: bypass.lat, lng: bypass.lng }];
+          extraWps.forEach((wp) => {
+            waypoints.push({
+              lat: wp.lat,
+              lng: wp.lng,
+              isDetourBypass: true,
+              fromNum: prevNum || 1,
+              toNum: s.originalNumber,
+              label: `Desvío Calle Clausurada (${prevNum || 1} → ${s.originalNumber})`
+            });
           });
           closedBarriers.push({
-            fromNum: prevNum,
-            toNum: s.originalNumber,
+            fromNum: prevNum || 8,
+            toNum: s.originalNumber || 6,
             lat: bypass.closedMidLat,
             lng: bypass.closedMidLng,
             bypassLat: bypass.lat,
@@ -914,36 +794,33 @@
         });
       });
 
-      // También verificar si en la ruta hay parada 8 y parada 6 separadas por otra parada (ej. 8 → 7 → 6)
-      // pero cuya calle directa 8 ↔ 6 está clausurada, para mostrar el aviso visual en el mapa
-      const stop8 = state.stops.find((s) => s.originalNumber === 8);
-      const stop6 = state.stops.find((s) => s.originalNumber === 6);
+      // Si hay paradas en Venezia Lakes, mostrar siempre el marcador rojo ⛔ en el cruce clausurado (25.6338, -80.4038)
       if (
-        stop8 &&
-        stop6 &&
-        isClosedStreetBetweenNumbers(8, 6) &&
-        !closedBarriers.some((b) => (b.fromNum === 8 && b.toNum === 6) || (b.fromNum === 6 && b.toNum === 8))
+        state.stops.some((s) => isInsideVeneziaLakes(s) || s.lat < 25.66) &&
+        !closedBarriers.some((b) => Math.abs(b.lat - VENEZIA_LAKES_RED_CIRCLE_BLOCKED.lat) < 0.002)
       ) {
-        const bypass86 = computeClosedStreetBypassPoint(stop8, stop6);
         closedBarriers.push({
           fromNum: 8,
           toNum: 6,
-          lat: bypass86.closedMidLat,
-          lng: bypass86.closedMidLng,
-          bypassLat: bypass86.lat,
-          bypassLng: bypass86.lng
+          lat: VENEZIA_LAKES_RED_CIRCLE_BLOCKED.lat,
+          lng: VENEZIA_LAKES_RED_CIRCLE_BLOCKED.lng,
+          bypassLat: VENEZIA_LAKES_NORTH_GATE.lat,
+          bypassLng: VENEZIA_LAKES_NORTH_GATE.lng
         });
       }
 
-      if (state.endMode === 'return_to_start') {
-        waypoints.push({ lat: 25.8219, lng: -80.2618, isClosing: true, label: 'Cierre en P1' });
-      } else if (state.endMode === 'brickell') {
-        waypoints.push({ lat: 25.7617, lng: -80.1918, isClosing: true, label: 'Cierre en Brickell' });
-      } else if (state.endMode === 'home') {
-        waypoints.push({ lat: HOME_CLOSING_COORDS.lat, lng: HOME_CLOSING_COORDS.lng, isClosing: true, label: 'Home' });
-      } else if (state.endMode === 'custom' && state.customEndAddress) {
-        const est = estimateCoordinatesFromAddress(state.customEndAddress, 'Miami, FL', 0);
-        waypoints.push({ lat: est.lat, lng: est.lng, isClosing: true, label: 'Destino de Cierre' });
+      // Solo agregar el destino post-ruta cuando se solicita explícitamente (NUNCA para el tiempo de completar la ruta)
+      if (includeClosing) {
+        if (state.endMode === 'return_to_start') {
+          waypoints.push({ lat: stationCoords.lat, lng: stationCoords.lng, isClosing: true, label: 'Cierre en P1' });
+        } else if (state.endMode === 'brickell') {
+          waypoints.push({ lat: 25.7617, lng: -80.1918, isClosing: true, label: 'Cierre en Brickell' });
+        } else if (state.endMode === 'home') {
+          waypoints.push({ lat: HOME_CLOSING_COORDS.lat, lng: HOME_CLOSING_COORDS.lng, isClosing: true, label: 'Home' });
+        } else if (state.endMode === 'custom' && state.customEndAddress) {
+          const est = estimateCoordinatesFromAddress(state.customEndAddress, 'Miami, FL', 0);
+          waypoints.push({ lat: est.lat, lng: est.lng, isClosing: true, label: 'Destino de Cierre' });
+        }
       }
 
       return { waypoints, activeStops, completedStops, originPt, closedBarriers };
@@ -954,7 +831,8 @@
     }
 
     async function fetchOsrmRouteForActiveStops() {
-      const { waypoints } = getActiveWaypointsList();
+      // El trazado y telemetría de la ruta cubre desde la Estación (P1) hasta la última parada a entregar
+      const { waypoints } = getActiveWaypointsList(false);
       if (waypoints.length < 2) return;
       const key = getWaypointsCacheKey(waypoints);
       if (osrmRouteCache[key]) {
@@ -1034,7 +912,9 @@
 
       // El reloj activo de la ruta avanza en tiempo real segundo a segundo desde la hora configurada
       const activeRouteClock = new Date(baseStartDate.getTime() + elapsedTotalSec * 1000);
-      const { waypoints, activeStops, completedStops, originPt } = getActiveWaypointsList();
+      // IMPORTANTE: El tiempo de completar la ruta se calcula EXCLUSIVAMENTE desde la Estación (P1)
+      // hasta la última parada a entregar (includeClosing = false, no incluye destino post-ruta)
+      const { waypoints, activeStops, completedStops, originPt } = getActiveWaypointsList(false);
       const cacheKey = getWaypointsCacheKey(waypoints);
       const osrmData = osrmRouteCache[cacheKey];
 
@@ -1059,7 +939,6 @@
 
         if (osrmData && osrmData.legs && osrmData.legs[i]) {
           legMiles = (osrmData.legs[i].distance || 0) / 1609.34;
-          // Ajuste urbano de semáforos e intersecciones reales sobre velocidad libre OSRM
           legBaseSec = Math.round((osrmData.legs[i].duration || 60) * 1.12);
         } else {
           const straightMiles = haversineMiles(fromPt.lat, fromPt.lng, toPt.lat, toPt.lng);
@@ -1097,6 +976,7 @@
       const totalRemainingSec = totalTrafficDrivingSec + totalServiceSec;
       const trafficDelaySec = Math.max(0, totalTrafficDrivingSec - totalBaseDrivingSec);
       const bufferVsEndSec = Math.round((scheduledEndDate.getTime() - runningClock.getTime()) / 1000);
+      const lastActiveStop = activeStops.length > 0 ? activeStops[activeStops.length - 1] : null;
 
       return {
         dayName: headlineTraffic.dayName,
@@ -1116,6 +996,7 @@
         activeCount: activeStops.length,
         completedCount: completedStops.length,
         totalCount: state.stops.length,
+        lastStopNumber: lastActiveStop ? lastActiveStop.originalNumber : null,
         elapsedTotalSec,
         originLabel: originPt.label,
         usingRealRoads: Boolean(osrmData)
@@ -1140,10 +1021,10 @@
 
       const t = computeRouteTelemetry();
 
-      if (t.activeCount === 0 && state.endMode === 'none') {
+      if (t.activeCount === 0) {
         panel.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="text-xs font-black text-emerald-300">✅ ¡Todas las paradas completadas!</span>
+            <span class="text-xs font-black text-emerald-300">✅ ¡Todas las paradas entregadas!</span>
             <span class="text-xs font-bold text-slate-400">0 min restantes</span>
           </div>
         `;
@@ -1171,7 +1052,7 @@
             <div class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
               <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">
-                Tiempo para Completar Ruta (En Vivo)
+                Tiempo para Completar Ruta (Estación P1 → Última Parada #${t.lastStopNumber || t.totalCount})
               </span>
             </div>
             <div class="flex flex-wrap items-baseline gap-2 mt-0.5">
@@ -1179,7 +1060,7 @@
                 ⏱️ ${totalDurationStr}
               </span>
               <span class="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-xs font-black text-cyan-300">
-                🏁 Termina est.: ${finishTimeStr}
+                🏁 Última entrega: ${finishTimeStr}
               </span>
               ${windowBadgeHtml}
             </div>
@@ -1198,7 +1079,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-800/90 text-[11px]">
           <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-            <span class="text-slate-400 font-semibold">🚗 Manejo (${t.totalMiles} mi):</span>
+            <span class="text-slate-400 font-semibold">🚗 Manejo P1→#${t.lastStopNumber || t.totalCount} (${t.totalMiles} mi):</span>
             <span class="font-black text-white">${drivingStr}</span>
           </div>
           <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
@@ -1262,6 +1143,90 @@
         : `📅 ${dateFormatted} • ⏰ ${startFormatted}`;
     }
 
+    function formatShortSavedRouteLabel(sched, stopCount) {
+      let shortDate = sched.date || '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(shortDate)) {
+        const [, m, d] = shortDate.split('-');
+        shortDate = `${m}/${d}`;
+      }
+      const startStr = format24hTo12hStr(sched.time);
+      const endStr = sched.endTime ? format24hTo12hStr(sched.endTime) : '';
+      return `${shortDate} • ${startStr}${endStr ? '–' + endStr : ''} (${stopCount})`;
+    }
+
+    function registerCurrentRoute(silent = false) {
+      updateRouteScheduleFromInputs(true);
+      const sched = getActiveRouteSchedule();
+      if (!Array.isArray(state.savedRoutes)) state.savedRoutes = [];
+
+      const routeKey = `saved-${sched.date}-${(sched.time || '10:00').replace(':', '')}-${(sched.endTime || '12:00').replace(':', '')}`;
+      const record = {
+        id: routeKey,
+        date: sched.date,
+        time: sched.time,
+        endTime: sched.endTime,
+        label: formatShortSavedRouteLabel(sched, state.stops.length),
+        pickupAddress: state.pickupAddress,
+        endMode: state.endMode,
+        customEndAddress: state.customEndAddress,
+        tacticalNotes: state.tacticalNotes,
+        stops: JSON.parse(JSON.stringify(state.stops))
+      };
+
+      const existingIdx = state.savedRoutes.findIndex(
+        (r) => r.id === routeKey || (r.date === sched.date && r.time === sched.time && r.endTime === sched.endTime)
+      );
+      if (existingIdx >= 0) {
+        state.savedRoutes[existingIdx] = record;
+      } else {
+        state.savedRoutes.unshift(record);
+      }
+
+      state.activePresetId = routeKey;
+      state.routeSchedules[routeKey] = { date: sched.date, time: sched.time, endTime: sched.endTime };
+      saveStateToStorage();
+      renderHeaderControls();
+      if (!silent) {
+        showToast(`✅ Ruta registrada arriba: ${record.label}`);
+      }
+    }
+
+    function loadSavedRoute(routeId) {
+      if (!Array.isArray(state.savedRoutes)) return;
+      const found = state.savedRoutes.find((r) => r.id === routeId);
+      if (!found) return;
+      state.activePresetId = found.id;
+      if (!state.routeSchedules) state.routeSchedules = {};
+      state.routeSchedules[found.id] = {
+        date: found.date,
+        time: found.time,
+        endTime: found.endTime || '12:00'
+      };
+      state.pickupAddress = found.pickupAddress || state.pickupAddress;
+      state.endMode = found.endMode || state.endMode;
+      state.customEndAddress = found.customEndAddress || state.customEndAddress;
+      state.tacticalNotes = found.tacticalNotes || state.tacticalNotes;
+      state.stops = JSON.parse(JSON.stringify(found.stops || []));
+      state.selectedStopId = state.stops[0] ? state.stops[0].id : null;
+      state.scheduleAnchoredAt = Date.now();
+      state.currentLegStartedAt = Date.now();
+      lastFittedPreset = null;
+      renderAll();
+      showToast(`Ruta cargada: ${found.label}`);
+    }
+
+    function deleteSavedRoute(routeId, ev) {
+      if (ev) ev.stopPropagation();
+      if (!Array.isArray(state.savedRoutes)) return;
+      state.savedRoutes = state.savedRoutes.filter((r) => r.id !== routeId);
+      if (state.activePresetId === routeId) {
+        state.activePresetId = 'custom-imported';
+      }
+      saveStateToStorage();
+      renderHeaderControls();
+      showToast('Ruta guardada eliminada');
+    }
+
     function updateRouteScheduleFromInputs(silent = false) {
       const dateEl = document.getElementById('route-date-input');
       const timeEl = document.getElementById('route-time-input');
@@ -1270,6 +1235,18 @@
       if (dateEl && dateEl.value) sched.date = dateEl.value;
       if (timeEl && timeEl.value) sched.time = timeEl.value;
       if (endTimeEl && endTimeEl.value) sched.endTime = endTimeEl.value;
+
+      // Si la ruta activa ya está registrada arriba, actualizar también su etiqueta y horario guardado
+      if (Array.isArray(state.savedRoutes)) {
+        const activeSaved = state.savedRoutes.find((r) => r.id === state.activePresetId);
+        if (activeSaved) {
+          activeSaved.date = sched.date;
+          activeSaved.time = sched.time;
+          activeSaved.endTime = sched.endTime;
+          activeSaved.label = formatShortSavedRouteLabel(sched, state.stops.length);
+        }
+      }
+
       state.scheduleAnchoredAt = Date.now();
       state.currentLegStartedAt = Date.now();
       state.pickupTime = formatScheduleDisplay(sched);
@@ -1351,9 +1328,13 @@
         const curStop = activeStops[i];
         if (i > 0) {
           const prevStop = activeStops[i - 1];
-          if (isClosedStreetBetweenNumbers(prevStop.originalNumber, curStop.originalNumber)) {
+          const crossesVenezia = isInsideVeneziaLakes(prevStop) !== isInsideVeneziaLakes(curStop);
+          if (isClosedStreetBetweenNumbers(prevStop.originalNumber, curStop.originalNumber) || crossesVenezia) {
             const bypass = computeClosedStreetBypassPoint(prevStop, curStop);
-            waypointEntries.push(`${bypass.lat},${bypass.lng}`);
+            const extraWps = Array.isArray(bypass.extraWaypoints)
+              ? bypass.extraWaypoints
+              : [{ lat: bypass.lat, lng: bypass.lng }];
+            extraWps.forEach((wp) => waypointEntries.push(`${wp.lat},${wp.lng}`));
           }
         }
         waypointEntries.push(cleanAddressForMaps(curStop.address, curStop.city));
@@ -2228,15 +2209,42 @@
     }
 
     function renderHeaderControls() {
-      ['miami-beach', 'hialeah-brickell'].forEach((id) => {
-        const btn = document.getElementById(`preset-btn-${id}`);
-        if (!btn) return;
-        if (state.activePresetId === id) {
-          btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow';
-        } else {
-          btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
-        }
-      });
+      const bar = document.getElementById('saved-routes-bar');
+      if (bar) {
+        const savedList = Array.isArray(state.savedRoutes) ? state.savedRoutes : [];
+        const presetBtnsHtml = [
+          { id: 'miami-beach', label: 'Ruta 1: Miami Beach' },
+          { id: 'hialeah-brickell', label: 'Ruta 2: Hialeah → Brickell' }
+        ]
+          .map((p) => {
+            const active = state.activePresetId === p.id;
+            const cls = active
+              ? 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow'
+              : 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
+            return `<button onclick="loadPresetRoute('${p.id}')" id="preset-btn-${p.id}" class="${cls}">${p.label}</button>`;
+          })
+          .join('');
+
+        const savedBtnsHtml = savedList
+          .map((sr) => {
+            const active = state.activePresetId === sr.id;
+            const label = formatShortSavedRouteLabel(sr.schedule, Array.isArray(sr.stops) ? sr.stops.length : 0);
+            const cls = active
+              ? 'px-2.5 py-1.5 rounded-lg text-xs font-black transition-all bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow flex items-center gap-1.5'
+              : 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-900/90 border border-emerald-500/30 text-emerald-300 hover:text-white flex items-center gap-1.5';
+            return `
+              <div class="inline-flex items-center">
+                <button onclick="loadSavedRoute('${sr.id}')" class="${cls}" title="Ruta registrada • Toca para abrir">
+                  <span>📅 ${label}</span>
+                  <span onclick="deleteSavedRoute('${sr.id}', event)" title="Eliminar ruta guardada" class="ml-1 px-1 rounded hover:bg-rose-500/30 text-[10px] opacity-75 hover:opacity-100">✕</span>
+                </button>
+              </div>
+            `;
+          })
+          .join('');
+
+        bar.innerHTML = presetBtnsHtml + savedBtnsHtml;
+      }
 
       const sched = getActiveRouteSchedule();
       const dateInput = document.getElementById('route-date-input');
@@ -2245,6 +2253,11 @@
       if (dateInput && sched.date) dateInput.value = sched.date;
       if (timeInput && sched.time) timeInput.value = sched.time;
       if (endTimeInput && sched.endTime) endTimeInput.value = sched.endTime;
+
+      const stationInfo = getStationCoordinates();
+      if (stationInfo.isDmi9 && state.activePresetId !== 'miami-beach' && state.activePresetId !== 'hialeah-brickell') {
+        state.pickupAddress = stationInfo.address;
+      }
 
       const formattedBadge = formatScheduleDisplay(sched);
       state.pickupTime = formattedBadge;
@@ -2568,13 +2581,9 @@
     function fitGoogleMapToRoute() {
       const map = initGoogleMapIfNeeded();
       if (!map || state.stops.length === 0) return;
+      const station = getStationCoordinates();
       const boundsPoints = state.stops.map((s) => [s.lat, s.lng]);
-      boundsPoints.push([25.8219, -80.2618]); // Parada 1 Estación Hialeah
-      if (state.endMode === 'brickell') {
-        boundsPoints.push([25.7617, -80.1918]);
-      } else if (state.endMode === 'home') {
-        boundsPoints.push([HOME_CLOSING_COORDS.lat, HOME_CLOSING_COORDS.lng]);
-      }
+      boundsPoints.push([station.lat, station.lng]);
       map.fitBounds(boundsPoints, { padding: [28, 28] });
     }
 
@@ -2590,12 +2599,13 @@
           googleRoutePolyline = null;
         }
 
-        const { waypoints, closedBarriers } = getActiveWaypointsList();
+        const { waypoints, closedBarriers } = getActiveWaypointsList(false);
         const cacheKey = getWaypointsCacheKey(waypoints);
         const cachedOsrm = osrmRouteCache[cacheKey];
 
-        // Punto de salida P1 (Estación Hialeah)
-        const p1Coords = [25.8219, -80.2618];
+        // Punto de salida P1 (Estación detectada: DMI9 Amazon o Hialeah)
+        const station = getStationCoordinates();
+        const p1Coords = [station.lat, station.lng];
         const p1Icon = L.divIcon({
           className: '',
           html: `<div style="width:28px;height:28px;border-radius:9999px;background:#f59e0b;border:2.5px solid #ffffff;color:#040812;font-weight:900;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.45);">P1</div>`,
@@ -2603,7 +2613,7 @@
           iconAnchor: [14, 14]
         });
         L.marker(p1Coords, { icon: p1Icon })
-          .bindPopup(`<div class="text-xs font-bold">Parada 1 (Salida)<br/><span class="font-normal text-slate-300">${state.pickupAddress}</span></div>`)
+          .bindPopup(`<div class="text-xs font-bold">Parada 1 (Salida)<br/><span class="font-normal text-slate-300">${station.address || state.pickupAddress}</span></div>`)
           .addTo(googleMarkersLayer);
 
         state.stops.forEach((stop, idx) => {
@@ -2933,7 +2943,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '04:20 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '04:45 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
@@ -2965,12 +2975,16 @@
     }
 
     function initApp() {
+      osrmRouteCache = {};
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.stops) && parsed.stops.length > 0) {
             state = { ...state, ...parsed };
+            if (!Array.isArray(state.savedRoutes)) {
+              state.savedRoutes = [];
+            }
             if (!state.closedStreetPairs) {
               state.closedStreetPairs = { '8-6': true, '6-8': true };
             } else {
@@ -2986,16 +3000,22 @@
                 ci.endTime = '12:00';
               }
             }
-            // Si la ruta importada en el móvil tenía 8 y 6 pegadas (8 → 6) por el cálculo anterior, re-optimizar evitando la calle clausurada
-            if (state.activePresetId === 'custom-imported') {
-              for (let i = 0; i < state.stops.length - 1; i++) {
-                const a = state.stops[i].originalNumber;
-                const b = state.stops[i + 1].originalNumber;
-                if ((a === 8 && b === 6) || (a === 6 && b === 8)) {
-                  state.stops = autoOptimizeStopsList(state.stops);
-                  break;
-                }
-              }
+            // Si hay una ruta personalizada activa y aún no estaba guardada arriba, registrarla automáticamente
+            if (state.activePresetId === 'custom-imported' && state.savedRoutes.length === 0 && state.stops.length > 0) {
+              const sched = getActiveRouteSchedule();
+              const autoId = 'saved-route-initial';
+              state.routeSchedules[autoId] = { ...sched };
+              state.savedRoutes.push({
+                id: autoId,
+                schedule: { ...sched },
+                pickupAddress: getStationCoordinates().address || state.pickupAddress,
+                endMode: state.endMode,
+                customEndAddress: state.customEndAddress,
+                tacticalNotes: state.tacticalNotes,
+                closedStreetPairs: { ...(state.closedStreetPairs || { '8-6': true, '6-8': true }) },
+                stops: JSON.parse(JSON.stringify(state.stops))
+              });
+              state.activePresetId = autoId;
             }
             if (!state.scheduleAnchoredAt) state.scheduleAnchoredAt = Date.now();
             if (!state.currentLegStartedAt) state.currentLegStartedAt = Date.now();
