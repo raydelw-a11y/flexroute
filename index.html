@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -93,13 +93,29 @@
   <!-- TOP COCKPIT HEADER -->
   <header class="sticky top-0 z-30 glass-card border-b border-slate-800/90 px-4 pb-3 safe-top-header">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-500 flex items-center justify-center neon-cyan-shadow shrink-0">
-          <svg class="w-5 h-5 text-slate-950 fill-slate-950" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-          </svg>
+      <div class="flex items-start gap-3">
+        <!-- ICONO DE LA APP + BOTÓN MENÚ DE 3 RAYAS HORIZONTALES JUSTO DEBAJO -->
+        <div class="flex flex-col items-center gap-1.5 shrink-0">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-500 flex items-center justify-center neon-cyan-shadow shrink-0">
+            <svg class="w-5 h-5 text-slate-950 fill-slate-950" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+          </div>
+          <button
+            id="hamburger-menu-btn"
+            type="button"
+            onclick="toggleMainMenuDrawer()"
+            title="Menu"
+            aria-label="Open Menu"
+            class="w-10 h-7 rounded-xl bg-slate-900/95 hover:bg-slate-800 border border-cyan-400/50 flex flex-col items-center justify-center gap-1 shadow-md transition-all"
+          >
+            <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
+            <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
+            <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
+          </button>
         </div>
-        <div>
+
+        <div class="pt-0.5">
           <div class="flex items-center gap-2">
             <h1 class="text-base sm:text-lg font-black tracking-tight text-white">
               FlexRoute
@@ -108,8 +124,8 @@
               Google Maps Direct
             </span>
           </div>
-          <p class="text-xs text-slate-400">
-            Optimizador táctico en tiempo real • Captura automática desde Amazon Flex
+          <p id="i18n-header-subtitle" class="text-xs text-slate-400">
+            Real-time tactical route optimizer • Auto-capture from Amazon Flex
           </p>
         </div>
       </div>
@@ -118,34 +134,203 @@
         <!-- BOTÓN RÁPIDO DE ESCANEO DE VIDEO O CAPTURAS DE AMAZON FLEX -->
         <button onclick="openScreenshotPicker()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
           <span>🎬📸</span>
-          <span>Video / Capturas Flex</span>
+          <span id="i18n-btn-video-flex">Flex Video / Screenshots</span>
+        </button>
+
+        <!-- BOTÓN RÁPIDO DE CALENDARIO -->
+        <button onclick="openCalendarModal()" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-xs font-black flex items-center gap-1">
+          <span>📅</span>
+          <span id="i18n-btn-calendar-top">Calendar</span>
         </button>
 
         <!-- SELECTOR DE RUTA PRECARGADA + RUTAS REGISTRADAS CON FECHA Y HORARIO -->
         <div id="saved-routes-bar" class="flex flex-wrap items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
           <button id="preset-btn-miami-beach" onclick="loadPresetRoute('miami-beach')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            Ruta 1 (11)
+            Miami Beach (10)
           </button>
           <button id="preset-btn-hialeah-brickell" onclick="loadPresetRoute('hialeah-brickell')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            Ruta 2 (13)
+            Hialeah / Miami (12)
           </button>
         </div>
 
         <!-- PESTAÑAS DE MODO -->
         <div class="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
           <button id="tab-btn-cockpit" onclick="switchTab('cockpit')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-            Cabina
+            Cockpit
           </button>
           <button id="tab-btn-parser" onclick="switchTab('parser')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
-            Auto-Importar
+            Auto-Import
           </button>
           <button id="tab-btn-add" onclick="switchTab('add')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
-            + Parada
+            + Stop
+          </button>
+        </div>
+
+        <!-- SELECTOR DE IDIOMA (ENGLISH DEFAULT / ESPAÑOL) -->
+        <div class="flex items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+          <button id="lang-btn-en" onclick="setAppLanguage('en')" class="px-2 py-1 rounded-lg text-[11px] font-black bg-cyan-400 text-slate-950">
+            EN
+          </button>
+          <button id="lang-btn-es" onclick="setAppLanguage('es')" class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white">
+            ES
           </button>
         </div>
       </div>
     </div>
   </header>
+
+  <!-- MENÚ DESPLEGABLE LATERAL IZQUIERDO (ACCESO RÁPIDO A OPCIONES PRINCIPALES Y CALENDARIO) -->
+  <div id="main-menu-backdrop" onclick="toggleMainMenuDrawer(false)" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm"></div>
+  <aside id="main-menu-drawer" class="hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-slate-950 border-r border-cyan-500/35 p-4 flex flex-col justify-between shadow-2xl overflow-y-auto">
+    <div class="space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-400 to-emerald-500 flex items-center justify-center">
+            <svg class="w-4 h-4 text-slate-950 fill-slate-950" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+          </div>
+          <div>
+            <div id="i18n-menu-title" class="text-sm font-black text-white">FlexRoute Menu</div>
+            <div id="i18n-menu-subtitle" class="text-[10px] text-cyan-400 font-semibold">Quick Navigation &amp; Tools</div>
+          </div>
+        </div>
+        <button onclick="toggleMainMenuDrawer(false)" class="w-7 h-7 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-black border border-slate-800">
+          ✕
+        </button>
+      </div>
+
+      <!-- OPCIONES MÁS IMPORTANTES DEL MENÚ -->
+      <nav class="space-y-1.5">
+        <button onclick="openCalendarModal(); toggleMainMenuDrawer(false);" class="w-full p-3 rounded-xl bg-gradient-to-r from-cyan-500/20 to-emerald-500/15 hover:from-cyan-500/30 hover:to-emerald-500/25 border border-cyan-400/40 text-left flex items-center gap-3 transition-all">
+          <span class="text-lg">📅</span>
+          <div>
+            <div id="i18n-menu-calendar" class="text-xs font-black text-white">Route Calendar</div>
+            <div id="i18n-menu-calendar-sub" class="text-[10px] text-cyan-300">Select a day &amp; view scheduled routes</div>
+          </div>
+        </button>
+
+        <button onclick="switchTab('cockpit'); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
+          <span class="text-base">🧭</span>
+          <div>
+            <div id="i18n-menu-cockpit" class="text-xs font-bold text-slate-100">Tactical Cockpit</div>
+            <div id="i18n-menu-cockpit-sub" class="text-[10px] text-slate-400">Station, map, live ETA &amp; stops</div>
+          </div>
+        </button>
+
+        <button onclick="openScreenshotPicker(); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
+          <span class="text-base">🎬</span>
+          <div>
+            <div id="i18n-menu-upload" class="text-xs font-bold text-amber-300">Upload Flex Video / Captures</div>
+            <div id="i18n-menu-upload-sub" class="text-[10px] text-slate-400">Scan itinerary video or screenshots</div>
+          </div>
+        </button>
+
+        <button onclick="switchTab('parser'); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
+          <span class="text-base">📋</span>
+          <div>
+            <div id="i18n-menu-parser" class="text-xs font-bold text-slate-100">Auto-Import &amp; Paste Text</div>
+            <div id="i18n-menu-parser-sub" class="text-[10px] text-slate-400">Import from clipboard or iOS Shortcut</div>
+          </div>
+        </button>
+
+        <button onclick="switchTab('add'); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
+          <span class="text-base">➕</span>
+          <div>
+            <div id="i18n-menu-add" class="text-xs font-bold text-slate-100">Add Stop Manually</div>
+            <div id="i18n-menu-add-sub" class="text-[10px] text-slate-400">Insert address into active route</div>
+          </div>
+        </button>
+
+        <button onclick="switchTab('cockpit'); toggleMainMenuDrawer(false); toggleMapFullscreen(true);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
+          <span class="text-base">🗺️</span>
+          <div>
+            <div id="i18n-menu-map" class="text-xs font-bold text-slate-100">Fullscreen Google Map</div>
+            <div id="i18n-menu-map-sub" class="text-[10px] text-slate-400">Open full tactical map with live traffic</div>
+          </div>
+        </button>
+
+        <button onclick="autoOptimizeCurrentStops(); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
+          <span class="text-base">⚡</span>
+          <div>
+            <div id="i18n-menu-optimize" class="text-xs font-bold text-emerald-300">Auto-Optimize Sequence</div>
+            <div id="i18n-menu-optimize-sub" class="text-[10px] text-slate-400">Recalculate fastest order &amp; detours</div>
+          </div>
+        </button>
+
+        <button onclick="registerCurrentRoute(); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
+          <span class="text-base">💾</span>
+          <div>
+            <div id="i18n-menu-register" class="text-xs font-bold text-cyan-300">Register Current Route</div>
+            <div id="i18n-menu-register-sub" class="text-[10px] text-slate-400">Save route with date &amp; start/end times</div>
+          </div>
+        </button>
+      </nav>
+    </div>
+
+    <!-- SELECTOR DE IDIOMA EN EL MENÚ -->
+    <div class="pt-3 border-t border-slate-800 space-y-2">
+      <div id="i18n-menu-lang-label" class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Language / Idioma</div>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="menu-lang-en" onclick="setAppLanguage('en')" class="py-2 px-3 rounded-xl text-xs font-black border bg-cyan-500/20 border-cyan-400 text-cyan-300">
+          🇺🇸 English
+        </button>
+        <button id="menu-lang-es" onclick="setAppLanguage('es')" class="py-2 px-3 rounded-xl text-xs font-bold border bg-slate-900 border-slate-800 text-slate-400">
+          🇪🇸 Español
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MODAL DE CALENDARIO DE RUTAS POR DÍA -->
+  <div id="calendar-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div class="w-full max-w-lg glass-card rounded-2xl border border-cyan-500/40 p-4 sm:p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div>
+          <h2 id="i18n-cal-modal-title" class="text-base font-black text-white">📅 Route Calendar</h2>
+          <p id="i18n-cal-modal-subtitle" class="text-xs text-slate-400">Select a date to view and open routes scheduled for that day</p>
+        </div>
+        <button onclick="closeCalendarModal()" class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-black border border-slate-800">
+          ✕
+        </button>
+      </div>
+
+      <!-- CONTROLES DE MES -->
+      <div class="flex items-center justify-between bg-slate-950/90 p-2 rounded-xl border border-slate-800">
+        <button onclick="changeCalendarMonth(-1)" class="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 text-xs font-black border border-slate-800">
+          ◀
+        </button>
+        <div id="calendar-month-label" class="text-sm font-black text-white">November 2026</div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="jumpCalendarToDate('2026-11-08')" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold">
+            11/08
+          </button>
+          <button onclick="changeCalendarMonth(1)" class="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 text-xs font-black border border-slate-800">
+            ▶
+          </button>
+        </div>
+      </div>
+
+      <!-- CABECERA DE DÍAS DE LA SEMANA Y GRILLA -->
+      <div>
+        <div id="calendar-weekdays-row" class="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase text-slate-400 mb-1.5"></div>
+        <div id="calendar-days-grid" class="grid grid-cols-7 gap-1.5"></div>
+      </div>
+
+      <!-- LISTA DE RUTAS DEL DÍA SELECCIONADO -->
+      <div class="pt-3 border-t border-slate-800 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span id="calendar-selected-day-heading" class="text-xs font-black uppercase tracking-wider text-cyan-400">
+            Routes on 11/08/2026
+          </span>
+          <button onclick="closeCalendarModal(); openScreenshotPicker();" class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-black">
+            + Upload Route for this Day
+          </button>
+        </div>
+        <div id="calendar-day-routes-list" class="space-y-2"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- INPUT OCULTO GLOBAL PARA SUBIR VIDEO DE PANTALLA O CAPTURAS DESDE CUALQUIER PESTAÑA -->
   <input
@@ -172,18 +357,18 @@
               </div>
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Estación de Salida (Pickup)</span>
+                  <span id="i18n-station-title" class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Departure Station (Pickup)</span>
                   <span id="pickup-time-badge" class="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[11px] font-bold text-cyan-300">11/08/2026 • 10:00 AM – 12:00 PM</span>
                 </div>
                 <p id="pickup-address-display" class="text-sm font-bold text-white">1125 SE 8th Street, Suite 700, Hialeah, FL</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="copyTextToClipboard(state.pickupAddress, 'Dirección Parada 1')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
-                Copiar P1
+              <button id="i18n-btn-copy-p1" onclick="copyTextToClipboard(state.pickupAddress, 'Stop 1 Address')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+                Copy P1
               </button>
               <a id="pickup-maps-link" href="#" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold">
-                Ir a P1
+                Go to P1
               </a>
             </div>
           </div>
@@ -191,27 +376,28 @@
           <!-- SELECTOR DE FECHA, HORA DE COMIENZO, HORA DE TERMINAR Y BOTÓN REGISTRAR RUTA ARRIBA -->
           <div class="pt-2.5 border-t border-slate-800/90 space-y-2">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="text-xs font-bold text-slate-300">📅 Fecha y Horario de la Ruta:</span>
+              <span id="i18n-schedule-heading" class="text-xs font-bold text-slate-300">📅 Route Date &amp; Schedule:</span>
               <div class="flex items-center gap-1.5">
                 <button
+                  id="i18n-btn-now"
                   type="button"
                   onclick="setRouteScheduleToNow()"
                   class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 border border-slate-700"
                 >
-                  Ahora
+                  Now
                 </button>
                 <button
                   type="button"
                   onclick="registerCurrentRoute()"
                   class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-[11px] font-black shadow flex items-center gap-1"
                 >
-                  <span>💾 Registrar Ruta</span>
+                  <span id="i18n-btn-register-route">💾 Register Route</span>
                 </button>
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
-                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Fecha</label>
+                <label id="i18n-lbl-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
                 <input
                   id="route-date-input"
                   type="date"
@@ -221,7 +407,7 @@
                 />
               </div>
               <div>
-                <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Comienzo</label>
+                <label id="i18n-lbl-start" class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Start Time</label>
                 <input
                   id="route-time-input"
                   type="time"
@@ -231,7 +417,7 @@
                 />
               </div>
               <div>
-                <label class="block text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">Terminar</label>
+                <label id="i18n-lbl-end" class="block text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">End Time</label>
                 <input
                   id="route-end-time-input"
                   type="time"
@@ -249,24 +435,24 @@
 
         <!-- 1. PANEL DE DESTINO DE CIERRE Y VARIANTES TÁCTICAS (DEBAJO DE ESTACIÓN DE SALIDA) -->
         <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-4">
-          <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">
-            Destino de Cierre y Variantes Tácticas
+          <h3 id="i18n-dest-panel-title" class="text-xs font-black uppercase tracking-wider text-slate-300">
+            Closing Destination &amp; Tactical Variants
           </h3>
           <div id="strategy-controls-container" class="space-y-3"></div>
           <div class="pt-3 border-t border-slate-800">
-            <label class="block text-xs text-slate-400 font-bold mb-2">Destino de Cierre al Terminar la Ruta:</label>
+            <label id="i18n-dest-label" class="block text-xs text-slate-400 font-bold mb-2">Closing Destination After Finishing Route:</label>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               <button id="endmode-home" onclick="setEndMode('home')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Home</button>
-              <button id="endmode-return" onclick="setEndMode('return_to_start')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Regresar a Parada 1</button>
-              <button id="endmode-brickell" onclick="setEndMode('brickell')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Ir a Brickell</button>
-              <button id="endmode-custom" onclick="setEndMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Otra Dirección</button>
-              <button id="endmode-none" onclick="setEndMode('none')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Sin Cierre Extra</button>
+              <button id="endmode-return" onclick="setEndMode('return_to_start')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Return to P1</button>
+              <button id="endmode-brickell" onclick="setEndMode('brickell')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Go to Brickell</button>
+              <button id="endmode-custom" onclick="setEndMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Custom Address</button>
+              <button id="endmode-none" onclick="setEndMode('none')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">No Extra Closing</button>
             </div>
             <div id="custom-end-wrapper" class="mt-2.5 hidden">
               <input
                 id="custom-end-input"
                 type="text"
-                placeholder="Ej: 1200 Brickell Ave, Miami, FL"
+                placeholder="Ex: 1200 Brickell Ave, Miami, FL"
                 oninput="updateCustomEndAddress(this.value)"
                 class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
               />
@@ -278,28 +464,28 @@
         <div id="map-card-container" class="glass-card rounded-2xl border border-slate-800 overflow-hidden transition-all">
           <div class="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 class="text-xs font-black uppercase tracking-wider text-slate-200">
-                Mapa Táctico Google Maps
+              <h3 id="i18n-map-title" class="text-xs font-black uppercase tracking-wider text-slate-200">
+                Tactical Google Maps
               </h3>
               <p id="map-fullscreen-hint" class="text-[10px] text-cyan-400 font-semibold">
-                Toca el mapa para abrirlo a pantalla completa
+                Tap map to open in fullscreen
               </p>
             </div>
             <div class="flex items-center gap-1">
               <button id="gmap-mode-streets" onclick="setGoogleMapLayer('streets')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                Mapa
+                Map
               </button>
               <button id="gmap-mode-hybrid" onclick="setGoogleMapLayer('hybrid')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">
-                Satélite
+                Satellite
               </button>
               <button id="gmap-traffic-btn" onclick="toggleGoogleTrafficLayer()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                🚦 Tráfico
+                🚦 Traffic
               </button>
-              <button onclick="fitGoogleMapToRoute()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800">
-                Centrar
+              <button id="i18n-btn-center-map" onclick="fitGoogleMapToRoute()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800">
+                Center
               </button>
               <button id="gmap-fullscreen-btn" onclick="toggleMapFullscreen()" class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-cyan-400 text-slate-950 shadow">
-                ⛶ Ampliar
+                ⛶ Expand
               </button>
             </div>
           </div>
@@ -312,13 +498,13 @@
         <!-- 3. SECUENCIA TÁCTICA ACTIVA -->
         <div class="glass-card rounded-2xl border border-cyan-500/30 p-4 shadow-xl">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-black uppercase tracking-wider text-cyan-400">
-              Secuencia Táctica Activa
+            <span id="i18n-seq-title" class="text-xs font-black uppercase tracking-wider text-cyan-400">
+              Active Tactical Sequence
             </span>
             <div class="flex items-center gap-2">
-              <span id="metrics-counter" class="text-xs text-slate-400 font-semibold">0/10 listas</span>
-              <button onclick="autoOptimizeCurrentStops()" class="text-[11px] text-emerald-400 hover:underline font-bold">⚡ Auto-Optimizar</button>
-              <button onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reiniciar</button>
+              <span id="metrics-counter" class="text-xs text-slate-400 font-semibold">0/10 done</span>
+              <button id="i18n-btn-auto-opt" onclick="autoOptimizeCurrentStops()" class="text-[11px] text-emerald-400 hover:underline font-bold">⚡ Auto-Optimize</button>
+              <button id="i18n-btn-reset-seq" onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reset</button>
             </div>
           </div>
           <div id="sequence-pill-chain" class="flex flex-wrap items-center gap-1.5 my-3"></div>
@@ -328,13 +514,13 @@
         <!-- 4. LANZADOR MULTIPARADA CON GOOGLE MAPS -->
         <div class="glass-card rounded-2xl border border-emerald-500/35 p-4 space-y-3 shadow-lg">
           <div class="flex items-center justify-between">
-            <h2 class="text-sm font-extrabold text-white">Conexión Multiparada con Google Maps</h2>
-            <span class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
-              RUTA COMPLETA
+            <h2 id="i18n-multistop-title" class="text-sm font-extrabold text-white">Multi-Stop Google Maps Launcher</h2>
+            <span id="i18n-multistop-badge" class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+              FULL ROUTE
             </span>
           </div>
-          <p class="text-[11px] text-slate-400">
-            Envía todas las paradas activas en un solo enlace directo hacia la app oficial de Google Maps.
+          <p id="i18n-multistop-desc" class="text-[11px] text-slate-400">
+            Sends all active stops in a single direct link to the official Google Maps app.
           </p>
           <div id="multi-stop-links-container" class="space-y-2"></div>
         </div>
@@ -345,15 +531,15 @@
         <!-- CABECERA DE PARADAS Y MÉTRICAS RÁPIDAS -->
         <div class="flex flex-wrap items-center justify-between gap-2 px-1">
           <div>
-            <h2 id="route-title-heading" class="text-base font-black text-white">Hoja de Ruta Táctica</h2>
-            <p id="route-summary-subtitle" class="text-xs text-slate-400">Toca cualquier parada para enfocarla en el mapa o abrir navegación individual.</p>
+            <h2 id="route-title-heading" class="text-base font-black text-white">Tactical Route Sheet</h2>
+            <p id="route-summary-subtitle" class="text-xs text-slate-400">Tap any stop to focus it on the map or launch single-stop navigation.</p>
           </div>
           <div class="flex items-center gap-2">
             <span id="total-packages-badge" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-bold text-cyan-300">
-              0 paquetes
+              0 packages
             </span>
             <span id="urgent-stops-badge" class="px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-xs font-bold text-rose-300">
-              0 urgentes
+              0 urgent
             </span>
           </div>
         </div>
@@ -371,24 +557,24 @@
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase">
-              Video Screen Recording + Visión OCR
+            <span id="i18n-parser-badge" class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase">
+              Video Screen Recording + OCR Vision
             </span>
-            <h2 class="text-base font-black text-white">1. Subir Video de Pantalla o Capturas de Amazon Flex</h2>
+            <h2 id="i18n-parser-title" class="text-base font-black text-white">1. Upload Amazon Flex Screen Video or Screenshots</h2>
           </div>
-          <p class="text-xs text-slate-300 mt-1">
-            En la app de <strong>Amazon Flex</strong> ve a <strong>Itinerary → List</strong> y haz una <strong>Grabación de Pantalla en Video</strong> mientras bajas por la lista (o toma capturas). FlexRoute extraerá los cuadros del video automáticamente, eliminará duplicados y cargará toda la ruta.
+          <p id="i18n-parser-desc" class="text-xs text-slate-300 mt-1">
+            In the <strong>Amazon Flex</strong> app go to <strong>Itinerary → List</strong> and record a <strong>Screen Video</strong> while scrolling down the list (or take screenshots). FlexRoute automatically extracts key video frames, removes duplicates, and loads the entire route.
           </p>
         </div>
-        <button onclick="openScreenshotPicker()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-lg shrink-0">
-          🎬📸 Subir Video o Capturas de Pantalla
+        <button id="i18n-parser-upload-btn" onclick="openScreenshotPicker()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-lg shrink-0">
+          🎬📸 Upload Screen Video or Screenshots
         </button>
       </div>
 
       <!-- ESTADO DEL ESCÁNER OCR -->
       <div id="ocr-status-box" class="hidden p-4 rounded-xl bg-slate-950/90 border border-cyan-500/40 space-y-2">
         <div class="flex items-center justify-between text-xs font-bold">
-          <span id="ocr-status-label" class="text-cyan-300">Analizando capturas de Amazon Flex...</span>
+          <span id="ocr-status-label" class="text-cyan-300">Analyzing Amazon Flex captures...</span>
           <span id="ocr-status-percent" class="text-emerald-300">0%</span>
         </div>
         <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
@@ -399,11 +585,11 @@
 
       <!-- BOTÓN DE 1 TOQUE DESDE PORTAPAPELES -->
       <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
-        <div class="text-xs text-slate-400">
-          ¿Ya copiaste el texto con <strong>Live Text</strong> de tu iPhone o desde un Atajo?
+        <div id="i18n-clipboard-hint" class="text-xs text-slate-400">
+          Already copied text with iPhone <strong>Live Text</strong> or a Shortcut?
         </div>
-        <button onclick="pasteAndImportFromClipboard()" class="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-black">
-          📋 Pegar del Portapapeles e Importar en 1 Toque
+        <button id="i18n-clipboard-btn" onclick="pasteAndImportFromClipboard()" class="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-black">
+          📋 Paste from Clipboard &amp; Import in 1 Tap
         </button>
       </div>
     </div>
@@ -412,35 +598,35 @@
     <div class="glass-card rounded-2xl border border-cyan-500/30 p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 class="text-sm font-black text-white">2. Texto Detectado del Itinerario</h3>
-          <p class="text-xs text-slate-400">Aquí aparece lo leído de tus capturas o puedes pegar texto directamente.</p>
+          <h3 id="i18n-parser-card2-title" class="text-sm font-black text-white">2. Detected Itinerary Text</h3>
+          <p id="i18n-parser-card2-desc" class="text-xs text-slate-400">Text extracted from your captures appears here, or you can paste text directly.</p>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="loadSampleTextIntoParser()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-300 border border-slate-700">
-            Cargar Ejemplo
+          <button id="i18n-btn-sample" onclick="loadSampleTextIntoParser()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-300 border border-slate-700">
+            Load Sample
           </button>
-          <button onclick="document.getElementById('raw-itinerary-textarea').value = ''" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-slate-400 border border-slate-800">
-            Limpiar
+          <button id="i18n-btn-clear" onclick="document.getElementById('raw-itinerary-textarea').value = ''" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-slate-400 border border-slate-800">
+            Clear
           </button>
         </div>
       </div>
       <textarea
         id="raw-itinerary-textarea"
         rows="8"
-        placeholder="Aquí aparecerá automáticamente el texto extraído de tus capturas de Amazon Flex (o pégalo aquí)..."
+        placeholder="Text extracted from your Amazon Flex captures will appear here automatically (or paste it here)..."
         class="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-400"
       ></textarea>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <label class="flex items-center gap-2 text-xs text-slate-300 font-semibold cursor-pointer">
           <input id="auto-optimize-checkbox" type="checkbox" checked class="rounded border-slate-700 bg-slate-900 text-cyan-400" />
-          <span>Optimizar automáticamente por urgencia y cercanía geográfica</span>
+          <span id="i18n-chk-auto-opt">Automatically optimize by urgency and geographic proximity</span>
         </label>
         <div class="flex items-center gap-2">
-          <button onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
-            Cancelar
+          <button id="i18n-btn-cancel-parser" onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
+            Cancel
           </button>
-          <button onclick="parseRawItineraryText()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow-lg">
-            ⚡ Procesar y Cargar al Mapa
+          <button id="i18n-btn-process" onclick="parseRawItineraryText()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow-lg">
+            ⚡ Process &amp; Load to Map
           </button>
         </div>
       </div>
@@ -449,25 +635,25 @@
     <!-- TARJETA 3: ATAJO AUTOMÁTICO DE IPHONE (1 TOQUE SIN SALIR DE AMAZON FLEX) -->
     <div class="glass-card rounded-2xl border border-emerald-500/30 p-5 space-y-3">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-black text-emerald-300">⚡ Cómo activar el Atajo de 1 Toque en tu iPhone (iOS Shortcuts)</h3>
-        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">0 segundos</span>
+        <h3 id="i18n-shortcut-title" class="text-sm font-black text-emerald-300">⚡ How to Enable 1-Tap iPhone Shortcut (iOS Shortcuts)</h3>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">0 sec</span>
       </div>
-      <p class="text-xs text-slate-300 leading-relaxed">
-        Con la app nativa <strong>Atajos (Shortcuts)</strong> de tu iPhone puedes hacer que al tocar 2 veces la parte trasera del teléfono dentro de <strong>Amazon Flex</strong> se capture la pantalla y se abra <strong>FlexRoute</strong> con las paradas ya cargadas:
+      <p id="i18n-shortcut-desc" class="text-xs text-slate-300 leading-relaxed">
+        With the native iPhone <strong>Shortcuts</strong> app you can double-tap the back of your phone inside <strong>Amazon Flex</strong> to capture the screen and open <strong>FlexRoute</strong> with all stops loaded:
       </p>
       <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
-        <li>Abre la app <strong>Atajos (Shortcuts)</strong> en tu iPhone y toca <strong>+ (Nuevo Atajo)</strong>.</li>
-        <li>Agrega la acción <strong>«Hacer captura de pantalla»</strong> (<em>Take Screenshot</em>).</li>
-        <li>Agrega la acción <strong>«Extraer texto de la imagen»</strong> (<em>Extract Text from Image</em>).</li>
-        <li>Agrega la acción <strong>«Codificar URL»</strong> (<em>URL Encode</em>) pasando el <em>Texto de la imagen</em>.</li>
-        <li>Agrega la acción <strong>«Abrir URLs»</strong> con esta dirección:<br/>
-          <code class="text-cyan-300 font-mono text-[11px] break-all">https://raydelw-a11y.github.io/flexroute/?import=[Texto Codificado]</code>
+        <li>Open the <strong>Shortcuts</strong> app on your iPhone and tap <strong>+ (New Shortcut)</strong>.</li>
+        <li>Add the <strong>"Take Screenshot"</strong> action.</li>
+        <li>Add the <strong>"Extract Text from Image"</strong> action.</li>
+        <li>Add the <strong>"URL Encode"</strong> action passing the <em>Text from Image</em>.</li>
+        <li>Add the <strong>"Open URLs"</strong> action with this address:<br/>
+          <code class="text-cyan-300 font-mono text-[11px] break-all">https://raydelw-a11y.github.io/flexroute/?import=[URL Encoded Text]</code>
         </li>
       </ol>
       <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-        <span class="text-[11px] text-slate-400">¿Quieres añadir varias pantallas seguidas desde el Atajo? Usa <code>?append=1&amp;import=...</code> para acumular paradas sin borrar las anteriores.</span>
-        <button onclick="copyTextToClipboard('https://raydelw-a11y.github.io/flexroute/?append=1&import=', 'URL para Atajo de iPhone')" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold shrink-0">
-          Copiar URL del Atajo
+        <span class="text-[11px] text-slate-400">Want to append multiple screens in a row? Use <code>?append=1&amp;import=...</code> to accumulate stops.</span>
+        <button id="i18n-btn-copy-shortcut" onclick="copyTextToClipboard('https://raydelw-a11y.github.io/flexroute/?append=1&import=', 'iPhone Shortcut URL')" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold shrink-0">
+          Copy Shortcut URL
         </button>
       </div>
     </div>
@@ -477,49 +663,49 @@
   <div id="tab-panel-add" class="hidden max-w-2xl mx-auto px-4 pt-6">
     <form onsubmit="handleAddStopSubmit(event)" class="glass-card rounded-2xl border border-emerald-500/30 p-5 space-y-4">
       <div>
-        <h2 class="text-base font-black text-white">Añadir Nueva Parada a la Ruta Activa</h2>
-        <p class="text-xs text-slate-400">Se integrará inmediatamente en la secuencia táctica y en los enlaces de Google Maps.</p>
+        <h2 id="i18n-add-title" class="text-base font-black text-white">Add New Stop to Active Route</h2>
+        <p id="i18n-add-desc" class="text-xs text-slate-400">It will be integrated immediately into the tactical sequence and Google Maps links.</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label class="block text-xs font-bold text-slate-400 mb-1">N.º Parada</label>
+          <label id="i18n-add-lbl-num" class="block text-xs font-bold text-slate-400 mb-1">Stop #</label>
           <input id="add-num" type="number" placeholder="Auto" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-400 mb-1">Hora Límite (Deadline)</label>
+          <label id="i18n-add-lbl-dl" class="block text-xs font-bold text-slate-400 mb-1">Deadline</label>
           <input id="add-deadline" type="text" placeholder="12:00 PM" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-400 mb-1">Gate Code (#)</label>
-          <input id="add-gate" type="text" placeholder="Ej: #3234" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+          <input id="add-gate" type="text" placeholder="Ex: #3234" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
         </div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="sm:col-span-2">
-          <label class="block text-xs font-bold text-slate-400 mb-1">Dirección (Calle y Número) *</label>
-          <input id="add-address" type="text" required placeholder="Ej: 810 7th St" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+          <label id="i18n-add-lbl-addr" class="block text-xs font-bold text-slate-400 mb-1">Street Address *</label>
+          <input id="add-address" type="text" required placeholder="Ex: 810 7th St" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-400 mb-1">Unidad / Apt</label>
+          <label id="i18n-add-lbl-unit" class="block text-xs font-bold text-slate-400 mb-1">Unit / Apt</label>
           <input id="add-unit" type="text" placeholder="APT 207" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
         </div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs font-bold text-slate-400 mb-1">Ciudad</label>
+          <label id="i18n-add-lbl-city" class="block text-xs font-bold text-slate-400 mb-1">City</label>
           <input id="add-city" type="text" placeholder="Miami Beach, FL" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-400 mb-1">Paquetes</label>
+          <label id="i18n-add-lbl-pkgs" class="block text-xs font-bold text-slate-400 mb-1">Packages</label>
           <input id="add-packages" type="number" value="1" min="1" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
         </div>
       </div>
       <div class="flex justify-end gap-2 pt-2">
-        <button type="button" onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
-          Cancelar
+        <button id="i18n-add-btn-cancel" type="button" onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
+          Cancel
         </button>
-        <button type="submit" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-black">
-          Guardar Parada
+        <button id="i18n-add-btn-save" type="submit" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-black">
+          Save Stop
         </button>
       </div>
     </form>
@@ -532,8 +718,8 @@
       <div id="bottom-action-buttons" class="flex items-center gap-2 shrink-0"></div>
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
-      <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 05:28 PM - 11/08/2026 ↻
+      <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
+        Actualizado: 05:57 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -548,74 +734,80 @@
     const PRESET_ROUTES = {
       'miami-beach': {
         id: 'miami-beach',
-        name: 'Miami Beach + Venetian Islands (11 Paradas)',
+        name: 'Miami Beach + Venetian Islands (10 Stops)',
         pickupAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
         pickupTime: '7:49 AM',
         endMode: 'return_to_start',
         customEndAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
         tacticalNotes:
+          'Option B Active (5 → 11 → 10 → 9 → 8 → 7 → 6 → 2 → 3 → 4 → 1): Enter via I-395 straight to Stop 5 (due 9:50 AM). Head up to Venetian Causeway and use the protected left turn onto Island Ave to sweep Belle Isle inside-out (11 → 10 → 9). Continue west across Rivo Alto and Di Lido (8 → 7 → 6, due 10:00 AM), return to Miami Beach to go straight north up Collins Ave (2 → 3 → 4) and take 41st St (I-195 W / SR-112 W) back to Stop 1 in Hialeah.',
+        tacticalNotesEs:
           'Opción B Activa (5 → 11 → 10 → 9 → 8 → 7 → 6 → 2 → 3 → 4 → 1): Entras por I-395 directo a la Parada 5 (vence 9:50 AM). Subes al Venetian Causeway y aprovechas el semáforo largo con giro protegido a la izquierda hacia Island Ave para barrer Belle Isle de adentro hacia afuera (11 → 10 → 9). Sigues hacia el oeste por Rivo Alto y Di Lido (8 → 7 → 6, vence 10:00 AM), regresas a Miami Beach para subir en línea recta por Collins Ave (2 → 3 → 4) y tomas la calle 41 (I-195 W / SR-112 W) directo a la Parada 1 en Hialeah.',
         defaultOrder: [5, 11, 10, 9, 8, 7, 6, 2, 3, 4],
         stops: [
           { id: 'mb-2', originalNumber: 2, code: 'C.L08.OV', address: '4775 Collins Ave', unit: 'APT 1503', city: 'Miami Beach, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8226, lng: -80.1223, zone: 'Mid-Beach', urgent: false },
           { id: 'mb-3', originalNumber: 3, code: 'C.L08.OV', address: '4779 Collins Ave', unit: 'APT 2703', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8235, lng: -80.1221, zone: 'Mid-Beach', urgent: false },
           { id: 'mb-4', originalNumber: 4, code: 'C.L08.OV', address: '5025 Collins Ave', unit: 'APT 1501', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 4, locations: 3, gateCode: '', lat: 25.8273, lng: -80.1216, zone: 'Mid-Beach', urgent: false },
-          { id: 'mb-5', originalNumber: 5, code: 'C.L08.OV', address: '810 7th St', unit: 'UNIT 207', city: 'Miami Beach, FL', deadline: '9:50 AM', packages: 1, locations: 1, gateCode: '', lat: 25.7768, lng: -80.1369, zone: 'South Beach (Urgente)', urgent: true },
-          { id: 'mb-6', originalNumber: 6, code: 'C.L08.OV', address: '28 W Dilido Dr', unit: '', city: 'Miami Beach, FL', deadline: '10:00 AM', packages: 2, locations: 1, gateCode: '', lat: 25.7905, lng: -80.1603, zone: 'Di Lido Island (Urgente)', urgent: true, arcgisGeocoded: true },
+          { id: 'mb-5', originalNumber: 5, code: 'C.L08.OV', address: '810 7th St', unit: 'UNIT 207', city: 'Miami Beach, FL', deadline: '9:50 AM', packages: 1, locations: 1, gateCode: '', lat: 25.7768, lng: -80.1369, zone: 'South Beach (Urgent)', urgent: true },
+          { id: 'mb-6', originalNumber: 6, code: 'C.L08.OV', address: '28 W Dilido Dr', unit: '', city: 'Miami Beach, FL', deadline: '10:00 AM', packages: 2, locations: 1, gateCode: '', lat: 25.7905, lng: -80.1603, zone: 'Di Lido Island (Urgent)', urgent: true, arcgisGeocoded: true },
           { id: 'mb-7', originalNumber: 7, code: 'C.L08.OV', address: '220 W Rivo Alto Dr', unit: '', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7918, lng: -80.1558, zone: 'Rivo Alto Island', urgent: false, arcgisGeocoded: true },
           { id: 'mb-8', originalNumber: 8, code: 'C.L08.OV', address: '303 E Rivo Alto Dr', unit: '', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7924, lng: -80.1542, zone: 'Rivo Alto Island', urgent: false, arcgisGeocoded: true },
-          { id: 'mb-9', originalNumber: 9, code: 'C.L08.OV', address: '1 Century Ln', unit: 'APT 609', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7909, lng: -80.1489, zone: 'Belle Isle (Salida Oeste)', urgent: false, arcgisGeocoded: true },
-          { id: 'mb-10', originalNumber: 10, code: 'C.L08.OV', address: '5 Island Ave', unit: 'APT 16E', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7888, lng: -80.1476, zone: 'Belle Isle (Centro)', urgent: false, arcgisGeocoded: true },
-          { id: 'mb-11', originalNumber: 11, code: 'C.L08.OV', address: '11 Island Ave', unit: 'APT 1111', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7897, lng: -80.1477, zone: 'Belle Isle (Giro Luz Verde)', urgent: false, arcgisGeocoded: true }
+          { id: 'mb-9', originalNumber: 9, code: 'C.L08.OV', address: '1 Century Ln', unit: 'APT 609', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7909, lng: -80.1489, zone: 'Belle Isle (West Exit)', urgent: false, arcgisGeocoded: true },
+          { id: 'mb-10', originalNumber: 10, code: 'C.L08.OV', address: '5 Island Ave', unit: 'APT 16E', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7888, lng: -80.1476, zone: 'Belle Isle (Center)', urgent: false, arcgisGeocoded: true },
+          { id: 'mb-11', originalNumber: 11, code: 'C.L08.OV', address: '11 Island Ave', unit: 'APT 1111', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7897, lng: -80.1477, zone: 'Belle Isle (Green Light Turn)', urgent: false, arcgisGeocoded: true }
         ]
       },
       'hialeah-brickell': {
         id: 'hialeah-brickell',
-        name: 'Hialeah → Miami → Cierre en Brickell (13 Paradas)',
+        name: 'Hialeah / Miami → Brickell (12 Stops)',
         pickupAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
         pickupTime: '9:54 AM',
         endMode: 'brickell',
         customEndAddress: 'Brickell, Miami, FL',
         tacticalNotes:
+          'Optimized North → South Sequence (2 → 4 → 3 → 5 → 7 → 6 → 8 → 9 → 10 → 11 → 13 → 12 → Brickell): Sweep Hialeah first (inverting 4 & 3 by proximity), cross east doing 7 before 6 (Gate #3234) with zero backtracking, head south through Allapattah and do 13 before 12 to finish on NW 3rd St, 4 minutes from Brickell.',
+        tacticalNotesEs:
           'Secuencia Optimizada Norte → Sur (2 → 4 → 3 → 5 → 7 → 6 → 8 → 9 → 10 → 11 → 13 → 12 → Brickell): Barres Hialeah primero (invirtiendo 4 y 3 por cercanía), cruzas hacia el este haciendo 7 antes que 6 (Gate #3234) para no retroceder, bajas por Allapattah y haces 13 antes que 12 para terminar en NW 3rd St, a solo 4 minutos de Brickell.',
         defaultOrder: [2, 4, 3, 5, 7, 6, 8, 9, 10, 11, 13, 12],
         stops: [
-          { id: 'hb-2', originalNumber: 2, code: 'D.L06.OV', address: '730 E 6th St', unit: '', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8262, lng: -80.2682, zone: 'Hialeah Este', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-3', originalNumber: 3, code: 'D.L06.OV', address: '445 E 16th St', unit: '', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8362, lng: -80.2731, zone: 'Hialeah Centro-Norte', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-4', originalNumber: 4, code: 'D.L06.OV', address: '590 E 9th St', unit: 'APT 4', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 2, locations: 1, gateCode: '', lat: 25.8295, lng: -80.2704, zone: 'Hialeah Centro', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-2', originalNumber: 2, code: 'D.L06.OV', address: '730 E 6th St', unit: '', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8262, lng: -80.2682, zone: 'East Hialeah', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-3', originalNumber: 3, code: 'D.L06.OV', address: '445 E 16th St', unit: '', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8362, lng: -80.2731, zone: 'North-Central Hialeah', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-4', originalNumber: 4, code: 'D.L06.OV', address: '590 E 9th St', unit: 'APT 4', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 2, locations: 1, gateCode: '', lat: 25.8295, lng: -80.2704, zone: 'Central Hialeah', urgent: false, arcgisGeocoded: true },
           { id: 'hb-5', originalNumber: 5, code: 'D.L06.OV', address: '2640 NW 46th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8168, lng: -80.2392, zone: 'Brownsville / NW 46th', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-6', originalNumber: 6, code: 'D.L06.OV', address: '1420 NW 36th St', unit: 'APT 302', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '#3234', lat: 25.8092, lng: -80.2195, zone: 'Allapattah Este (Gate #3234)', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-7', originalNumber: 7, code: 'D.L06.OV', address: '1950 NW 36th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8094, lng: -80.2284, zone: 'Allapattah Oeste', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-8', originalNumber: 8, code: 'D.L06.OV', address: '1745 NW 28th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8024, lng: -80.2248, zone: 'Allapattah Sur', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-6', originalNumber: 6, code: 'D.L06.OV', address: '1420 NW 36th St', unit: 'APT 302', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '#3234', lat: 25.8092, lng: -80.2195, zone: 'East Allapattah (Gate #3234)', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-7', originalNumber: 7, code: 'D.L06.OV', address: '1950 NW 36th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8094, lng: -80.2284, zone: 'West Allapattah', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-8', originalNumber: 8, code: 'D.L06.OV', address: '1745 NW 28th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8024, lng: -80.2248, zone: 'South Allapattah', urgent: false, arcgisGeocoded: true },
           { id: 'hb-9', originalNumber: 9, code: 'D.L06.OV', address: '1530 NW 21st Ter', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 2, locations: 1, gateCode: '', lat: 25.7965, lng: -80.2211, zone: 'Allapattah / Civic Center', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-10', originalNumber: 10, code: 'D.L06.OV', address: '1450 NW 14th St', unit: 'STE 200', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7879, lng: -80.2192, zone: 'Distrito Médico / Civic', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-11', originalNumber: 11, code: 'D.L06.OV', address: '1320 NW 7th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7798, lng: -80.2173, zone: 'Little Havana Norte', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-12', originalNumber: 12, code: 'D.L06.OV', address: '1129 NW 3rd St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7758, lng: -80.2138, zone: 'Cierre Pegado a Brickell', urgent: false, arcgisGeocoded: true },
-          { id: 'hb-13', originalNumber: 13, code: 'D.L06.OV', address: '1245 NW 5th St', unit: 'APT 8', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7779, lng: -80.2156, zone: 'Little Havana Este', urgent: false, arcgisGeocoded: true }
+          { id: 'hb-10', originalNumber: 10, code: 'D.L06.OV', address: '1450 NW 14th St', unit: 'STE 200', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7879, lng: -80.2192, zone: 'Medical District / Civic', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-11', originalNumber: 11, code: 'D.L06.OV', address: '1320 NW 7th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7798, lng: -80.2173, zone: 'North Little Havana', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-12', originalNumber: 12, code: 'D.L06.OV', address: '1129 NW 3rd St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7758, lng: -80.2138, zone: 'Brickell Border Finish', urgent: false, arcgisGeocoded: true },
+          { id: 'hb-13', originalNumber: 13, code: 'D.L06.OV', address: '1245 NW 5th St', unit: 'APT 8', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7779, lng: -80.2156, zone: 'East Little Havana', urgent: false, arcgisGeocoded: true }
         ]
       },
       'dmi9-kendall': {
         id: 'dmi9-kendall',
-        name: 'Miami (Kendall / Venezia Lakes) • 11/08 (10:00 AM – 12:00 PM) • 12 Paradas',
+        name: 'Miami (Kendall / Venezia Lakes) • 11/08 (10:00 AM – 12:00 PM) • 12 Stops',
         pickupAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
         pickupTime: '10:00 AM',
         endMode: 'home',
         customEndAddress: '',
         tacticalNotes:
+          'Miami (Kendall / Venezia Lakes) • 11/08 (10:00 AM – 12:00 PM): Departure from Hialeah Station (1125 SE 8th St, Suite 700). Head straight to NE Kendall (Stop 13 at 12372 SW 124th Ct → 12 → 11 → 10 → 9), enter Venezia Lakes via the north bridge on SW 132nd Ave (Stops 7 → 8), exit back north to SW 136th St & Lindgren Rd (SR-825) to enter Green Turtle Club (Stop 6) avoiding the closed SW Caribe Way / SW 144th Ter crossing, and finish in Country Walk (3 → 2 → 5 → 4).',
+        tacticalNotesEs:
           'Miami (Kendall / Venezia Lakes) • 11/08 (10:00 AM – 12:00 PM): Salida desde Estación Hialeah (1125 SE 8th St, Suite 700). Bajas directo al sector noreste de Kendall (Parada 13 en 12372 SW 124th Ct → 12 → 11 → 10 → 9), entras a Venezia Lakes por el puente norte de SW 132nd Ave (Paradas 7 → 8) y sales obligatoriamente de regreso al norte hacia SW 136th St y Lindgren Rd (SR-825) para entrar a Green Turtle Club (Parada 6) sin cruzar el paso bloqueado de SW Caribe Way / SW 144th Ter, cerrando en Country Walk (3 → 2 → 5 → 4).',
         defaultOrder: [13, 12, 11, 10, 9, 7, 8, 6, 3, 2, 5, 4],
         stops: [
-          { id: 'dk-2', originalNumber: 2, code: 'FLEX.DMI9', address: '14250 SW 146th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6318, lng: -80.4235, zone: 'Country Walk Oeste', urgent: false, arcgisGeocoded: true },
-          { id: 'dk-3', originalNumber: 3, code: 'FLEX.DMI9', address: '14020 SW 144th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6335, lng: -80.4210, zone: 'Country Walk Norte', urgent: false, arcgisGeocoded: true },
+          { id: 'dk-2', originalNumber: 2, code: 'FLEX.DMI9', address: '14250 SW 146th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6318, lng: -80.4235, zone: 'Country Walk West', urgent: false, arcgisGeocoded: true },
+          { id: 'dk-3', originalNumber: 3, code: 'FLEX.DMI9', address: '14020 SW 144th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6335, lng: -80.4210, zone: 'Country Walk North', urgent: false, arcgisGeocoded: true },
           { id: 'dk-4', originalNumber: 4, code: 'FLEX.DMI9', address: '13700 SW 149th Circle Ln', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6290, lng: -80.4153, zone: 'Market Walk / Lindgren Rd', urgent: false, arcgisGeocoded: true },
-          { id: 'dk-5', originalNumber: 5, code: 'FLEX.DMI9', address: '13741 SW 149th Circle Ln', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6297, lng: -80.4178, zone: 'Country Walk Sur', urgent: false, arcgisGeocoded: true },
+          { id: 'dk-5', originalNumber: 5, code: 'FLEX.DMI9', address: '13741 SW 149th Circle Ln', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6297, lng: -80.4178, zone: 'Country Walk South', urgent: false, arcgisGeocoded: true },
           { id: 'dk-6', originalNumber: 6, code: 'FLEX.DMI9', address: '13520 SW 143rd St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6347, lng: -80.4125, zone: 'Green Turtle Club', urgent: false, arcgisGeocoded: true },
-          { id: 'dk-7', originalNumber: 7, code: 'FLEX.DMI9', address: '14000 SW 132nd Ave', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6380, lng: -80.4066, zone: 'Venezia Lakes (Entrada Norte)', urgent: false, arcgisGeocoded: true },
+          { id: 'dk-7', originalNumber: 7, code: 'FLEX.DMI9', address: '14000 SW 132nd Ave', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6380, lng: -80.4066, zone: 'Venezia Lakes (North Gate)', urgent: false, arcgisGeocoded: true },
           { id: 'dk-8', originalNumber: 8, code: 'FLEX.DMI9', address: '13218 SW 142nd Ter', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6348, lng: -80.4072, zone: 'Venezia Lakes', urgent: false, arcgisGeocoded: true },
-          { id: 'dk-9', originalNumber: 9, code: 'FLEX.DMI9', address: '12747 SW 136th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6412, lng: -80.4005, zone: 'SW 136th St Corredor', urgent: false, arcgisGeocoded: true },
-          { id: 'dk-10', originalNumber: 10, code: 'FLEX.DMI9', address: '13221 SW 127th Ct', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6448, lng: -80.3992, zone: 'Three Lakes Este', urgent: false, arcgisGeocoded: true },
+          { id: 'dk-9', originalNumber: 9, code: 'FLEX.DMI9', address: '12747 SW 136th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6412, lng: -80.4005, zone: 'SW 136th St Corridor', urgent: false, arcgisGeocoded: true },
+          { id: 'dk-10', originalNumber: 10, code: 'FLEX.DMI9', address: '13221 SW 127th Ct', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6448, lng: -80.3992, zone: 'Three Lakes East', urgent: false, arcgisGeocoded: true },
           { id: 'dk-11', originalNumber: 11, code: 'FLEX.DMI9', address: '12720 SW 130th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6462, lng: -80.3990, zone: 'Three Lakes / SW 130th', urgent: false, arcgisGeocoded: true },
-          { id: 'dk-12', originalNumber: 12, code: 'FLEX.DMI9', address: '12540 SW 127th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6495, lng: -80.3982, zone: 'Three Lakes Norte', urgent: false, arcgisGeocoded: true },
+          { id: 'dk-12', originalNumber: 12, code: 'FLEX.DMI9', address: '12540 SW 127th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6495, lng: -80.3982, zone: 'Three Lakes North', urgent: false, arcgisGeocoded: true },
           { id: 'dk-13', originalNumber: 13, code: 'FLEX.DMI9', address: '12372 SW 124TH CT', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6532, lng: -80.3961, zone: 'Devon Aire / SW 124th Ct', urgent: false, arcgisGeocoded: true }
         ]
       }
@@ -645,6 +837,10 @@
     const VENEZIA_LAKES_RED_CIRCLE_BLOCKED = { lat: 25.6338, lng: -80.4038 }; // Cruce clausurado SW Caribe Way / SW 144th Ter
 
     let state = {
+      lang: 'en',
+      calendarYear: 2026,
+      calendarMonth: 10,
+      calendarSelectedDate: '2026-11-08',
       activePresetId: 'dmi9-kendall',
       activeVariant: 'option-b',
       belleIsleMode: '11-10-9',
@@ -672,9 +868,406 @@
       activeTab: 'cockpit'
     };
 
+    const DAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const MONTHS_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const WEEKDAYS_SHORT_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const WEEKDAYS_SHORT_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
     let osrmRouteCache = {};
     let osrmFetchInFlightKey = null;
+
+    function tr(enText, esText) {
+      return state.lang === 'es' ? esText : enText;
+    }
+
+    function toggleMainMenuDrawer(forceState) {
+      const drawer = document.getElementById('main-menu-drawer');
+      const backdrop = document.getElementById('main-menu-backdrop');
+      if (!drawer || !backdrop) return;
+      const isOpen = !drawer.classList.contains('hidden');
+      const nextOpen = typeof forceState === 'boolean' ? forceState : !isOpen;
+      if (nextOpen) {
+        drawer.classList.remove('hidden');
+        backdrop.classList.remove('hidden');
+      } else {
+        drawer.classList.add('hidden');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function setAppLanguage(lang) {
+      state.lang = lang === 'es' ? 'es' : 'en';
+      state.langInitializedV1 = true;
+      document.documentElement.lang = state.lang;
+      if (PRESET_ROUTES[state.activePresetId]) {
+        const p = PRESET_ROUTES[state.activePresetId];
+        state.tacticalNotes = state.lang === 'es' ? (p.tacticalNotesEs || p.tacticalNotes) : p.tacticalNotes;
+      }
+      applyLanguageUI();
+      renderAll();
+      if (!document.getElementById('calendar-modal')?.classList.contains('hidden')) {
+        renderCalendarModal();
+      }
+    }
+
+    function applyLanguageUI() {
+      const isEs = state.lang === 'es';
+      const setTxt = (id, en, es) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = isEs ? es : en;
+      };
+
+      setTxt('i18n-header-subtitle', 'Real-time tactical route optimizer • Auto-capture from Amazon Flex', 'Optimizador táctico en tiempo real • Auto-captura desde Amazon Flex');
+      setTxt('i18n-btn-video-flex', 'Flex Video / Screenshots', 'Video / Capturas Flex');
+      setTxt('i18n-btn-calendar-top', 'Calendar', 'Calendario');
+      setTxt('tab-btn-cockpit', 'Cockpit', 'Cabina');
+      setTxt('tab-btn-parser', 'Auto-Import', 'Auto-Importar');
+      setTxt('tab-btn-add', '+ Stop', '+ Parada');
+
+      // Hamburger Menu Drawer
+      setTxt('i18n-menu-title', 'FlexRoute Menu', 'Menú FlexRoute');
+      setTxt('i18n-menu-subtitle', 'Quick Navigation & Tools', 'Navegación Rápida y Herramientas');
+      setTxt('i18n-menu-calendar', 'Route Calendar', 'Calendario de Rutas');
+      setTxt('i18n-menu-calendar-sub', 'Select a day & view scheduled routes', 'Selecciona un día y mira sus rutas');
+      setTxt('i18n-menu-cockpit', 'Tactical Cockpit', 'Cabina Táctica');
+      setTxt('i18n-menu-cockpit-sub', 'Station, map, live ETA & stops', 'Estación, mapa, ETA en vivo y paradas');
+      setTxt('i18n-menu-upload', 'Upload Flex Video / Captures', 'Subir Video / Capturas Flex');
+      setTxt('i18n-menu-upload-sub', 'Scan itinerary video or screenshots', 'Escanear video o capturas del itinerario');
+      setTxt('i18n-menu-parser', 'Auto-Import & Paste Text', 'Auto-Importar y Pegar Texto');
+      setTxt('i18n-menu-parser-sub', 'Import from clipboard or iOS Shortcut', 'Importar del portapapeles o Atajo iOS');
+      setTxt('i18n-menu-add', 'Add Stop Manually', 'Añadir Parada Manual');
+      setTxt('i18n-menu-add-sub', 'Insert address into active route', 'Insertar dirección en la ruta activa');
+      setTxt('i18n-menu-map', 'Fullscreen Google Map', 'Mapa Google a Pantalla Completa');
+      setTxt('i18n-menu-map-sub', 'Open full tactical map with live traffic', 'Abrir mapa táctico completo con tráfico');
+      setTxt('i18n-menu-optimize', 'Auto-Optimize Sequence', 'Auto-Optimizar Secuencia');
+      setTxt('i18n-menu-optimize-sub', 'Recalculate fastest order & detours', 'Recalcular orden más rápido y desvíos');
+      setTxt('i18n-menu-register', 'Register Current Route', 'Registrar Ruta Actual');
+      setTxt('i18n-menu-register-sub', 'Save route with date & start/end times', 'Guardar ruta con fecha y hora inicio/fin');
+      setTxt('i18n-menu-lang-label', 'Language / Idioma', 'Idioma / Language');
+
+      // Calendar Modal
+      setTxt('i18n-cal-modal-title', '📅 Route Calendar', '📅 Calendario de Rutas');
+      setTxt('i18n-cal-modal-subtitle', 'Select a date to view and open routes scheduled for that day', 'Selecciona un día para ver y abrir las rutas programadas en esa fecha');
+
+      // Cockpit Left Column
+      setTxt('i18n-station-title', 'Departure Station (Pickup)', 'Estación de Salida (Recogida)');
+      setTxt('i18n-btn-copy-p1', 'Copy P1', 'Copiar P1');
+      setTxt('pickup-maps-link', 'Go to P1', 'Ir a P1');
+      setTxt('i18n-schedule-heading', '📅 Route Date & Schedule:', '📅 Fecha y Horario de la Ruta:');
+      setTxt('i18n-btn-now', 'Now', 'Ahora');
+      setTxt('i18n-btn-register-route', '💾 Register Route', '💾 Registrar Ruta');
+      setTxt('i18n-lbl-date', 'Date', 'Fecha');
+      setTxt('i18n-lbl-start', 'Start Time', 'Hora Comienzo');
+      setTxt('i18n-lbl-end', 'End Time', 'Hora Terminar');
+
+      setTxt('i18n-dest-panel-title', 'Closing Destination & Tactical Variants', 'Destino de Cierre y Variantes Tácticas');
+      setTxt('i18n-dest-label', 'Closing Destination After Finishing Route:', 'Destino de Cierre al Terminar la Ruta:');
+      setTxt('endmode-home', 'Home', 'Home');
+      setTxt('endmode-return', 'Return to P1', 'Regresar a P1');
+      setTxt('endmode-brickell', 'Go to Brickell', 'Ir a Brickell');
+      setTxt('endmode-custom', 'Custom Address', 'Otra Dirección');
+      setTxt('endmode-none', 'No Extra Closing', 'Sin Cierre Extra');
+
+      setTxt('i18n-map-title', 'Tactical Google Maps', 'Mapa Táctico Google Maps');
+      setTxt('gmap-mode-streets', 'Map', 'Mapa');
+      setTxt('gmap-mode-hybrid', 'Satellite', 'Satélite');
+      setTxt('gmap-traffic-btn', '🚦 Traffic', '🚦 Tráfico');
+      setTxt('i18n-btn-center-map', 'Center', 'Centrar');
+      if (!isMapFullscreen) {
+        setTxt('gmap-fullscreen-btn', '⛶ Expand', '⛶ Ampliar');
+        setTxt('map-fullscreen-hint', 'Tap map to open in fullscreen', 'Toca el mapa para abrirlo a pantalla completa');
+      } else {
+        setTxt('gmap-fullscreen-btn', '✕ Close', '✕ Cerrar');
+      }
+
+      setTxt('i18n-seq-title', 'Active Tactical Sequence', 'Secuencia Táctica Activa');
+      setTxt('i18n-btn-auto-opt', '⚡ Auto-Optimize', '⚡ Auto-Optimizar');
+      setTxt('i18n-btn-reset-seq', 'Reset', 'Reiniciar');
+      setTxt('i18n-multistop-title', 'Multi-Stop Google Maps Launcher', 'Lanzador Multiparada Google Maps');
+      setTxt('i18n-multistop-badge', 'FULL ROUTE', 'RUTA COMPLETA');
+      setTxt('i18n-multistop-desc', 'Sends all active stops in a single direct link to the official Google Maps app.', 'Envía todas las paradas activas en un solo enlace directo a la app oficial de Google Maps.');
+
+      // Parser & Add Tabs
+      setTxt('i18n-parser-badge', 'Video Screen Recording + OCR Vision', 'Video Screen Recording + Visión OCR');
+      setTxt('i18n-parser-title', '1. Upload Amazon Flex Screen Video or Screenshots', '1. Subir Video de Pantalla o Capturas de Amazon Flex');
+      setTxt('i18n-parser-upload-btn', '🎬📸 Upload Screen Video or Screenshots', '🎬📸 Subir Video o Capturas de Pantalla');
+      setTxt('i18n-clipboard-btn', '📋 Paste from Clipboard & Import in 1 Tap', '📋 Pegar del Portapapeles e Importar en 1 Toque');
+      setTxt('i18n-parser-card2-title', '2. Detected Itinerary Text', '2. Texto Detectado del Itinerario');
+      setTxt('i18n-parser-card2-desc', 'Text extracted from your captures appears here, or you can paste text directly.', 'Aquí aparece lo leído de tus capturas o puedes pegar texto directamente.');
+      setTxt('i18n-btn-sample', 'Load Sample', 'Cargar Ejemplo');
+      setTxt('i18n-btn-clear', 'Clear', 'Limpiar');
+      setTxt('i18n-chk-auto-opt', 'Automatically optimize by urgency and geographic proximity', 'Optimizar automáticamente por urgencia y cercanía geográfica');
+      setTxt('i18n-btn-cancel-parser', 'Cancel', 'Cancelar');
+      setTxt('i18n-btn-process', '⚡ Process & Load to Map', '⚡ Procesar y Cargar al Mapa');
+      setTxt('i18n-shortcut-title', '⚡ How to Enable 1-Tap iPhone Shortcut (iOS Shortcuts)', '⚡ Cómo activar el Atajo de 1 Toque en tu iPhone (iOS Shortcuts)');
+      setTxt('i18n-btn-copy-shortcut', 'Copy Shortcut URL', 'Copiar URL del Atajo');
+
+      setTxt('i18n-add-title', 'Add New Stop to Active Route', 'Añadir Nueva Parada a la Ruta Activa');
+      setTxt('i18n-add-desc', 'It will be integrated immediately into the tactical sequence and Google Maps links.', 'Se integrará inmediatamente en la secuencia táctica y en los enlaces de Google Maps.');
+      setTxt('i18n-add-lbl-num', 'Stop #', 'N.º Parada');
+      setTxt('i18n-add-lbl-dl', 'Deadline', 'Hora Límite (Deadline)');
+      setTxt('i18n-add-lbl-addr', 'Street Address *', 'Dirección (Calle y Número) *');
+      setTxt('i18n-add-lbl-unit', 'Unit / Apt', 'Unidad / Apt');
+      setTxt('i18n-add-lbl-city', 'City', 'Ciudad');
+      setTxt('i18n-add-lbl-pkgs', 'Packages', 'Paquetes');
+      setTxt('i18n-add-btn-cancel', 'Cancel', 'Cancelar');
+      setTxt('i18n-add-btn-save', 'Save Stop', 'Guardar Parada');
+
+      // Language buttons highlight
+      const btnEn = document.getElementById('lang-btn-en');
+      const btnEs = document.getElementById('lang-btn-es');
+      const menuEn = document.getElementById('menu-lang-en');
+      const menuEs = document.getElementById('menu-lang-es');
+      if (btnEn && btnEs) {
+        btnEn.className = !isEs
+          ? 'px-2 py-1 rounded-lg text-[11px] font-black bg-cyan-400 text-slate-950'
+          : 'px-2 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white';
+        btnEs.className = isEs
+          ? 'px-2 py-1 rounded-lg text-[11px] font-black bg-cyan-400 text-slate-950'
+          : 'px-2 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white';
+      }
+      if (menuEn && menuEs) {
+        menuEn.className = !isEs
+          ? 'py-2 px-3 rounded-xl text-xs font-black border bg-cyan-500/20 border-cyan-400 text-cyan-300'
+          : 'py-2 px-3 rounded-xl text-xs font-bold border bg-slate-900 border-slate-800 text-slate-400';
+        menuEs.className = isEs
+          ? 'py-2 px-3 rounded-xl text-xs font-black border bg-cyan-500/20 border-cyan-400 text-cyan-300'
+          : 'py-2 px-3 rounded-xl text-xs font-bold border bg-slate-900 border-slate-800 text-slate-400';
+      }
+    }
+
+    function getRoutesForDate(dateStr) {
+      const results = [];
+      const seenIds = new Set();
+
+      // 1. Revisar rutas predefinidas según su fecha en state.routeSchedules
+      Object.values(PRESET_ROUTES).forEach((preset) => {
+        const sched = (state.routeSchedules && state.routeSchedules[preset.id]) || {
+          date: '2026-11-08',
+          time: '10:00',
+          endTime: '12:00'
+        };
+        if (sched.date === dateStr) {
+          seenIds.add(preset.id);
+          results.push({
+            type: 'preset',
+            id: preset.id,
+            city: getRoutePrimaryCity(preset.stops, preset.id),
+            date: sched.date,
+            time: sched.time || '10:00',
+            endTime: sched.endTime || '12:00',
+            stopCount: preset.stops.length,
+            pickupAddress: preset.pickupAddress,
+            label: formatShortSavedRouteLabel(sched, preset.stops.length, preset.stops, preset.id)
+          });
+        }
+      });
+
+      // 2. Revisar rutas registradas por el usuario en state.savedRoutes
+      if (Array.isArray(state.savedRoutes)) {
+        state.savedRoutes.forEach((sr) => {
+          const srSched = sr.schedule || { date: sr.date, time: sr.time, endTime: sr.endTime };
+          if (srSched.date === dateStr && !seenIds.has(sr.id)) {
+            seenIds.add(sr.id);
+            const stopsArr = Array.isArray(sr.stops) ? sr.stops : [];
+            results.push({
+              type: 'saved',
+              id: sr.id,
+              city: getRoutePrimaryCity(stopsArr, sr.id),
+              date: srSched.date,
+              time: srSched.time || '10:00',
+              endTime: srSched.endTime || '12:00',
+              stopCount: stopsArr.length,
+              pickupAddress: sr.pickupAddress || '1125 SE 8th Street, Suite 700, Hialeah, FL',
+              label: formatShortSavedRouteLabel(srSched, stopsArr.length, stopsArr, sr.id)
+            });
+          }
+        });
+      }
+
+      results.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+      return results;
+    }
+
+    function openCalendarModal() {
+      const sched = getActiveRouteSchedule();
+      if (sched && /^\d{4}-\d{2}-\d{2}$/.test(sched.date)) {
+        const [y, m] = sched.date.split('-').map(Number);
+        state.calendarYear = y;
+        state.calendarMonth = m - 1;
+        state.calendarSelectedDate = sched.date;
+      }
+      const modal = document.getElementById('calendar-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        renderCalendarModal();
+      }
+    }
+
+    function closeCalendarModal() {
+      const modal = document.getElementById('calendar-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function changeCalendarMonth(delta) {
+      let m = (typeof state.calendarMonth === 'number' ? state.calendarMonth : 10) + delta;
+      let y = state.calendarYear || 2026;
+      if (m < 0) {
+        m = 11;
+        y -= 1;
+      } else if (m > 11) {
+        m = 0;
+        y += 1;
+      }
+      state.calendarMonth = m;
+      state.calendarYear = y;
+      renderCalendarModal();
+    }
+
+    function jumpCalendarToDate(dateStr) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+      const [y, m] = dateStr.split('-').map(Number);
+      state.calendarYear = y;
+      state.calendarMonth = m - 1;
+      state.calendarSelectedDate = dateStr;
+      renderCalendarModal();
+    }
+
+    function selectCalendarDate(dateStr) {
+      state.calendarSelectedDate = dateStr;
+      renderCalendarModal();
+    }
+
+    function openRouteFromCalendar(type, routeId) {
+      closeCalendarModal();
+      switchTab('cockpit');
+      if (type === 'preset') {
+        loadPresetRoute(routeId);
+      } else {
+        loadSavedRoute(routeId);
+      }
+    }
+
+    function renderCalendarModal() {
+      const year = state.calendarYear || 2026;
+      const month = typeof state.calendarMonth === 'number' ? state.calendarMonth : 10;
+      const selectedDate = state.calendarSelectedDate || '2026-11-08';
+
+      const monthNames = state.lang === 'es' ? MONTHS_ES : MONTHS_EN;
+      const weekdaysShort = state.lang === 'es' ? WEEKDAYS_SHORT_ES : WEEKDAYS_SHORT_EN;
+
+      const monthLabelEl = document.getElementById('calendar-month-label');
+      if (monthLabelEl) {
+        monthLabelEl.textContent = `${monthNames[month]} ${year}`;
+      }
+
+      const weekdaysRowEl = document.getElementById('calendar-weekdays-row');
+      if (weekdaysRowEl) {
+        weekdaysRowEl.innerHTML = weekdaysShort.map((w) => `<div>${w}</div>`).join('');
+      }
+
+      const firstDayWeekIdx = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const cells = [];
+      for (let i = 0; i < firstDayWeekIdx; i++) {
+        cells.push(`<div class="h-12 rounded-xl bg-slate-950/30 border border-slate-900/50"></div>`);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayRoutes = getRoutesForDate(dateStr);
+        const isSelected = dateStr === selectedDate;
+        const hasRoutes = dayRoutes.length > 0;
+
+        const baseCls = isSelected
+          ? 'bg-cyan-500/25 border-cyan-400 text-white ring-2 ring-cyan-400/50'
+          : hasRoutes
+          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200 hover:border-emerald-400'
+          : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700';
+
+        const badgeHtml = hasRoutes
+          ? `<span class="px-1.5 py-0.2 rounded-full bg-emerald-400 text-slate-950 text-[9px] font-black leading-tight">${dayRoutes.length} ${
+              dayRoutes.length === 1 ? tr('route', 'ruta') : tr('routes', 'rutas')
+            }</span>`
+          : `<span class="text-[9px] text-slate-600">•</span>`;
+
+        cells.push(`
+          <button
+            type="button"
+            onclick="selectCalendarDate('${dateStr}')"
+            class="h-12 rounded-xl border p-1 flex flex-col items-center justify-between transition-all ${baseCls}"
+          >
+            <span class="text-xs font-black">${day}</span>
+            ${badgeHtml}
+          </button>
+        `);
+      }
+
+      const gridEl = document.getElementById('calendar-days-grid');
+      if (gridEl) {
+        gridEl.innerHTML = cells.join('');
+      }
+
+      const [sy, sm, sd] = selectedDate.split('-');
+      const formattedSelected = `${sm}/${sd}/${sy}`;
+      const headingEl = document.getElementById('calendar-selected-day-heading');
+      if (headingEl) {
+        headingEl.textContent = tr(`Routes on ${formattedSelected}`, `Rutas del ${formattedSelected}`);
+      }
+
+      const routesListEl = document.getElementById('calendar-day-routes-list');
+      if (routesListEl) {
+        const selectedRoutes = getRoutesForDate(selectedDate);
+        if (selectedRoutes.length === 0) {
+          routesListEl.innerHTML = `
+            <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-center text-xs text-slate-400">
+              ${tr(
+                `No routes scheduled on ${formattedSelected}. Tap "11/08" above or upload a route for this day.`,
+                `No hay rutas registradas el ${formattedSelected}. Toca "11/08" arriba o sube una ruta para este día.`
+              )}
+            </div>
+          `;
+        } else {
+          routesListEl.innerHTML = selectedRoutes
+            .map((r) => {
+              const isActive = state.activePresetId === r.id;
+              const start12 = format24hTo12hStr(r.time);
+              const end12 = format24hTo12hStr(r.endTime);
+              return `
+                <div class="p-3 rounded-xl bg-slate-900/95 border ${
+                  isActive ? 'border-cyan-400' : 'border-slate-800'
+                } flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-black text-white">${r.city}</span>
+                      <span class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-[10px] font-bold text-cyan-300">
+                        ⏰ ${start12} – ${end12}
+                      </span>
+                      <span class="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/35 text-[10px] font-bold text-emerald-300">
+                        ${r.stopCount} ${tr('stops', 'paradas')}
+                      </span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-0.5">
+                      P1: ${r.pickupAddress}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onclick="openRouteFromCalendar('${r.type}', '${r.id}')"
+                    class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow"
+                  >
+                    ${isActive ? tr('Active Route ✓', 'Ruta Activa ✓') : tr('Open Route ↗', 'Abrir Ruta ↗')}
+                  </button>
+                </div>
+              `;
+            })
+            .join('');
+        }
+      }
+    }
 
     function isInsideVeneziaLakes(pt) {
       if (!pt || typeof pt.lat !== 'number' || typeof pt.lng !== 'number') return false;
@@ -738,8 +1331,8 @@
       renderAll();
       showToast(
         nextVal
-          ? `⛔ Calle clausurada marcada entre Parada ${numA} y ${numB} (Desvío activo)`
-          : `✅ Calle reabierta entre Parada ${numA} y ${numB}`
+          ? tr(`⛔ Closed street marked between Stop ${numA} & ${numB} (Detour active)`, `⛔ Calle clausurada marcada entre Parada ${numA} y ${numB} (Desvío activo)`)
+          : tr(`✅ Street reopened between Stop ${numA} & ${numB}`, `✅ Calle reabierta entre Parada ${numA} y ${numB}`)
       );
     }
 
@@ -817,7 +1410,8 @@
 
     function getLiveTrafficProfile(dateObj, fromPt, toPt) {
       const dayIdx = dateObj.getDay();
-      const dayName = DAYS_ES[dayIdx] || 'Hoy';
+      const daysArr = state.lang === 'es' ? DAYS_ES : DAYS_EN;
+      const dayName = daysArr[dayIdx] || tr('Today', 'Hoy');
       const isWeekend = dayIdx === 0 || dayIdx === 6;
       const hourFloat = dateObj.getHours() + dateObj.getMinutes() / 60 + dateObj.getSeconds() / 3600;
 
@@ -825,7 +1419,7 @@
       const dayBase = dayBaseMap[dayIdx] || 1.05;
 
       let timeFactor = 1.0;
-      let label = 'Tráfico Fluido';
+      let label = tr('Light Traffic', 'Tráfico Fluido');
       let dotColor = 'bg-emerald-400';
       let badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
 
@@ -833,70 +1427,70 @@
         if (hourFloat >= 6.5 && hourFloat < 9.5) {
           const distFromPeak = Math.abs(hourFloat - 8.0);
           timeFactor = 1.38 - distFromPeak * 0.10;
-          label = 'Hora Pico Mañana';
+          label = tr('Morning Rush Hour', 'Hora Pico Mañana');
           dotColor = 'bg-rose-400';
           badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
         } else if (hourFloat >= 9.5 && hourFloat < 11.5) {
           timeFactor = 1.15;
-          label = 'Tráfico Moderado (Media Mañana)';
+          label = tr('Moderate Traffic (Mid-Morning)', 'Tráfico Moderado (Media Mañana)');
           dotColor = 'bg-amber-400';
           badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
         } else if (hourFloat >= 11.5 && hourFloat < 14.25) {
           timeFactor = 1.22;
-          label = 'Tráfico Mediodía Comercial';
+          label = tr('Midday Commercial Traffic', 'Tráfico Mediodía Comercial');
           dotColor = 'bg-amber-400';
           badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
         } else if (hourFloat >= 14.25 && hourFloat < 15.5) {
           timeFactor = 1.29;
-          label = 'Tráfico Intenso (Salida Escolar)';
+          label = tr('Heavy Traffic (School Dismissal)', 'Tráfico Intenso (Salida Escolar)');
           dotColor = 'bg-orange-400';
           badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
         } else if (hourFloat >= 15.5 && hourFloat < 19.25) {
           const distFromPeak = Math.abs(hourFloat - 17.25);
           timeFactor = 1.48 - distFromPeak * 0.09;
-          label = 'Hora Pico Tarde (Tráfico Pesado)';
+          label = tr('Evening Rush Hour (Heavy)', 'Hora Pico Tarde (Tráfico Pesado)');
           dotColor = 'bg-rose-500';
           badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
         } else if (hourFloat >= 19.25 && hourFloat < 21.5) {
           timeFactor = 1.14;
-          label = 'Tráfico Moderado Nocturno';
+          label = tr('Moderate Evening Traffic', 'Tráfico Moderado Nocturno');
           dotColor = 'bg-amber-400';
           badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
         } else {
           timeFactor = 0.96;
-          label = 'Vía Despejada Nocturna';
+          label = tr('Clear Night Roads', 'Vía Despejada Nocturna');
           dotColor = 'bg-emerald-400';
           badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
         }
       } else {
         if (hourFloat >= 0 && hourFloat < 9.25) {
           timeFactor = 0.98;
-          label = 'Mañana Fluida de Fin de Semana';
+          label = tr('Clear Weekend Morning', 'Mañana Fluida de Fin de Semana');
           dotColor = 'bg-emerald-400';
           badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
         } else if (hourFloat >= 9.25 && hourFloat < 11.5) {
           timeFactor = 1.12;
-          label = 'Tráfico Ligero Fin de Semana';
+          label = tr('Light Weekend Traffic', 'Tráfico Ligero Fin de Semana');
           dotColor = 'bg-emerald-400';
           badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
         } else if (hourFloat >= 11.5 && hourFloat < 14.5) {
           timeFactor = 1.25;
-          label = 'Tráfico Moderado (Playas / Puentes)';
+          label = tr('Moderate Traffic (Beaches / Bridges)', 'Tráfico Moderado (Playas / Puentes)');
           dotColor = 'bg-amber-400';
           badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
         } else if (hourFloat >= 14.5 && hourFloat < 19.75) {
           timeFactor = dayIdx === 6 ? 1.35 : 1.28;
-          label = 'Tráfico Intenso Tarde Fin de Semana';
+          label = tr('Busy Weekend Afternoon', 'Tráfico Intenso Tarde Fin de Semana');
           dotColor = 'bg-orange-400';
           badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
         } else if (hourFloat >= 19.75 && hourFloat < 23.0) {
           timeFactor = dayIdx === 6 ? 1.24 : 1.12;
-          label = 'Tráfico Nocturno Fin de Semana';
+          label = tr('Weekend Night Traffic', 'Tráfico Nocturno Fin de Semana');
           dotColor = 'bg-amber-400';
           badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
         } else {
           timeFactor = 0.97;
-          label = 'Tráfico Fluido';
+          label = tr('Light Traffic', 'Tráfico Fluido');
         }
       }
 
@@ -1223,8 +1817,8 @@
       if (t.activeCount === 0) {
         panel.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="text-xs font-black text-emerald-300">✅ ¡Todas las paradas entregadas!</span>
-            <span class="text-xs font-bold text-slate-400">0 min restantes</span>
+            <span class="text-xs font-black text-emerald-300">✅ ${tr('All stops delivered!', '¡Todas las paradas entregadas!')}</span>
+            <span class="text-xs font-bold text-slate-400">0 min ${tr('remaining', 'restantes')}</span>
           </div>
         `;
         return;
@@ -1242,8 +1836,8 @@
       const bufferMin = Math.round(Math.abs(t.bufferVsEndSec) / 60);
       const isWithinWindow = t.bufferVsEndSec >= 0;
       const windowBadgeHtml = isWithinWindow
-        ? `<span class="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-[11px] font-extrabold text-emerald-300">✓ Cierre bloque ${scheduledEndStr} (${bufferMin}m a favor)</span>`
-        : `<span class="px-2 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[11px] font-extrabold text-rose-300">⚠️ +${bufferMin}m sobre cierre ${scheduledEndStr}</span>`;
+        ? `<span class="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-[11px] font-extrabold text-emerald-300">✓ ${tr(`Block ends ${scheduledEndStr} (${bufferMin}m ahead)`, `Cierre bloque ${scheduledEndStr} (${bufferMin}m a favor)`)}</span>`
+        : `<span class="px-2 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[11px] font-extrabold text-rose-300">⚠️ ${tr(`+${bufferMin}m over ${scheduledEndStr}`, `+${bufferMin}m sobre cierre ${scheduledEndStr}`)}</span>`;
 
       panel.innerHTML = `
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -1251,7 +1845,10 @@
             <div class="flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
               <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">
-                Tiempo para Completar Ruta (Estación P1 → Última Parada #${t.lastStopNumber || t.totalCount})
+                ${tr(
+                  `Time to Complete Route (Station P1 → Last Stop #${t.lastStopNumber || t.totalCount})`,
+                  `Tiempo para Completar Ruta (Estación P1 → Última Parada #${t.lastStopNumber || t.totalCount})`
+                )}
               </span>
             </div>
             <div class="flex flex-wrap items-baseline gap-2 mt-0.5">
@@ -1259,7 +1856,7 @@
                 ⏱️ ${totalDurationStr}
               </span>
               <span class="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-xs font-black text-cyan-300">
-                🏁 Última entrega: ${finishTimeStr}
+                🏁 ${tr('Last delivery:', 'Última entrega:')} ${finishTimeStr}
               </span>
               ${windowBadgeHtml}
             </div>
@@ -1271,23 +1868,23 @@
               <span>${t.dayName} • ${t.trafficLabel} (+${t.trafficSurgePct}%)</span>
             </span>
             <span class="text-[10px] text-slate-400 font-mono">
-              Reloj ruta: ${activeClockStr} • En curso: ${elapsedStr}
+              ${tr('Route clock:', 'Reloj ruta:')} ${activeClockStr} • ${tr('Elapsed:', 'En curso:')} ${elapsedStr}
             </span>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-800/90 text-[11px]">
           <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-            <span class="text-slate-400 font-semibold">🚗 Manejo P1→#${t.lastStopNumber || t.totalCount} (${t.totalMiles} mi):</span>
+            <span class="text-slate-400 font-semibold">🚗 ${tr('Drive P1→#', 'Manejo P1→#')}${t.lastStopNumber || t.totalCount} (${t.totalMiles} mi):</span>
             <span class="font-black text-white">${drivingStr}</span>
           </div>
           <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-            <span class="text-slate-400 font-semibold">📦 En ${t.activeCount} paradas:</span>
+            <span class="text-slate-400 font-semibold">📦 ${tr(`At ${t.activeCount} stops:`, `En ${t.activeCount} paradas:`)}</span>
             <span class="font-black text-emerald-300">${serviceStr}</span>
           </div>
           <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-            <span class="text-slate-400 font-semibold">🚦 Impacto tráfico:</span>
-            <span class="font-black text-amber-300">+${delayMin} min (${t.completedCount}/${t.totalCount} listas)</span>
+            <span class="text-slate-400 font-semibold">🚦 ${tr('Traffic impact:', 'Impacto tráfico:')}</span>
+            <span class="font-black text-amber-300">+${delayMin} min (${t.completedCount}/${t.totalCount} ${tr('done', 'listas')})</span>
           </div>
         </div>
       `;
@@ -1299,7 +1896,7 @@
         if (!badge) return;
         if (stop.completed) {
           badge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold';
-          badge.textContent = '✓ Entregada';
+          badge.textContent = tr('✓ Delivered', '✓ Entregada');
           return;
         }
         if (stop.liveEtaDate) {
@@ -1310,7 +1907,7 @@
           badge.className = isLate
             ? 'px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 font-extrabold'
             : 'px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 font-extrabold';
-          badge.textContent = `🏁 Llegada: ${etaStr} (~${stop.liveLegMin || 1}m)${isLate ? ' ⚠️' : ''}`;
+          badge.textContent = `🏁 ${tr('ETA:', 'Llegada:')} ${etaStr} (~${stop.liveLegMin || 1}m)${isLate ? ' ⚠️' : ''}`;
         }
       });
     }
@@ -1412,7 +2009,7 @@
       saveStateToStorage();
       renderHeaderControls();
       if (!silent) {
-        showToast(`✅ Ruta registrada arriba: ${record.label}`);
+        showToast(tr(`✅ Route registered: ${record.label}`, `✅ Ruta registrada arriba: ${record.label}`));
       }
     }
 
@@ -1442,7 +2039,7 @@
       state.currentLegStartedAt = Date.now();
       lastFittedPreset = null;
       renderAll();
-      showToast(`Ruta cargada: ${formatShortSavedRouteLabel(fSched, state.stops.length, state.stops, found.id)}`);
+      showToast(tr(`Loaded route: ${formatShortSavedRouteLabel(fSched, state.stops.length, state.stops, found.id)}`, `Ruta cargada: ${formatShortSavedRouteLabel(fSched, state.stops.length, state.stops, found.id)}`));
     }
 
     function deleteSavedRoute(routeId, ev) {
@@ -1454,7 +2051,7 @@
       }
       saveStateToStorage();
       renderHeaderControls();
-      showToast('Ruta guardada eliminada');
+      showToast(tr('Saved route deleted', 'Ruta guardada eliminada'));
     }
 
     function updateRouteScheduleFromInputs(silent = false) {
@@ -1466,7 +2063,6 @@
       if (timeEl && timeEl.value) sched.time = timeEl.value;
       if (endTimeEl && endTimeEl.value) sched.endTime = endTimeEl.value;
 
-      // Si la ruta activa ya está registrada arriba, actualizar también su etiqueta y horario guardado
       if (Array.isArray(state.savedRoutes)) {
         const activeSaved = state.savedRoutes.find((r) => r.id === state.activePresetId);
         if (activeSaved) {
@@ -1486,7 +2082,7 @@
       renderStopCards();
       saveStateToStorage();
       if (!silent) {
-        showToast(`Horario actualizado: ${state.pickupTime}`);
+        showToast(tr(`Schedule updated: ${state.pickupTime}`, `Horario actualizado: ${state.pickupTime}`));
       }
     }
 
@@ -1510,7 +2106,7 @@
       renderLiveDurationPanel();
       renderStopCards();
       saveStateToStorage();
-      showToast(`Hora de comienzo ajustada a Ahora (${formatScheduleDisplay(sched)})`);
+      showToast(tr(`Start time set to Now (${formatScheduleDisplay(sched)})`, `Hora de comienzo ajustada a Ahora (${formatScheduleDisplay(sched)})`));
     }
 
     function showToast(message) {
@@ -1540,10 +2136,10 @@
     }
 
     function getFinalDestinationVisualLabel() {
-      if (state.endMode === 'return_to_start') return 'Parada 1 (Estación)';
+      if (state.endMode === 'return_to_start') return tr('Stop 1 (Station)', 'Parada 1 (Estación)');
       if (state.endMode === 'brickell') return 'Brickell';
       if (state.endMode === 'home') return 'Home';
-      if (state.endMode === 'custom') return state.customEndAddress || 'Destino';
+      if (state.endMode === 'custom') return state.customEndAddress || tr('Destination', 'Destino');
       return null;
     }
 
@@ -1587,8 +2183,11 @@
 
       return [
         {
-          title: 'Abrir Ruta Completa en Google Maps',
-          subtitle: `${activeStops.length} paradas en orden táctico${finalVisualLabel ? ` + cierre en ${finalVisualLabel}` : ''}`,
+          title: tr('Open Full Route in Google Maps', 'Abrir Ruta Completa en Google Maps'),
+          subtitle: tr(
+            `${activeStops.length} stops in tactical order${finalVisualLabel ? ` + closing at ${finalVisualLabel}` : ''}`,
+            `${activeStops.length} paradas en orden táctico${finalVisualLabel ? ` + cierre en ${finalVisualLabel}` : ''}`
+          ),
           url
         }
       ];
@@ -1602,7 +2201,7 @@
       state.pickupTime = preset.pickupTime;
       state.endMode = preset.endMode;
       state.customEndAddress = preset.customEndAddress;
-      state.tacticalNotes = preset.tacticalNotes;
+      state.tacticalNotes = state.lang === 'es' ? (preset.tacticalNotesEs || preset.tacticalNotes) : preset.tacticalNotes;
       state.activeVariant = presetId === 'miami-beach' ? 'option-b' : 'optimized';
       state.belleIsleMode = '11-10-9';
       state.scheduleAnchoredAt = Date.now();
@@ -1622,15 +2221,19 @@
       let targetOrder;
       if (state.activeVariant === 'option-b') {
         targetOrder = [5, ...belleOrder, 8, 7, 6, 2, 3, 4];
-        state.tacticalNotes =
-          `Opción B Activa (5 → ${belleOrder.join(' → ')} → 8 → 7 → 6 → 2 → 3 → 4 → 1): Entras por I-395 directo a la Parada 5 (vence 9:50 AM), haces Venetian Islands (${belleOrder.join(' → ')} → 8 → 7 → 6) y subes por Collins Ave (2 → 3 → 4) para regresar por I-195 W.`;
+        state.tacticalNotes = tr(
+          `Option B Active (5 → ${belleOrder.join(' → ')} → 8 → 7 → 6 → 2 → 3 → 4 → 1): Enter via I-395 straight to Stop 5 (due 9:50 AM), sweep Venetian Islands (${belleOrder.join(' → ')} → 8 → 7 → 6) and head north up Collins Ave (2 → 3 → 4) to return via I-195 W.`,
+          `Opción B Activa (5 → ${belleOrder.join(' → ')} → 8 → 7 → 6 → 2 → 3 → 4 → 1): Entras por I-395 directo a la Parada 5 (vence 9:50 AM), haces Venetian Islands (${belleOrder.join(' → ')} → 8 → 7 → 6) y subes por Collins Ave (2 → 3 → 4) para regresar por I-195 W.`
+        );
       } else if (state.activeVariant === 'option-a') {
         targetOrder = [6, 7, 8, ...belleOrder.slice().reverse(), 5, 2, 3, 4];
-        state.tacticalNotes =
-          'Opción A Activa (Oeste → Este por Venetian Causeway): Entras por Venetian Causeway desde Miami hacia Di Lido (6 → 7 → 8), pasas por Belle Isle, bajas a South Beach (5) y subes por Collins Ave (2 → 3 → 4).';
+        state.tacticalNotes = tr(
+          'Option A Active (West → East via Venetian Causeway): Enter via Venetian Causeway from Miami to Di Lido (6 → 7 → 8), cross Belle Isle, drop to South Beach (5) and go north up Collins Ave (2 → 3 → 4).',
+          'Opción A Activa (Oeste → Este por Venetian Causeway): Entras por Venetian Causeway desde Miami hacia Di Lido (6 → 7 → 8), pasas por Belle Isle, bajas a South Beach (5) y subes por Collins Ave (2 → 3 → 4).'
+        );
       } else {
         targetOrder = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        state.tacticalNotes = 'Orden Numérico Original del Itinerario (2 → 11).';
+        state.tacticalNotes = tr('Original Numerical Itinerary Order (2 → 11).', 'Orden Numérico Original del Itinerario (2 → 11).');
       }
 
       reorderStopsByOriginalNumbers(targetOrder);
@@ -1641,10 +2244,11 @@
       state.activeVariant = variant;
       if (variant === 'optimized') {
         reorderStopsByOriginalNumbers([2, 4, 3, 5, 7, 6, 8, 9, 10, 11, 13, 12]);
-        state.tacticalNotes = PRESET_ROUTES['hialeah-brickell'].tacticalNotes;
+        const p = PRESET_ROUTES['hialeah-brickell'];
+        state.tacticalNotes = state.lang === 'es' ? (p.tacticalNotesEs || p.tacticalNotes) : p.tacticalNotes;
       } else {
         reorderStopsByOriginalNumbers([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
-        state.tacticalNotes = 'Orden Numérico Original (2 → 13) sin inversiones tácticas.';
+        state.tacticalNotes = tr('Original Numerical Order (2 → 13) without tactical inversions.', 'Orden Numérico Original (2 → 13) sin inversiones tácticas.');
       }
       renderAll();
     }
@@ -1721,7 +2325,7 @@
       tempInput.select();
       document.execCommand('copy');
       document.body.removeChild(tempInput);
-      showToast(`Copiado: ${label || text}`);
+      showToast(tr(`Copied: ${label || text}`, `Copiado: ${label || text}`));
     }
 
     function switchTab(tabName) {
@@ -2529,7 +3133,7 @@
 
     function renderSequencePills() {
       const completedCount = state.stops.filter((s) => s.completed).length;
-      document.getElementById('metrics-counter').textContent = `${completedCount}/${state.stops.length} listas`;
+      document.getElementById('metrics-counter').textContent = `${completedCount}/${state.stops.length} ${tr('done', 'listas')}`;
       document.getElementById('tactical-notes-box').textContent = state.tacticalNotes;
 
       const chain = document.getElementById('sequence-pill-chain');
@@ -2552,7 +3156,7 @@
         const prevNum = idx > 0 ? state.stops[idx - 1].originalNumber : null;
         if (prevNum && isClosedStreetBetweenNumbers(prevNum, s.originalNumber)) {
           pillsHtml.push(
-            `<span title="Calle clausurada evitada con desvío" class="px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-black">⛔ desvío →</span>`
+            `<span title="${tr('Closed street bypassed via detour', 'Calle clausurada evitada con desvío')}" class="px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-black">⛔ ${tr('detour', 'desvío')} →</span>`
           );
         } else {
           pillsHtml.push(`<span class="text-slate-600 text-xs font-bold">→</span>`);
@@ -2572,7 +3176,7 @@
           : state.endMode === 'home'
           ? 'Home'
           : state.endMode === 'custom'
-          ? 'Destino'
+          ? tr('Destination', 'Destino')
           : null;
 
       if (endLabel) {
@@ -2593,7 +3197,7 @@
       if (batches.length === 0) {
         container.innerHTML = `
           <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-bold text-center">
-            ¡Todas las paradas están marcadas como entregadas!
+            ${tr('All stops are marked as delivered!', '¡Todas las paradas están marcadas como entregadas!')}
           </div>
         `;
         return;
@@ -2608,7 +3212,7 @@
               <div class="text-[11px] text-slate-300">${b.subtitle}</div>
             </div>
             <span class="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 text-xs font-black shrink-0">
-              Abrir Maps ↗
+              ${tr('Open Maps ↗', 'Abrir Maps ↗')}
             </span>
           </a>
         `
@@ -2626,7 +3230,7 @@
                 ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
                 : 'bg-slate-900/80 border-slate-800 text-slate-400'
             }">
-              <div class="font-black">Opción B (Sur → Norte)</div>
+              <div class="font-black">${tr('Option B (South → North)', 'Opción B (Sur → Norte)')}</div>
               <div class="text-[10px] opacity-80">5 → Venetian → Collins</div>
             </button>
             <button onclick="applyMiamiBeachVariant('option-a')" class="p-2 rounded-xl text-left border text-xs ${
@@ -2634,7 +3238,7 @@
                 ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
                 : 'bg-slate-900/80 border-slate-800 text-slate-400'
             }">
-              <div class="font-black">Opción A (Venetian 1º)</div>
+              <div class="font-black">${tr('Option A (Venetian 1st)', 'Opción A (Venetian 1º)')}</div>
               <div class="text-[10px] opacity-80">6..11 → 5 → Collins</div>
             </button>
             <button onclick="applyMiamiBeachVariant('original')" class="p-2 rounded-xl text-left border text-xs ${
@@ -2642,18 +3246,18 @@
                 ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
                 : 'bg-slate-900/80 border-slate-800 text-slate-400'
             }">
-              <div class="font-black">Orden Original</div>
+              <div class="font-black">${tr('Original Order', 'Orden Original')}</div>
               <div class="text-[10px] opacity-80">2 → 3 → 4 ... → 11</div>
             </button>
           </div>
           <div class="flex items-center justify-between gap-2 pt-1">
-            <span class="text-xs text-slate-400 font-semibold">Barrido en Belle Isle:</span>
+            <span class="text-xs text-slate-400 font-semibold">${tr('Belle Isle Sweep:', 'Barrido en Belle Isle:')}</span>
             <div class="flex gap-1.5">
               <button onclick="applyMiamiBeachVariant(null, '11-10-9')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
                 state.belleIsleMode === '11-10-9'
                   ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
                   : 'bg-slate-900 border-slate-800 text-slate-400'
-              }">11 → 10 → 9 (Luz Verde)</button>
+              }">${tr('11 → 10 → 9 (Green Light)', '11 → 10 → 9 (Luz Verde)')}</button>
               <button onclick="applyMiamiBeachVariant(null, '9-10-11')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
                 state.belleIsleMode === '9-10-11'
                   ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
@@ -2670,16 +3274,16 @@
                 ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
                 : 'bg-slate-900/80 border-slate-800 text-slate-400'
             }">
-              <div class="font-black">Norte → Sur Táctico (Recomendado)</div>
-              <div class="text-[10px] opacity-80">Invierte 4→3, 7→6 (#3234) y 13→12</div>
+              <div class="font-black">${tr('North → South Tactical (Recommended)', 'Norte → Sur Táctico (Recomendado)')}</div>
+              <div class="text-[10px] opacity-80">${tr('Inverts 4→3, 7→6 (#3234) & 13→12', 'Invierte 4→3, 7→6 (#3234) y 13→12')}</div>
             </button>
             <button onclick="applyHialeahVariant('original')" class="p-2.5 rounded-xl text-left border text-xs ${
               state.activeVariant === 'original'
                 ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
                 : 'bg-slate-900/80 border-slate-800 text-slate-400'
             }">
-              <div class="font-black">Orden Numérico (2 → 13)</div>
-              <div class="text-[10px] opacity-80">Secuencia sin optimizar</div>
+              <div class="font-black">${tr('Numerical Order (2 → 13)', 'Orden Numérico (2 → 13)')}</div>
+              <div class="text-[10px] opacity-80">${tr('Unoptimized sequence', 'Secuencia sin optimizar')}</div>
             </button>
           </div>
         `;
@@ -2687,12 +3291,12 @@
         container.innerHTML = `
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <button onclick="autoOptimizeCurrentStops()" class="p-2.5 rounded-xl text-left border text-xs bg-cyan-500/20 border-cyan-400 text-white font-bold">
-              <div class="font-black">⚡ Re-Optimizar (Evitando Calle 8 ↔ 6)</div>
-              <div class="text-[10px] opacity-80">Prioriza vencimientos y desvía calles clausuradas</div>
+              <div class="font-black">${tr('⚡ Re-Optimize (Avoid Closed St 8 ↔ 6)', '⚡ Re-Optimizar (Evitando Calle 8 ↔ 6)')}</div>
+              <div class="text-[10px] opacity-80">${tr('Prioritizes deadlines & bypasses closed streets', 'Prioriza vencimientos y desvía calles clausuradas')}</div>
             </button>
             <button onclick="reorderStopsByOriginalNumbers([...state.stops].map(s=>s.originalNumber).sort((a,b)=>a-b)); renderAll();" class="p-2.5 rounded-xl text-left border text-xs bg-slate-900/80 border-slate-800 text-slate-300 font-bold">
-              <div class="font-black">Orden Numérico de Amazon Flex</div>
-              <div class="text-[10px] opacity-80">Ordenar de menor a mayor número</div>
+              <div class="font-black">${tr('Amazon Flex Numerical Order', 'Orden Numérico de Amazon Flex')}</div>
+              <div class="text-[10px] opacity-80">${tr('Sort stops from lowest to highest number', 'Ordenar de menor a mayor número')}</div>
             </button>
           </div>
         `;
@@ -2746,20 +3350,20 @@
       if (isMapFullscreen) {
         card.classList.add('map-fullscreen-active');
         if (btn) {
-          btn.textContent = '✕ Cerrar';
+          btn.textContent = tr('✕ Close', '✕ Cerrar');
           btn.className = 'px-3 py-1 rounded-lg text-xs font-black bg-rose-500 text-white shadow';
         }
         if (hint) {
-          hint.textContent = `${formatScheduleDisplay(getActiveRouteSchedule())} • Toca cualquier pin para navegar`;
+          hint.textContent = `${formatScheduleDisplay(getActiveRouteSchedule())} • ${tr('Tap any pin to navigate', 'Toca cualquier pin para navegar')}`;
         }
       } else {
         card.classList.remove('map-fullscreen-active');
         if (btn) {
-          btn.textContent = '⛶ Ampliar';
+          btn.textContent = tr('⛶ Expand', '⛶ Ampliar');
           btn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-black bg-cyan-400 text-slate-950 shadow';
         }
         if (hint) {
-          hint.textContent = 'Toca el mapa para abrirlo a pantalla completa';
+          hint.textContent = tr('Tap map to open in fullscreen', 'Toca el mapa para abrirlo a pantalla completa');
         }
       }
 
@@ -2986,10 +3590,8 @@
         const cacheKey = getWaypointsCacheKey(waypoints);
         const cachedOsrm = osrmRouteCache[cacheKey];
 
-        // Dibujar primero el trazo vial con degradado parada por parada (Rojo Intenso → Verde)
         drawRouteGradientPolylines(map, waypoints, cachedOsrm);
 
-        // Punto de salida P1 (Estación Hialeah)
         const station = getStationCoordinates();
         const p1Coords = [station.lat, station.lng];
         const p1Icon = L.divIcon({
@@ -2999,7 +3601,7 @@
           iconAnchor: [14, 14]
         });
         L.marker(p1Coords, { icon: p1Icon })
-          .bindPopup(`<div class="text-xs font-bold">Parada 1 (Salida)<br/><span class="font-normal text-slate-300">${station.address || state.pickupAddress}</span></div>`)
+          .bindPopup(`<div class="text-xs font-bold">${tr('Stop 1 (Departure)', 'Parada 1 (Salida)')}<br/><span class="font-normal text-slate-300">${station.address || state.pickupAddress}</span></div>`)
           .addTo(googleMarkersLayer);
 
         const totalStops = state.stops.length;
@@ -3037,28 +3639,27 @@
 
           marker.bindPopup(`
             <div style="min-width:170px;">
-              <div style="font-weight:900;font-size:12px;color:${colorMeta.hex};">#${idx + 1} en Ruta • Parada ${stop.originalNumber}</div>
+              <div style="font-weight:900;font-size:12px;color:${colorMeta.hex};">#${idx + 1} ${tr('in Route • Stop', 'en Ruta • Parada')} ${stop.originalNumber}</div>
               <div style="font-weight:800;font-size:12px;margin-top:2px;">${stop.address}${stop.unit ? ' (' + stop.unit + ')' : ''}</div>
               <div style="font-size:11px;color:#94a3b8;margin-top:2px;">⏰ ${stop.deadline}${stop.gateCode ? ' • Gate: ' + stop.gateCode : ''}</div>
-              <a href="${getSingleStopMapsUrl(stop)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:4px 10px;border-radius:6px;background:${colorMeta.hex};color:#ffffff;font-weight:900;font-size:11px;text-decoration:none;">Abrir en Google Maps ↗</a>
+              <a href="${getSingleStopMapsUrl(stop)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:4px 10px;border-radius:6px;background:${colorMeta.hex};color:#ffffff;font-weight:900;font-size:11px;text-decoration:none;">${tr('Open in Google Maps ↗', 'Abrir en Google Maps ↗')}</a>
             </div>
           `);
 
           marker.addTo(googleMarkersLayer);
         });
 
-        // Dibujar marcadores de alerta en calles clausuradas (ej. entre Parada 8 y Parada 6)
         if (Array.isArray(closedBarriers)) {
           closedBarriers.forEach((b) => {
             const barrierIcon = L.divIcon({
               className: '',
-              html: `<div title="Calle Clausurada entre Parada ${b.fromNum} y ${b.toNum} (Desvío Activo)" style="padding:2px 6px;border-radius:9999px;background:#e11d48;border:2px solid #ffffff;color:#ffffff;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.6);">⛔ ${b.fromNum}↔${b.toNum}</div>`,
+              html: `<div title="${tr(`Closed Street between Stop ${b.fromNum} & ${b.toNum} (Active Detour)`, `Calle Clausurada entre Parada ${b.fromNum} y ${b.toNum} (Desvío Activo)`)}" style="padding:2px 6px;border-radius:9999px;background:#e11d48;border:2px solid #ffffff;color:#ffffff;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.6);">⛔ ${b.fromNum}↔${b.toNum}</div>`,
               iconSize: [52, 20],
               iconAnchor: [26, 10]
             });
             L.marker([b.lat, b.lng], { icon: barrierIcon, zIndexOffset: 900 })
               .bindPopup(
-                `<div style="font-size:11px;font-weight:800;color:#fda4af;">⛔ Calle Clausurada (Parada ${b.fromNum} ↔ ${b.toNum})<br/><span style="color:#cbd5e1;font-weight:600;">La ruta activa evita esta calle y toma el desvío por vía principal abierta.</span></div>`
+                `<div style="font-size:11px;font-weight:800;color:#fda4af;">⛔ ${tr(`Closed Street (Stop ${b.fromNum} ↔ ${b.toNum})`, `Calle Clausurada (Parada ${b.fromNum} ↔ ${b.toNum})`)}<br/><span style="color:#cbd5e1;font-weight:600;">${tr('Active route avoids this closed crossing and takes the open main road detour.', 'La ruta activa evita esta calle y toma el desvío por vía principal abierta.')}</span></div>`
               )
               .addTo(googleMarkersLayer);
           });
@@ -3082,7 +3683,7 @@
             iconAnchor: [24, 11]
           });
           L.marker(homeCoords, { icon: homeIcon })
-            .bindPopup(`<div style="font-size:12px;font-weight:900;color:#10b981;">Destino de Cierre: Home</div>`)
+            .bindPopup(`<div style="font-size:12px;font-weight:900;color:#10b981;">${tr('Closing Destination: Home', 'Destino de Cierre: Home')}</div>`)
             .addTo(googleMarkersLayer);
         }
 
@@ -3098,13 +3699,13 @@
         selectedBar.innerHTML = `
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[11px] font-black">Parada ${selectedStop.originalNumber}</span>
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[11px] font-black">${tr('Stop', 'Parada')} ${selectedStop.originalNumber}</span>
               <span class="text-xs font-bold text-white truncate">${selectedStop.address}${selectedStop.unit ? ' • ' + selectedStop.unit : ''}</span>
             </div>
-            <div class="text-[11px] text-slate-400 truncate">${selectedStop.zone} • Límite: ${selectedStop.deadline}${selectedStop.gateCode ? ' • Gate: ' + selectedStop.gateCode : ''}</div>
+            <div class="text-[11px] text-slate-400 truncate">${selectedStop.zone} • ${tr('Due:', 'Límite:')} ${selectedStop.deadline}${selectedStop.gateCode ? ' • Gate: ' + selectedStop.gateCode : ''}</div>
           </div>
           <a href="${getSingleStopMapsUrl(selectedStop)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-xs font-black shrink-0">
-            Navegar ↗
+            ${tr('Navigate ↗', 'Navegar ↗')}
           </a>
         `;
       }
@@ -3114,14 +3715,17 @@
       const sched = getActiveRouteSchedule();
       const schedLabel = formatScheduleDisplay(sched);
       const cityFirst = getRoutePrimaryCity(state.stops, state.activePresetId);
-      const baseTitle = `${cityFirst} • ${schedLabel.replace(/^📅\s*/, '')} (${state.stops.length} Paradas)`;
+      const baseTitle = `${cityFirst} • ${schedLabel.replace(/^📅\s*/, '')} (${state.stops.length} ${tr('Stops', 'Paradas')})`;
       document.getElementById('route-title-heading').textContent = baseTitle;
-      document.getElementById('route-summary-subtitle').textContent = `Iconos y trazo con degradado Rojo → Verde • Desvío activo en calle clausurada (8 ↔ 6).`;
+      document.getElementById('route-summary-subtitle').textContent = tr(
+        'Stop pins & road path with Red → Green gradient • Active detour on closed street (8 ↔ 6).',
+        'Iconos y trazo con degradado Rojo → Verde • Desvío activo en calle clausurada (8 ↔ 6).'
+      );
 
       const totalPkgs = state.stops.reduce((acc, s) => acc + (s.packages || 1), 0);
       const urgentCount = state.stops.filter((s) => s.urgent && !s.completed).length;
-      document.getElementById('total-packages-badge').textContent = `${totalPkgs} paquetes`;
-      document.getElementById('urgent-stops-badge').textContent = `${urgentCount} urgentes`;
+      document.getElementById('total-packages-badge').textContent = `${totalPkgs} ${tr('packages', 'paquetes')}`;
+      document.getElementById('urgent-stops-badge').textContent = `${urgentCount} ${tr('urgent', 'urgentes')}`;
 
       const container = document.getElementById('stops-cards-container');
       container.innerHTML = state.stops
@@ -3173,13 +3777,13 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px]">
                       <span id="stop-eta-badge-${stop.id}" class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 font-extrabold">
-                        🏁 Calculando...
+                        🏁 ${tr('Calculating...', 'Calculando...')}
                       </span>
                       <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">
-                        ⏰ Límite: ${stop.deadline}
+                        ⏰ ${tr('Due:', 'Límite:')} ${stop.deadline}
                       </span>
                       <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">
-                        📦 ${stop.packages} paq (${stop.locations || 1} ubic.)
+                        📦 ${stop.packages} ${tr('pkg', 'paq')} (${stop.locations || 1} ${tr('loc.', 'ubic.')})
                       </span>
                       ${
                         nextStopInSeq
@@ -3188,7 +3792,7 @@
                                 ? 'bg-rose-500/25 border-rose-500/50 text-rose-200'
                                 : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-rose-300'
                             }">
-                              ${hasClosedToNext ? `⛔ Desvío activo (${stop.originalNumber}→${nextStopInSeq.originalNumber})` : `🚧 Calle cerrada a #${nextStopInSeq.originalNumber}`}
+                              ${hasClosedToNext ? tr(`⛔ Detour active (${stop.originalNumber}→${nextStopInSeq.originalNumber})`, `⛔ Desvío activo (${stop.originalNumber}→${nextStopInSeq.originalNumber})`) : tr(`🚧 Closed street to #${nextStopInSeq.originalNumber}`, `🚧 Calle cerrada a #${nextStopInSeq.originalNumber}`)}
                             </button>`
                           : ''
                       }
@@ -3197,14 +3801,14 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-1.5">
-                  <button onclick="moveStopInSequence(${idx}, -1, event)" title="Subir en secuencia" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
+                  <button onclick="moveStopInSequence(${idx}, -1, event)" title="${tr('Move up in sequence', 'Subir en secuencia')}" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
                     ↑
                   </button>
-                  <button onclick="moveStopInSequence(${idx}, 1, event)" title="Bajar en secuencia" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
+                  <button onclick="moveStopInSequence(${idx}, 1, event)" title="${tr('Move down in sequence', 'Bajar en secuencia')}" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
                     ↓
                   </button>
-                  <button onclick="copyTextToClipboard('${cleanAddressForMaps(stop.address, stop.city)}', 'Dirección Parada ${stop.originalNumber}')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold">
-                    Copiar
+                  <button onclick="copyTextToClipboard('${cleanAddressForMaps(stop.address, stop.city)}', '${tr('Stop', 'Parada')} ${stop.originalNumber}')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold">
+                    ${tr('Copy', 'Copiar')}
                   </button>
                   <a href="${getSingleStopMapsUrl(stop)}" onclick="event.stopPropagation()" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-extrabold">
                     Maps ↗
@@ -3214,7 +3818,7 @@
                       ? 'bg-emerald-500 text-slate-950 border-emerald-400'
                       : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
                   }">
-                    ${stop.completed ? '✓ Lista' : 'Marcar'}
+                    ${stop.completed ? tr('✓ Done', '✓ Lista') : tr('Mark', 'Marcar')}
                   </button>
                 </div>
               </div>
@@ -3235,13 +3839,13 @@
         infoEl.innerHTML = `
           <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center font-black text-sm">✓</div>
           <div>
-            <div class="text-xs font-black text-emerald-300">Ruta Completada</div>
-            <div class="text-xs text-slate-300 truncate">Destino final sugerido: ${finalVisual}</div>
+            <div class="text-xs font-black text-emerald-300">${tr('Route Completed', 'Ruta Completada')}</div>
+            <div class="text-xs text-slate-300 truncate">${tr('Suggested final destination:', 'Destino final sugerido:')} ${finalVisual}</div>
           </div>
         `;
         btnsEl.innerHTML = `
           <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(finalDestQuery)}&travelmode=driving" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-black">
-            Ir a ${finalVisual} ↗
+            ${tr('Go to', 'Ir a')} ${finalVisual} ↗
           </a>
         `;
         return;
@@ -3253,7 +3857,7 @@
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">Siguiente Parada</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">${tr('Next Stop', 'Siguiente Parada')}</span>
             <span class="text-[11px] font-bold text-slate-400">⏰ ${nextStop.deadline}</span>
           </div>
           <div class="text-xs sm:text-sm font-black text-white truncate">
@@ -3264,10 +3868,10 @@
 
       btnsEl.innerHTML = `
         <button onclick="toggleStopCompleted('${nextStop.id}')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
-          ✓ Entregada
+          ✓ ${tr('Delivered', 'Entregada')}
         </button>
         <a href="${getSingleStopMapsUrl(nextStop)}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow-lg">
-          Navegar Parada ${nextStop.originalNumber} ↗
+          ${tr('Navigate Stop', 'Navegar Parada')} ${nextStop.originalNumber} ↗
         </a>
       `;
     }
@@ -3286,6 +3890,7 @@
 
     function renderAll() {
       saveStateToStorage();
+      applyLanguageUI();
       renderHeaderControls();
       renderLiveDurationPanel();
       renderSequencePills();
@@ -3313,7 +3918,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '05:28 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '05:57 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
@@ -3355,6 +3960,12 @@
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.stops) && parsed.stops.length > 0) {
             state = { ...state, ...parsed };
+            // Idioma inglés seleccionado por defecto
+            if (!state.langInitializedV1) {
+              state.lang = 'en';
+              state.langInitializedV1 = true;
+            }
+            if (!state.lang) state.lang = 'en';
             if (!Array.isArray(state.savedRoutes) || state.savedRoutes.length === 0) {
               state.savedRoutes = Array.isArray(vaultRoutes) ? vaultRoutes : [];
             }
@@ -3382,12 +3993,18 @@
               }
             }
           } else {
+            state.lang = 'en';
+            state.langInitializedV1 = true;
             loadPresetRoute('dmi9-kendall');
           }
         } else {
+          state.lang = 'en';
+          state.langInitializedV1 = true;
           loadPresetRoute('dmi9-kendall');
         }
       } catch (e) {
+        state.lang = 'en';
+        state.langInitializedV1 = true;
         loadPresetRoute('dmi9-kendall');
       }
 
