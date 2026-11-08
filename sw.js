@@ -1,37 +1,28 @@
-const CACHE_NAME = 'flexroute-pwa-v3';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './flexroute-icon.svg',
-  './apple-touch-icon.png'
-];
+// Network-first / No-stale-cache Service Worker for instant mobile updates
+const CACHE_NAME = 'flexroute-live-v4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS).catch(() => {}))
+    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(
-    fetch(event.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
-        return res;
-      })
-      .catch(() => caches.match(event.request))
-  );
+  const url = new URL(event.request.url);
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
+    );
+  }
 });

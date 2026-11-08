@@ -68,12 +68,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen pb-36 selection:bg-cyan-400 selection:text-slate-950">
-
-  <!-- INDICADOR DE ACTUALIZACIÓN EN ESQUINA -->
-  <div class="fixed top-1 right-2 z-50 pointer-events-none text-[10px] text-slate-500/80 font-mono">
-    Actualizado: 03:24 PM - 11/08/2026
-  </div>
+<body class="min-h-screen pb-40 selection:bg-cyan-400 selection:text-slate-950">
 
   <!-- TOP COCKPIT HEADER -->
   <header class="sticky top-0 z-30 glass-card border-b border-slate-800/90 px-4 pb-3 safe-top-header">
@@ -438,11 +433,16 @@
     </form>
   </div>
 
-  <!-- BARRA INFERIOR DE ACCIÓN RÁPIDA (MODO CONDUCTOR) -->
-  <div class="fixed bottom-0 inset-x-0 z-30 glass-card border-t border-slate-800/90 px-4 pt-3 safe-bottom-bar">
+  <!-- BARRA INFERIOR DE ACCIÓN RÁPIDA (MODO CONDUCTOR) + INDICADOR DE ACTUALIZACIÓN ABAJO -->
+  <div class="fixed bottom-0 inset-x-0 z-30 glass-card border-t border-slate-800/90 px-4 pt-2.5 safe-bottom-bar">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
       <div id="bottom-next-stop-info" class="flex items-center gap-3 min-w-0"></div>
       <div id="bottom-action-buttons" class="flex items-center gap-2 shrink-0"></div>
+    </div>
+    <div class="max-w-7xl mx-auto flex justify-end pt-1">
+      <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
+        Actualizado: 03:28 PM - 11/08/2026 ↻
+      </button>
     </div>
   </div>
 
@@ -1744,6 +1744,37 @@
       return false;
     }
 
+    const CURRENT_BUILD_TIMESTAMP = '03:28 PM - 11/08/2026';
+
+    async function forceReloadApp(newVersionId) {
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } catch (e) {}
+      const v = newVersionId || Date.now();
+      window.location.replace(`${window.location.pathname}?v=${v}`);
+    }
+
+    async function checkRemoteUpdate() {
+      try {
+        const res = await fetch(`./version.json?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.buildTimestamp && data.buildTimestamp !== CURRENT_BUILD_TIMESTAMP) {
+          forceReloadApp(data.buildId || Date.now());
+        }
+      } catch (e) {}
+    }
+
     function initApp() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -1764,11 +1795,26 @@
 
       // Si viene desde el Atajo de iPhone (?import=...), procesa e inyecta automáticamente
       checkUrlAutoImport();
+
+      // Verificar si hay versión nueva en GitHub Pages automáticamente
+      checkRemoteUpdate();
+      setInterval(checkRemoteUpdate, 20000);
+      window.addEventListener('focus', checkRemoteUpdate);
+      window.addEventListener('pageshow', checkRemoteUpdate);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkRemoteUpdate();
+      });
     }
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        // Limpiar cualquier caché viejo de Service Worker y actualizar
+        if ('caches' in window) {
+          caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+        }
+        navigator.serviceWorker.register(`./sw.js?v=${Date.now()}`).then((reg) => {
+          reg.update().catch(() => {});
+        }).catch(() => {});
       });
     }
 
