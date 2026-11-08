@@ -16,6 +16,7 @@
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <title>FlexRoute</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -59,7 +60,7 @@
 
   <!-- INDICADOR DE ACTUALIZACIÓN EN ESQUINA -->
   <div class="fixed top-1 right-2 z-50 pointer-events-none text-[10px] text-slate-500/80 font-mono">
-    Actualizado: 11:00 AM - 11/08/2026
+    Actualizado: 03:16 PM - 11/08/2026
   </div>
 
   <!-- TOP COCKPIT HEADER -->
@@ -81,19 +82,25 @@
             </span>
           </div>
           <p class="text-xs text-slate-400">
-            Optimizador táctico en tiempo real • Miami Beach, Venetian Islands, Hialeah y Brickell
+            Optimizador táctico en tiempo real • Captura automática desde Amazon Flex
           </p>
         </div>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
+        <!-- BOTÓN RÁPIDO DE ESCANEO DE CAPTURAS DE AMAZON FLEX -->
+        <button onclick="openScreenshotPicker()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
+          <span>📸</span>
+          <span>Capturas Flex</span>
+        </button>
+
         <!-- SELECTOR DE RUTA PRECARGADA -->
-        <div class="flex items-center gap-1.5 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+        <div class="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
           <button id="preset-btn-miami-beach" onclick="loadPresetRoute('miami-beach')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            Ruta 1: Miami Beach (11)
+            Ruta 1 (11)
           </button>
           <button id="preset-btn-hialeah-brickell" onclick="loadPresetRoute('hialeah-brickell')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">
-            Ruta 2: Hialeah → Brickell (13)
+            Ruta 2 (13)
           </button>
         </div>
 
@@ -103,7 +110,7 @@
             Cabina
           </button>
           <button id="tab-btn-parser" onclick="switchTab('parser')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
-            Importar
+            Auto-Importar
           </button>
           <button id="tab-btn-add" onclick="switchTab('add')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
             + Parada
@@ -112,6 +119,16 @@
       </div>
     </div>
   </header>
+
+  <!-- INPUT OCULTO GLOBAL PARA SUBIR CAPTURAS DE PANTALLA DESDE CUALQUIER PESTAÑA -->
+  <input
+    id="flex-screenshots-input"
+    type="file"
+    accept="image/*"
+    multiple
+    class="hidden"
+    onchange="handleScreenshotsSelected(event)"
+  />
 
   <!-- PANEL 1: CABINA TÁCTICA PRINCIPAL -->
   <div id="tab-panel-cockpit">
@@ -127,6 +144,7 @@
             </span>
             <div class="flex items-center gap-2">
               <span id="metrics-counter" class="text-xs text-slate-400 font-semibold">0/10 listas</span>
+              <button onclick="autoOptimizeCurrentStops()" class="text-[11px] text-emerald-400 hover:underline font-bold">⚡ Auto-Optimizar</button>
               <button onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reiniciar</button>
             </div>
           </div>
@@ -237,30 +255,110 @@
     </main>
   </div>
 
-  <!-- PANEL 2: IMPORTADOR DE TEXTO DE ITINERARIO -->
-  <div id="tab-panel-parser" class="hidden max-w-4xl mx-auto px-4 pt-6">
+  <!-- PANEL 2: AUTO-IMPORTADOR DESDE AMAZON FLEX (CAPTURAS + ATAJO IPHONE + PORTAPAPELES) -->
+  <div id="tab-panel-parser" class="hidden max-w-4xl mx-auto px-4 pt-5 space-y-5">
+    <!-- TARJETA 1: ESCÁNER DE CAPTURAS DE PANTALLA DE AMAZON FLEX -->
+    <div class="glass-card rounded-2xl border border-amber-500/40 p-5 space-y-4 shadow-xl">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase">
+              Automático con Visión OCR
+            </span>
+            <h2 class="text-base font-black text-white">1. Escanear Capturas de Pantalla de Amazon Flex</h2>
+          </div>
+          <p class="text-xs text-slate-300 mt-1">
+            En la app de <strong>Amazon Flex</strong> ve a <strong>Itinerary → List</strong>, toma 1, 2 o más capturas de pantalla y súbelas aquí. FlexRoute extraerá y ordenará todas las paradas automáticamente.
+          </p>
+        </div>
+        <button onclick="openScreenshotPicker()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-lg shrink-0">
+          📸 Seleccionar Capturas de Pantalla
+        </button>
+      </div>
+
+      <!-- ESTADO DEL ESCÁNER OCR -->
+      <div id="ocr-status-box" class="hidden p-4 rounded-xl bg-slate-950/90 border border-cyan-500/40 space-y-2">
+        <div class="flex items-center justify-between text-xs font-bold">
+          <span id="ocr-status-label" class="text-cyan-300">Analizando capturas de Amazon Flex...</span>
+          <span id="ocr-status-percent" class="text-emerald-300">0%</span>
+        </div>
+        <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+          <div id="ocr-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div id="ocr-thumbs-preview" class="flex gap-2 overflow-x-auto pt-1"></div>
+      </div>
+
+      <!-- BOTÓN DE 1 TOQUE DESDE PORTAPAPELES -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+        <div class="text-xs text-slate-400">
+          ¿Ya copiaste el texto con <strong>Live Text</strong> de tu iPhone o desde un Atajo?
+        </div>
+        <button onclick="pasteAndImportFromClipboard()" class="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-black">
+          📋 Pegar del Portapapeles e Importar en 1 Toque
+        </button>
+      </div>
+    </div>
+
+    <!-- TARJETA 2: TEXTO DEL ITINERARIO (VERIFICACIÓN / EDICIÓN MANUAL) -->
     <div class="glass-card rounded-2xl border border-cyan-500/30 p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 class="text-base font-black text-white">Importador de Itinerario en Texto</h2>
-          <p class="text-xs text-slate-400">Pega el texto copiado de tu itinerario para generar paradas automáticamente.</p>
+          <h3 class="text-sm font-black text-white">2. Texto Detectado del Itinerario</h3>
+          <p class="text-xs text-slate-400">Aquí aparece lo leído de tus capturas o puedes pegar texto directamente.</p>
         </div>
-        <button onclick="loadSampleTextIntoParser()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-300 border border-slate-700">
-          Cargar Ejemplo
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="loadSampleTextIntoParser()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-300 border border-slate-700">
+            Cargar Ejemplo
+          </button>
+          <button onclick="document.getElementById('raw-itinerary-textarea').value = ''" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-slate-400 border border-slate-800">
+            Limpiar
+          </button>
+        </div>
       </div>
       <textarea
         id="raw-itinerary-textarea"
         rows="8"
-        placeholder="Pega aquí las paradas del itinerario..."
+        placeholder="Aquí aparecerá automáticamente el texto extraído de tus capturas de Amazon Flex (o pégalo aquí)..."
         class="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-400"
       ></textarea>
-      <div class="flex flex-wrap items-center justify-end gap-2">
-        <button onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
-          Cancelar
-        </button>
-        <button onclick="parseRawItineraryText()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black">
-          Procesar y Cargar al Mapa
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <label class="flex items-center gap-2 text-xs text-slate-300 font-semibold cursor-pointer">
+          <input id="auto-optimize-checkbox" type="checkbox" checked class="rounded border-slate-700 bg-slate-900 text-cyan-400" />
+          <span>Optimizar automáticamente por urgencia y cercanía geográfica</span>
+        </label>
+        <div class="flex items-center gap-2">
+          <button onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
+            Cancelar
+          </button>
+          <button onclick="parseRawItineraryText()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow-lg">
+            ⚡ Procesar y Cargar al Mapa
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETA 3: ATAJO AUTOMÁTICO DE IPHONE (1 TOQUE SIN SALIR DE AMAZON FLEX) -->
+    <div class="glass-card rounded-2xl border border-emerald-500/30 p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-black text-emerald-300">⚡ Cómo activar el Atajo de 1 Toque en tu iPhone (iOS Shortcuts)</h3>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">0 segundos</span>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Con la app nativa <strong>Atajos (Shortcuts)</strong> de tu iPhone puedes hacer que al tocar 2 veces la parte trasera del teléfono dentro de <strong>Amazon Flex</strong> se capture la pantalla y se abra <strong>FlexRoute</strong> con las paradas ya cargadas:
+      </p>
+      <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
+        <li>Abre la app <strong>Atajos (Shortcuts)</strong> en tu iPhone y toca <strong>+ (Nuevo Atajo)</strong>.</li>
+        <li>Agrega la acción <strong>«Hacer captura de pantalla»</strong> (<em>Take Screenshot</em>).</li>
+        <li>Agrega la acción <strong>«Extraer texto de la imagen»</strong> (<em>Extract Text from Image</em>).</li>
+        <li>Agrega la acción <strong>«Codificar URL»</strong> (<em>URL Encode</em>) pasando el <em>Texto de la imagen</em>.</li>
+        <li>Agrega la acción <strong>«Abrir URLs»</strong> con esta dirección:<br/>
+          <code class="text-cyan-300 font-mono text-[11px] break-all">https://raydelw-a11y.github.io/flexroute/?import=[Texto Codificado]</code>
+        </li>
+      </ol>
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <span class="text-[11px] text-slate-400">¿Quieres añadir varias pantallas seguidas desde el Atajo? Usa <code>?append=1&amp;import=...</code> para acumular paradas sin borrar las anteriores.</span>
+        <button onclick="copyTextToClipboard('https://raydelw-a11y.github.io/flexroute/?append=1&import=', 'URL para Atajo de iPhone')" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold shrink-0">
+          Copiar URL del Atajo
         </button>
       </div>
     </div>
@@ -384,6 +482,20 @@
       }
     };
 
+    const CITY_CENTERS = {
+      'MIAMI BEACH': { lat: 25.7907, lng: -80.1300 },
+      'HIALEAH': { lat: 25.8576, lng: -80.2781 },
+      'MIAMI': { lat: 25.7825, lng: -80.2150 },
+      'BRICKELL': { lat: 25.7617, lng: -80.1918 },
+      'CORAL GABLES': { lat: 25.7215, lng: -80.2684 },
+      'DORAL': { lat: 25.8195, lng: -80.3553 },
+      'MIAMI SPRINGS': { lat: 25.8223, lng: -80.2898 },
+      'NORTH MIAMI': { lat: 25.8901, lng: -80.1867 },
+      'AVENTURA': { lat: 25.9565, lng: -80.1392 },
+      'KENDALL': { lat: 25.6793, lng: -80.3173 },
+      'HOMESTEAD': { lat: 25.4687, lng: -80.4776 }
+    };
+
     let state = {
       activePresetId: 'miami-beach',
       activeVariant: 'option-b',
@@ -397,6 +509,13 @@
       selectedStopId: null,
       activeTab: 'cockpit'
     };
+
+    function showToast(message) {
+      const toast = document.getElementById('toast-notification');
+      document.getElementById('toast-text').textContent = message;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 2400);
+    }
 
     function cleanAddressForMaps(address, city) {
       const street = (address || '').replace(/^KDR\s+/i, '').trim();
@@ -589,11 +708,7 @@
       tempInput.select();
       document.execCommand('copy');
       document.body.removeChild(tempInput);
-
-      const toast = document.getElementById('toast-notification');
-      document.getElementById('toast-text').textContent = `Copiado: ${label || text}`;
-      toast.classList.remove('hidden');
-      setTimeout(() => toast.classList.add('hidden'), 1800);
+      showToast(`Copiado: ${label || text}`);
     }
 
     function switchTab(tabName) {
@@ -609,6 +724,339 @@
           if (btn) btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
         }
       });
+    }
+
+    // =========================================================================
+    // MOTOR INTELIGENTE DE EXTRACCIÓN DE AMAZON FLEX (OCR + LIVE TEXT + PARSER)
+    // =========================================================================
+
+    function openScreenshotPicker() {
+      const input = document.getElementById('flex-screenshots-input');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+    }
+
+    function preprocessImageForOcr(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          // Recortar el 7% superior (barra de hora/batería de iOS) y 6% inferior (barra inferior)
+          const cropTop = Math.round(img.height * 0.06);
+          const cropBottom = Math.round(img.height * 0.05);
+          const croppedHeight = Math.max(100, img.height - cropTop - cropBottom);
+          canvas.width = img.width;
+          canvas.height = croppedHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, cropTop, img.width, croppedHeight, 0, 0, img.width, croppedHeight);
+          resolve({ dataUrl: canvas.toDataURL('image/png'), thumbUrl: url });
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    async function handleScreenshotsSelected(event) {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+
+      switchTab('parser');
+      const statusBox = document.getElementById('ocr-status-box');
+      const statusLabel = document.getElementById('ocr-status-label');
+      const statusPercent = document.getElementById('ocr-status-percent');
+      const progressBar = document.getElementById('ocr-progress-bar');
+      const thumbsPreview = document.getElementById('ocr-thumbs-preview');
+
+      statusBox.classList.remove('hidden');
+      thumbsPreview.innerHTML = '';
+
+      const combinedTexts = [];
+
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          statusLabel.textContent = `Leyendo captura ${i + 1} de ${files.length} (${file.name})...`;
+          const baseProgress = Math.round((i / files.length) * 100);
+          progressBar.style.width = `${baseProgress}%`;
+          statusPercent.textContent = `${baseProgress}%`;
+
+          const { dataUrl, thumbUrl } = await preprocessImageForOcr(file);
+          thumbsPreview.insertAdjacentHTML(
+            'beforeend',
+            `<img src="${thumbUrl}" class="h-16 w-auto rounded-lg border border-slate-700 object-cover shrink-0" />`
+          );
+
+          if (window.Tesseract) {
+            const result = await window.Tesseract.recognize(dataUrl, 'eng', {
+              logger: (m) => {
+                if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+                  const totalPct = Math.min(
+                    99,
+                    Math.round(((i + m.progress) / files.length) * 100)
+                  );
+                  progressBar.style.width = `${totalPct}%`;
+                  statusPercent.textContent = `${totalPct}%`;
+                }
+              }
+            });
+            if (result && result.data && result.data.text) {
+              combinedTexts.push(result.data.text);
+            }
+          }
+        }
+
+        progressBar.style.width = '100%';
+        statusPercent.textContent = '100%';
+        statusLabel.textContent = `¡${files.length} captura(s) leída(s)! Extrayendo paradas de Amazon Flex...`;
+
+        const textarea = document.getElementById('raw-itinerary-textarea');
+        const fullRawText = combinedTexts.join('\n\n');
+        textarea.value = textarea.value
+          ? `${textarea.value}\n\n${fullRawText}`
+          : fullRawText;
+
+        parseRawItineraryText(false);
+      } catch (err) {
+        statusLabel.textContent = 'No se pudo procesar la imagen automáticamente. Intenta con otra captura.';
+      }
+    }
+
+    async function pasteAndImportFromClipboard() {
+      try {
+        const clipText = await navigator.clipboard.readText();
+        if (!clipText || !clipText.trim()) {
+          showToast('El portapapeles está vacío');
+          return;
+        }
+        document.getElementById('raw-itinerary-textarea').value = clipText;
+        parseRawItineraryText(false);
+      } catch (e) {
+        showToast('Pega el texto en el recuadro y pulsa Procesar');
+      }
+    }
+
+    function estimateCoordinatesFromAddress(address, city, index) {
+      const upperCity = (city || 'MIAMI').toUpperCase();
+      let base = CITY_CENTERS['MIAMI'];
+      for (const [k, coords] of Object.entries(CITY_CENTERS)) {
+        if (upperCity.includes(k)) {
+          base = coords;
+          break;
+        }
+      }
+
+      // Heurística de calles numeradas en Miami / Hialeah / Miami Beach
+      const stMatch = (address || '').match(/\b(\d+)(?:ST|ND|RD|TH)?\s+(?:ST|TER|LN|DR|AVE|CT|PL)\b/i);
+      const numMatch = (address || '').match(/^(\d+)/);
+      const streetNum = stMatch ? parseInt(stMatch[1], 10) : (index + 1) * 8;
+      const houseNum = numMatch ? parseInt(numMatch[1], 10) : 500;
+
+      const latOffset = ((streetNum % 120) - 40) * 0.00055;
+      const lngOffset = ((houseNum % 3000) - 1200) * 0.000012;
+
+      return {
+        lat: Number((base.lat + latOffset).toFixed(5)),
+        lng: Number((base.lng - lngOffset).toFixed(5))
+      };
+    }
+
+    async function refineCoordinatesWithNominatim(stopsList) {
+      for (const stop of stopsList) {
+        if (!stop.address || stop.geocoded) continue;
+        try {
+          const query = encodeURIComponent(`${stop.address}, ${stop.city || 'Miami, FL'}`);
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${query}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data[0] && data[0].lat && data[0].lon) {
+              stop.lat = parseFloat(data[0].lat);
+              stop.lng = parseFloat(data[0].lon);
+              stop.geocoded = true;
+              renderSvgMap();
+              saveStateToStorage();
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    function parseAmazonFlexItinerary(rawText) {
+      const cleanLines = rawText
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .map((l) => l.replace(/[|•·©®™]/g, ' ').replace(/\s+/g, ' ').trim())
+        .filter((l) => l.length > 1 && !/^(itinerary|list|map|summary|todays itinerary|current stop|next stop|scan|help)$/i.test(l));
+
+      const detectedStops = [];
+      const seenAddresses = new Set();
+
+      const cityRegex = /^(MIAMI BEACH|MIAMI SPRINGS|MIAMI GARDENS|NORTH MIAMI BEACH|NORTH MIAMI|SOUTH MIAMI|WEST MIAMI|HIALEAH GARDENS|HIALEAH|CORAL GABLES|BRICKELL|DORAL|AVENTURA|SUNNY ISLES|KEY BISCAYNE|KENDALL|HOMESTEAD|OPA-LOCKA|MEDLEY|SWEETWATER|PINECREST|SURFSIDE|BAL HARBOUR|BAY HARBOR ISLANDS|MIAMI)(?:,?\s*FL(?:\s*\d{5})?)?$/i;
+      const addressRegex = /^(\d{1,5})\s+([A-Z0-9.\s#-]+?\b(?:ST|STREET|AVE|AVENUE|DR|DRIVE|RD|ROAD|BLVD|LN|LANE|TER|TERRACE|CT|COURT|PL|PLACE|WAY|PKWY|CIR|HWY|ISLAND AVE|COLLINS AVE|DILIDO DR|RIVO ALTO DR|CENTURY LN)\b.*)$/i;
+      const unitExtractRegex = /\b((?:APT|UNIT|STE|SUITE|FL|PH|BLDG|RM|#)\s*[A-Z0-9-]+)\s*$/i;
+      const deadlineLineRegex = /(?:^(\d{1,2})\s+)?(?:Expected by|Deliver(?:y)? between|Deliver by|Scheduled|Today by|Before)\s*([0-9]{1,2}:[0-9]{2}\s*(?:AM|PM)?(?:\s*-\s*[0-9]{1,2}:[0-9]{2}\s*(?:AM|PM)?)?)/i;
+
+      let pendingStopNum = null;
+      let pendingDeadline = null;
+
+      for (let i = 0; i < cleanLines.length; i++) {
+        const line = cleanLines[i];
+
+        // 1. Detectar línea de número de parada y/o ventana de horario ("5 Expected by 9:50 AM")
+        const dlMatch = line.match(deadlineLineRegex);
+        if (dlMatch) {
+          if (dlMatch[1]) pendingStopNum = parseInt(dlMatch[1], 10);
+          pendingDeadline = dlMatch[2].trim();
+          continue;
+        }
+
+        // Detectar número de parada aislado ("5" o "#5")
+        const pureNumMatch = line.match(/^#?(\d{1,2})$/);
+        if (pureNumMatch) {
+          const n = parseInt(pureNumMatch[1], 10);
+          if (n >= 1 && n <= 60) {
+            pendingStopNum = n;
+          }
+          continue;
+        }
+
+        // 2. Detectar línea de dirección física
+        let cleanAddrCandidate = line.replace(/^#?\d{1,2}\s+(?=\d{1,5}\s+[A-Z])/i, (m) => {
+          const n = parseInt(m.replace('#', '').trim(), 10);
+          if (!pendingStopNum && n >= 1 && n <= 60) pendingStopNum = n;
+          return '';
+        });
+
+        const addrMatch = cleanAddrCandidate.match(addressRegex);
+        if (addrMatch) {
+          let fullStreet = cleanAddrCandidate.trim();
+          let unit = '';
+          const unitMatch = fullStreet.match(unitExtractRegex);
+          if (unitMatch) {
+            unit = unitMatch[1].trim().toUpperCase();
+            fullStreet = fullStreet.slice(0, unitMatch.index).trim();
+          }
+
+          // Revisar siguientes 1-2 líneas para Unidad, Ciudad o Cantidad de Paquetes
+          let city = 'Miami, FL';
+          let packages = 1;
+          for (let j = 1; j <= 3 && i + j < cleanLines.length; j++) {
+            const nextL = cleanLines[i + j];
+            if (/^(?:APT|UNIT|STE|SUITE|#)\s*[A-Z0-9-]+$/i.test(nextL) && !unit) {
+              unit = nextL.toUpperCase();
+              continue;
+            }
+            const cMatch = nextL.match(cityRegex);
+            if (cMatch) {
+              const rawCity = cMatch[1]
+                .toLowerCase()
+                .replace(/\b\w/g, (c) => c.toUpperCase());
+              city = `${rawCity}, FL`;
+              continue;
+            }
+            const pkgMatch = nextL.match(/(\d+)\s*(?:package|paquete)/i);
+            if (pkgMatch) {
+              packages = parseInt(pkgMatch[1], 10) || 1;
+            }
+          }
+
+          // Si es la estación de recogida (Parada 1 / Hialeah SE 8th St)
+          if (/1125\s+SE\s+8TH/i.test(fullStreet) || pendingStopNum === 1) {
+            state.pickupAddress = `${fullStreet}, ${city}`;
+            pendingStopNum = null;
+            pendingDeadline = null;
+            continue;
+          }
+
+          const dedupeKey = `${fullStreet.toUpperCase()}|${unit}`;
+          if (seenAddresses.has(dedupeKey)) {
+            pendingStopNum = null;
+            pendingDeadline = null;
+            continue;
+          }
+          seenAddresses.add(dedupeKey);
+
+          const stopNumber = pendingStopNum || detectedStops.length + 2;
+          const deadline = pendingDeadline || '12:00 PM';
+          const isUrgent = /\b(8:|9:|10:00|10:15|10:30)\b/i.test(deadline);
+          const coords = estimateCoordinatesFromAddress(fullStreet, city, detectedStops.length);
+
+          detectedStops.push({
+            id: `flex-${Date.now()}-${detectedStops.length}`,
+            originalNumber: stopNumber,
+            code: 'FLEX.OCR',
+            address: fullStreet,
+            unit,
+            city,
+            deadline,
+            packages,
+            locations: 1,
+            gateCode: '',
+            lat: coords.lat,
+            lng: coords.lng,
+            zone: isUrgent ? `${city.replace(', FL', '')} (Prioridad)` : city.replace(', FL', ''),
+            completed: false,
+            urgent: isUrgent
+          });
+
+          pendingStopNum = null;
+          pendingDeadline = null;
+        }
+      }
+
+      return detectedStops;
+    }
+
+    function autoOptimizeStopsList(stopsArray) {
+      if (stopsArray.length <= 2) return stopsArray;
+      const urgentStops = stopsArray.filter((s) => s.urgent && !s.completed);
+      const normalStops = stopsArray.filter((s) => !s.urgent && !s.completed);
+      const completedStops = stopsArray.filter((s) => s.completed);
+
+      const orderByNearest = (list, startLat, startLng) => {
+        const remaining = [...list];
+        const ordered = [];
+        let curLat = startLat;
+        let curLng = startLng;
+        while (remaining.length > 0) {
+          let bestIdx = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < remaining.length; i++) {
+            const dLat = remaining[i].lat - curLat;
+            const dLng = remaining[i].lng - curLng;
+            const dist = dLat * dLat + dLng * dLng;
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestIdx = i;
+            }
+          }
+          const next = remaining.splice(bestIdx, 1)[0];
+          ordered.push(next);
+          curLat = next.lat;
+          curLng = next.lng;
+        }
+        return ordered;
+      };
+
+      const orderedUrgent = orderByNearest(urgentStops, 25.82, -80.26);
+      const lastUrgent = orderedUrgent[orderedUrgent.length - 1];
+      const orderedNormal = orderByNearest(
+        normalStops,
+        lastUrgent ? lastUrgent.lat : 25.82,
+        lastUrgent ? lastUrgent.lng : -80.26
+      );
+
+      return [...orderedUrgent, ...orderedNormal, ...completedStops];
+    }
+
+    function autoOptimizeCurrentStops() {
+      state.stops = autoOptimizeStopsList(state.stops);
+      const seqStr = state.stops.map((s) => s.originalNumber).join(' → ');
+      state.tacticalNotes = `Secuencia Táctica Auto-Optimizada por Urgencia y Cercanía (${seqStr}): Prioriza entregas con vencimiento temprano y encadena el resto sin retrocesos.`;
+      renderAll();
+      showToast('Ruta optimizada tácticamente ⚡');
     }
 
     function handleAddStopSubmit(e) {
@@ -628,6 +1076,7 @@
         ? Math.max(...state.stops.map((s) => s.originalNumber)) + 1
         : 2;
 
+      const coords = estimateCoordinatesFromAddress(addressVal, cityVal, state.stops.length);
       const newStop = {
         id: `custom-${Date.now()}`,
         originalNumber: nextNum,
@@ -639,8 +1088,8 @@
         packages: pkgsVal,
         locations: 1,
         gateCode: gateVal,
-        lat: 25.792 + (Math.random() - 0.5) * 0.02,
-        lng: -80.148 + (Math.random() - 0.5) * 0.02,
+        lat: coords.lat,
+        lng: coords.lng,
         zone: 'Parada Añadida',
         completed: false,
         urgent: /9:|10:|11:/i.test(deadlineVal)
@@ -650,51 +1099,84 @@
       e.target.reset();
       switchTab('cockpit');
       renderAll();
+      refineCoordinatesWithNominatim([newStop]);
     }
 
     function loadSampleTextIntoParser() {
       document.getElementById('raw-itinerary-textarea').value =
-        "5 Expected by 9:50 AM\n810 7TH ST UNIT 207\nMIAMI BEACH\n\n11 Expected by 12:00 PM\n11 ISLAND AVE APT 1111\nMIAMI BEACH";
+        "5 Expected by 9:50 AM\n810 7TH ST UNIT 207\nMIAMI BEACH\n\n6 Expected by 10:00 AM\n28 W DILIDO DR\nMIAMI BEACH\n\n11 Expected by 12:00 PM\n11 ISLAND AVE APT 1111\nMIAMI BEACH\n\n2 Expected by 2:00 PM\n4775 COLLINS AVE APT 1503\nMIAMI BEACH";
     }
 
-    function parseRawItineraryText() {
+    function parseRawItineraryText(appendMode = false) {
       const raw = document.getElementById('raw-itinerary-textarea').value.trim();
-      if (!raw) return;
-      const blocks = raw.split(/\n\s*\n/);
-      const parsedStops = [];
-      blocks.forEach((block, idx) => {
-        const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
-        if (lines.length === 0) return;
-        const headerMatch = lines[0].match(/^(\d+)\s*(?:Expected by\s*(.+))?/i);
-        const stopNum = headerMatch ? parseInt(headerMatch[1], 10) : idx + 2;
-        const deadline = headerMatch && headerMatch[2] ? headerMatch[2].trim() : '12:00 PM';
-        const addressLine = lines[1] || lines[0];
-        const cityLine = lines[2] ? `${lines[2]}, FL` : 'Miami, FL';
-        parsedStops.push({
-          id: `parsed-${Date.now()}-${idx}`,
-          originalNumber: stopNum,
-          code: 'FLEX.IMP',
-          address: addressLine,
-          unit: '',
-          city: cityLine,
-          deadline,
-          packages: 1,
-          locations: 1,
-          gateCode: '',
-          lat: 25.79 + (idx * 0.006),
-          lng: -80.16 + (idx * 0.006),
-          zone: 'Importada',
-          completed: false,
-          urgent: /9:|10:/i.test(deadline)
+      if (!raw) {
+        showToast('Pega texto o selecciona capturas de Amazon Flex');
+        return;
+      }
+
+      let parsedStops = parseAmazonFlexItinerary(raw);
+
+      // Respaldo para bloques simples si el texto no tiene sufijos estándar de calle
+      if (parsedStops.length === 0) {
+        const blocks = raw.split(/\n\s*\n/);
+        blocks.forEach((block, idx) => {
+          const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+          if (lines.length === 0) return;
+          const headerMatch = lines[0].match(/^(\d+)\s*(?:Expected by\s*(.+))?/i);
+          const stopNum = headerMatch ? parseInt(headerMatch[1], 10) : idx + 2;
+          const deadline = headerMatch && headerMatch[2] ? headerMatch[2].trim() : '12:00 PM';
+          const addressLine = lines[1] || lines[0];
+          const cityLine = lines[2] ? `${lines[2].replace(/,?\s*FL$/i, '')}, FL` : 'Miami, FL';
+          const coords = estimateCoordinatesFromAddress(addressLine, cityLine, idx);
+          parsedStops.push({
+            id: `parsed-${Date.now()}-${idx}`,
+            originalNumber: stopNum,
+            code: 'FLEX.IMP',
+            address: addressLine,
+            unit: '',
+            city: cityLine,
+            deadline,
+            packages: 1,
+            locations: 1,
+            gateCode: '',
+            lat: coords.lat,
+            lng: coords.lng,
+            zone: cityLine.replace(', FL', ''),
+            completed: false,
+            urgent: /9:|10:/i.test(deadline)
+          });
         });
-      });
+      }
 
       if (parsedStops.length > 0) {
-        state.stops = parsedStops;
-        state.selectedStopId = parsedStops[0].id;
-        state.tacticalNotes = `Itinerario importado manualmente (${parsedStops.length} paradas).`;
+        if (appendMode && state.stops.length > 0) {
+          const existingKeys = new Set(state.stops.map((s) => `${s.address.toUpperCase()}|${s.unit}`));
+          parsedStops.forEach((s) => {
+            const k = `${s.address.toUpperCase()}|${s.unit}`;
+            if (!existingKeys.has(k)) {
+              state.stops.push(s);
+              existingKeys.add(k);
+            }
+          });
+        } else {
+          state.stops = parsedStops;
+        }
+
+        const shouldOptimize = document.getElementById('auto-optimize-checkbox')?.checked;
+        if (shouldOptimize) {
+          state.stops = autoOptimizeStopsList(state.stops);
+        }
+
+        state.activePresetId = 'custom-imported';
+        state.selectedStopId = state.stops[0].id;
+        const seqStr = state.stops.map((s) => s.originalNumber).join(' → ');
+        state.tacticalNotes = `Ruta importada desde Amazon Flex (${state.stops.length} paradas • Secuencia: ${seqStr}).`;
         switchTab('cockpit');
         renderAll();
+        showToast(`¡${parsedStops.length} paradas importadas desde Amazon Flex!`);
+        refineCoordinatesWithNominatim(state.stops);
+      } else {
+        showToast('No se detectaron direcciones válidas en el texto');
       }
     }
 
@@ -840,7 +1322,7 @@
             </div>
           </div>
         `;
-      } else {
+      } else if (state.activePresetId === 'hialeah-brickell') {
         container.innerHTML = `
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <button onclick="applyHialeahVariant('optimized')" class="p-2.5 rounded-xl text-left border text-xs ${
@@ -858,6 +1340,19 @@
             }">
               <div class="font-black">Orden Numérico (2 → 13)</div>
               <div class="text-[10px] opacity-80">Secuencia sin optimizar</div>
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <button onclick="autoOptimizeCurrentStops()" class="p-2.5 rounded-xl text-left border text-xs bg-cyan-500/20 border-cyan-400 text-white font-bold">
+              <div class="font-black">⚡ Re-Optimizar por Urgencia y Cercanía</div>
+              <div class="text-[10px] opacity-80">Prioriza vencimientos tempranos y distancia</div>
+            </button>
+            <button onclick="reorderStopsByOriginalNumbers([...state.stops].map(s=>s.originalNumber).sort((a,b)=>a-b)); renderAll();" class="p-2.5 rounded-xl text-left border text-xs bg-slate-900/80 border-slate-800 text-slate-300 font-bold">
+              <div class="font-black">Orden Numérico de Amazon Flex</div>
+              <div class="text-[10px] opacity-80">Ordenar de menor a mayor número</div>
             </button>
           </div>
         `;
@@ -987,7 +1482,9 @@
 
     function renderStopCards() {
       const preset = PRESET_ROUTES[state.activePresetId];
-      document.getElementById('route-title-heading').textContent = preset ? preset.name : 'Hoja de Ruta Táctica';
+      document.getElementById('route-title-heading').textContent = preset
+        ? preset.name
+        : `Ruta Importada de Amazon Flex (${state.stops.length} Paradas)`;
 
       const totalPkgs = state.stops.reduce((acc, s) => acc + (s.packages || 1), 0);
       const urgentCount = state.stops.filter((s) => s.urgent && !s.completed).length;
@@ -1147,6 +1644,21 @@
       renderBottomActionBar();
     }
 
+    function checkUrlAutoImport() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const importedText = params.get('import') || params.get('text');
+        const isAppend = params.get('append') === '1';
+        if (importedText && importedText.trim()) {
+          document.getElementById('raw-itinerary-textarea').value = importedText;
+          parseRawItineraryText(isAppend);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
     function initApp() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -1155,11 +1667,18 @@
           if (parsed && Array.isArray(parsed.stops) && parsed.stops.length > 0) {
             state = { ...state, ...parsed };
             renderAll();
-            return;
+          } else {
+            loadPresetRoute('miami-beach');
           }
+        } else {
+          loadPresetRoute('miami-beach');
         }
-      } catch (e) {}
-      loadPresetRoute('miami-beach');
+      } catch (e) {
+        loadPresetRoute('miami-beach');
+      }
+
+      // Si viene desde el Atajo de iPhone (?import=...), procesa e inyecta automáticamente
+      checkUrlAutoImport();
     }
 
     if ('serviceWorker' in navigator) {
