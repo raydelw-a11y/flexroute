@@ -146,8 +146,8 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <!-- BOTÓN RÁPIDO DE ESCANEO DE VIDEO O CAPTURAS DE AMAZON FLEX -->
-        <button onclick="openScreenshotPicker()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
+        <!-- BOTÓN DE ESCANEO DE VIDEO O CAPTURAS DE AMAZON FLEX (SOLO APARECE AL CREAR UNA RUTA NUEVA DESDE EL MENÚ PRINCIPAL) -->
+        <button id="header-flex-video-btn" onclick="openScreenshotPicker()" class="hidden px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
           <span>🎬📸</span>
           <span id="i18n-btn-video-flex">Flex Video / Screenshots</span>
         </button>
@@ -173,8 +173,8 @@
           <button id="tab-btn-cockpit" onclick="switchTab('cockpit')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
             Cockpit
           </button>
-          <button id="tab-btn-parser" onclick="switchTab('parser')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
-            Auto-Import
+          <button id="tab-btn-parser" onclick="startNewRouteFromMenu()" class="hidden px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
+            New Route
           </button>
           <button id="tab-btn-add" onclick="switchTab('add')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
             + Stop
@@ -225,27 +225,19 @@
           </div>
         </button>
 
+        <button onclick="startNewRouteFromMenu();" class="w-full p-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/15 hover:from-amber-500/30 hover:to-orange-500/25 border border-amber-400/40 text-left flex items-center gap-3 transition-all">
+          <span class="text-lg">✨</span>
+          <div>
+            <div id="i18n-menu-new-route" class="text-xs font-black text-amber-300">Create New Route</div>
+            <div id="i18n-menu-new-route-sub" class="text-[10px] text-slate-300">Upload Flex Video / Screenshots or paste text</div>
+          </div>
+        </button>
+
         <button onclick="switchTab('cockpit'); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
           <span class="text-base">🧭</span>
           <div>
-            <div id="i18n-menu-cockpit" class="text-xs font-bold text-slate-100">Tactical Cockpit</div>
+            <div id="i18n-menu-cockpit" class="text-xs font-bold text-slate-100">Active Route (Cockpit)</div>
             <div id="i18n-menu-cockpit-sub" class="text-[10px] text-slate-400">Station, map, live ETA &amp; stops</div>
-          </div>
-        </button>
-
-        <button onclick="openScreenshotPicker(); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
-          <span class="text-base">🎬</span>
-          <div>
-            <div id="i18n-menu-upload" class="text-xs font-bold text-amber-300">Upload Flex Video / Captures</div>
-            <div id="i18n-menu-upload-sub" class="text-[10px] text-slate-400">Scan itinerary video or screenshots</div>
-          </div>
-        </button>
-
-        <button onclick="switchTab('parser'); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
-          <span class="text-base">📋</span>
-          <div>
-            <div id="i18n-menu-parser" class="text-xs font-bold text-slate-100">Auto-Import &amp; Paste Text</div>
-            <div id="i18n-menu-parser-sub" class="text-[10px] text-slate-400">Import from clipboard or iOS Shortcut</div>
           </div>
         </button>
 
@@ -729,7 +721,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:11 PM - 11/08/2026 ↻
+        Actualizado: 06:20 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -941,12 +933,10 @@
       setTxt('i18n-menu-subtitle', 'Quick Navigation & Tools', 'Navegación Rápida y Herramientas');
       setTxt('i18n-menu-calendar', 'Route Calendar', 'Calendario de Rutas');
       setTxt('i18n-menu-calendar-sub', 'Select a day & view scheduled routes', 'Selecciona un día y mira sus rutas');
-      setTxt('i18n-menu-cockpit', 'Tactical Cockpit', 'Cabina Táctica');
+      setTxt('i18n-menu-new-route', 'Create New Route', 'Crear Ruta Nueva');
+      setTxt('i18n-menu-new-route-sub', 'Upload Flex Video / Screenshots or paste text', 'Subir Video / Capturas Flex o pegar texto');
+      setTxt('i18n-menu-cockpit', 'Active Route (Cockpit)', 'Ruta Activa (Cabina)');
       setTxt('i18n-menu-cockpit-sub', 'Station, map, live ETA & stops', 'Estación, mapa, ETA en vivo y paradas');
-      setTxt('i18n-menu-upload', 'Upload Flex Video / Captures', 'Subir Video / Capturas Flex');
-      setTxt('i18n-menu-upload-sub', 'Scan itinerary video or screenshots', 'Escanear video o capturas del itinerario');
-      setTxt('i18n-menu-parser', 'Auto-Import & Paste Text', 'Auto-Importar y Pegar Texto');
-      setTxt('i18n-menu-parser-sub', 'Import from clipboard or iOS Shortcut', 'Importar del portapapeles o Atajo iOS');
       setTxt('i18n-menu-add', 'Add Stop Manually', 'Añadir Parada Manual');
       setTxt('i18n-menu-add-sub', 'Insert address into active route', 'Insertar dirección en la ruta activa');
       setTxt('i18n-menu-map', 'Fullscreen Google Map', 'Mapa Google a Pantalla Completa');
@@ -2181,6 +2171,7 @@
       state.scheduleAnchoredAt = Date.now();
       state.currentLegStartedAt = Date.now();
       lastFittedPreset = null;
+      switchTab('cockpit');
       renderAll();
       showToast(tr(`Loaded route: ${formatShortSavedRouteLabel(fSched, state.stops.length, state.stops, found.id)}`, `Ruta cargada: ${formatShortSavedRouteLabel(fSched, state.stops.length, state.stops, found.id)}`));
     }
@@ -2353,6 +2344,7 @@
       const stopMap = new Map(preset.stops.map((s) => [s.originalNumber, { ...s, completed: false }]));
       state.stops = preset.defaultOrder.map((num) => stopMap.get(num)).filter(Boolean);
       state.selectedStopId = state.stops[0] ? state.stops[0].id : null;
+      switchTab('cockpit');
       renderAll();
     }
 
@@ -2502,17 +2494,42 @@
       showToast(tr(`Copied: ${label || text}`, `Copiado: ${label || text}`));
     }
 
+    function startNewRouteFromMenu() {
+      state.creatingNewRouteFromMenu = true;
+      toggleMainMenuDrawer(false);
+      const rawTextarea = document.getElementById('raw-itinerary-textarea');
+      if (rawTextarea) rawTextarea.value = '';
+      switchTab('parser');
+      showToast(tr('✨ Create New Route: Upload Flex Video or Screenshots', '✨ Crear Ruta Nueva: Sube Video o Capturas de Amazon Flex'));
+    }
+
     function switchTab(tabName) {
       state.activeTab = tabName;
+      if (tabName !== 'parser') {
+        state.creatingNewRouteFromMenu = false;
+      }
+      const headerFlexVideoBtn = document.getElementById('header-flex-video-btn');
+      if (headerFlexVideoBtn) {
+        if (tabName === 'parser' && state.creatingNewRouteFromMenu) {
+          headerFlexVideoBtn.classList.remove('hidden');
+        } else {
+          headerFlexVideoBtn.classList.add('hidden');
+        }
+      }
       ['cockpit', 'parser', 'add'].forEach((t) => {
         const panel = document.getElementById(`tab-panel-${t}`);
         const btn = document.getElementById(`tab-btn-${t}`);
         if (t === tabName) {
           panel.classList.remove('hidden');
-          if (btn) btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+          if (btn) {
+            if (t === 'parser') btn.classList.remove('hidden');
+            btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+          }
         } else {
           panel.classList.add('hidden');
-          if (btn) btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
+          if (btn) {
+            btn.className = `${t === 'parser' ? 'hidden ' : ''}px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white`;
+          }
         }
       });
     }
@@ -4163,7 +4180,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:11 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:20 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
