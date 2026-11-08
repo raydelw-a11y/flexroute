@@ -721,7 +721,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:28 PM - 11/08/2026 ↻
+        Actualizado: 06:31 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1797,26 +1797,21 @@
       if (scheduledEndDate.getTime() <= baseStartDate.getTime()) {
         scheduledEndDate.setDate(scheduledEndDate.getDate() + 1);
       }
-      const nowMs = Date.now();
-      const elapsedTotalSec = Math.max(0, Math.floor((nowMs - (state.scheduleAnchoredAt || nowMs)) / 1000));
-      const elapsedLegSec = Math.max(0, Math.floor((nowMs - (state.currentLegStartedAt || nowMs)) / 1000));
 
-      // El reloj activo de la ruta avanza en tiempo real segundo a segundo desde la hora configurada
-      const activeRouteClock = new Date(baseStartDate.getTime() + elapsedTotalSec * 1000);
-      // IMPORTANTE: El tiempo de completar la ruta se calcula EXCLUSIVAMENTE desde la Estación (P1)
-      // hasta la última parada a entregar (includeClosing = false, no incluye destino post-ruta)
+      // El tiempo de completar la ruta se calcula EXCLUSIVAMENTE por la distancia/ruta real desde la ubicación GPS actual del móvil
+      // (o última parada completada / Estación P1) hasta la última parada a entregar, SIN descontar segundos artificialmente si no hay movimiento
       const { waypoints, activeStops, completedStops, originPt } = getActiveWaypointsList(false);
       const cacheKey = getWaypointsCacheKey(waypoints);
       const osrmData = osrmRouteCache[cacheKey];
 
-      let runningClock = new Date(activeRouteClock.getTime());
+      let runningClock = new Date(baseStartDate.getTime());
       let totalBaseDrivingSec = 0;
       let totalTrafficDrivingSec = 0;
       let totalServiceSec = 0;
       let totalMiles = 0;
 
       const headlineTraffic = getLiveTrafficProfile(
-        activeRouteClock,
+        runningClock,
         waypoints[0],
         waypoints[1] || waypoints[0]
       );
@@ -1839,13 +1834,7 @@
         }
 
         const legTraffic = getLiveTrafficProfile(runningClock, fromPt, toPt);
-        let legWithTrafficSec = Math.round(legBaseSec * legTraffic.multiplier);
-
-        // En el tramo actual (i === 0), descontamos el tiempo que va pasando en tiempo real
-        if (i === 0 && activeStops.length > 0) {
-          legWithTrafficSec = Math.max(15, legWithTrafficSec - elapsedLegSec);
-          legBaseSec = Math.max(12, legBaseSec - Math.round(elapsedLegSec / legTraffic.multiplier));
-        }
+        const legWithTrafficSec = Math.round(legBaseSec * legTraffic.multiplier);
 
         totalMiles += legMiles;
         totalBaseDrivingSec += legBaseSec;
@@ -1875,7 +1864,7 @@
         trafficDotColor: headlineTraffic.dotColor,
         trafficBadgeCls: headlineTraffic.badgeCls,
         trafficSurgePct: headlineTraffic.surgePct,
-        activeRouteClock,
+        activeRouteClock: baseStartDate,
         estimatedFinishDate: runningClock,
         scheduledEndDate,
         bufferVsEndSec,
@@ -1888,7 +1877,6 @@
         completedCount: completedStops.length,
         totalCount: state.stops.length,
         lastStopNumber: lastActiveStop ? lastActiveStop.originalNumber : null,
-        elapsedTotalSec,
         originLabel: originPt.label,
         usingRealRoads: Boolean(osrmData)
       };
@@ -1925,7 +1913,7 @@
         return;
       }
 
-      const totalDurationStr = formatDurationHuman(t.totalRemainingSec, true);
+      const totalDurationStr = formatDurationHuman(t.totalRemainingSec, false);
       if (timeBadge) {
         timeBadge.textContent = `⏱️ ${totalDurationStr}`;
       }
@@ -1951,11 +1939,10 @@
       }
 
       const nextStop = state.stops.find((s) => !s.completed);
-      const elapsedStr = formatDurationHuman(t.elapsedTotalSec, true);
       const finishTimeStr = formatClock12h(t.estimatedFinishDate, false);
       const scheduledEndStr = formatClock12h(t.scheduledEndDate, false);
-      const activeClockStr = formatClock12h(t.activeRouteClock, true);
-      const totalDurationStr = formatDurationHuman(t.totalRemainingSec, true);
+      const activeClockStr = formatClock12h(t.activeRouteClock, false);
+      const totalDurationStr = formatDurationHuman(t.totalRemainingSec, false);
       const drivingStr = formatDurationHuman(t.totalTrafficDrivingSec, false);
       const serviceStr = formatDurationHuman(t.totalServiceSec, false);
       const delayMin = Math.max(1, Math.round(t.trafficDelaySec / 60));
@@ -2001,7 +1988,7 @@
               <span>${t.dayName} • ${t.trafficLabel} (+${t.trafficSurgePct}%)</span>
             </span>
             <span class="text-[10px] text-slate-400 font-mono">
-              ${tr('Route clock:', 'Reloj ruta:')} ${activeClockStr} • ${tr('Elapsed:', 'En curso:')} ${elapsedStr}
+              ${tr('Start:', 'Inicio:')} ${activeClockStr} • ${t.totalMiles} mi ${tr('remaining', 'restantes')}
             </span>
           </div>
         </div>
@@ -4204,7 +4191,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:28 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:31 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
