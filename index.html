@@ -93,40 +93,55 @@
   <!-- TOP COCKPIT HEADER -->
   <header class="sticky top-0 z-30 glass-card border-b border-slate-800/90 px-4 pb-3 safe-top-header">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-start gap-3">
-        <!-- ICONO DE LA APP + BOTÓN MENÚ DE 3 RAYAS HORIZONTALES JUSTO DEBAJO -->
-        <div class="flex flex-col items-center gap-1.5 shrink-0">
+      <div class="flex flex-col gap-1.5">
+        <!-- FILA 1: ICONO DE LA APP + TÍTULO FLEXROUTE -->
+        <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-500 flex items-center justify-center neon-cyan-shadow shrink-0">
             <svg class="w-5 h-5 text-slate-950 fill-slate-950" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
             </svg>
           </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-black tracking-tight text-white">
+                FlexRoute
+              </h1>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                Google Maps Direct
+              </span>
+            </div>
+            <p id="i18n-header-subtitle" class="text-[11px] text-slate-400 hidden sm:block">
+              Real-time tactical route optimizer • Auto-capture from Amazon Flex
+            </p>
+          </div>
+        </div>
+
+        <!-- FILA 2 (JUSTO DEBAJO DEL ICONO DE LA APP): BOTÓN MENÚ (☰) + A SU DERECHA TIEMPO EN VIVO (GPS MÓVIL) + GOING TO STOP # -->
+        <div class="flex flex-wrap items-center gap-2">
           <button
             id="hamburger-menu-btn"
             type="button"
             onclick="toggleMainMenuDrawer()"
             title="Menu"
             aria-label="Open Menu"
-            class="w-10 h-7 rounded-xl bg-slate-900/95 hover:bg-slate-800 border border-cyan-400/50 flex flex-col items-center justify-center gap-1 shadow-md transition-all"
+            class="w-10 h-7 rounded-xl bg-slate-900/95 hover:bg-slate-800 border border-cyan-400/50 flex flex-col items-center justify-center gap-1 shadow-md transition-all shrink-0"
           >
             <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
             <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
             <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
           </button>
-        </div>
 
-        <div class="pt-0.5">
-          <div class="flex items-center gap-2">
-            <h1 class="text-base sm:text-lg font-black tracking-tight text-white">
-              FlexRoute
-            </h1>
-            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-              Google Maps Direct
-            </span>
+          <div
+            id="header-live-gps-bar"
+            onclick="requestImmediateGpsRefresh()"
+            title="Live GPS time to complete route • Tap to refresh mobile GPS"
+            class="px-2.5 py-1 rounded-xl bg-slate-950/95 border border-cyan-400/50 flex items-center gap-2 shadow-md cursor-pointer"
+          >
+            <span id="header-gps-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+            <span id="header-live-time-badge" class="text-xs font-black text-white font-mono tracking-tight">⏱️ --m</span>
+            <span class="text-slate-600 font-bold text-xs">•</span>
+            <span id="header-going-to-stop-text" class="text-xs font-black text-cyan-300">Going to stop #--</span>
           </div>
-          <p id="i18n-header-subtitle" class="text-xs text-slate-400">
-            Real-time tactical route optimizer • Auto-capture from Amazon Flex
-          </p>
         </div>
       </div>
 
@@ -247,14 +262,6 @@
           <div>
             <div id="i18n-menu-map" class="text-xs font-bold text-slate-100">Fullscreen Google Map</div>
             <div id="i18n-menu-map-sub" class="text-[10px] text-slate-400">Open full tactical map with live traffic</div>
-          </div>
-        </button>
-
-        <button onclick="autoOptimizeCurrentStops(); toggleMainMenuDrawer(false);" class="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-left flex items-center gap-3 transition-all">
-          <span class="text-base">⚡</span>
-          <div>
-            <div id="i18n-menu-optimize" class="text-xs font-bold text-emerald-300">Auto-Optimize Sequence</div>
-            <div id="i18n-menu-optimize-sub" class="text-[10px] text-slate-400">Recalculate fastest order &amp; detours</div>
           </div>
         </button>
 
@@ -433,13 +440,17 @@
           <div id="route-live-duration-panel" class="p-3.5 rounded-xl bg-slate-950/95 border border-cyan-500/35 space-y-2.5 shadow-inner"></div>
         </div>
 
-        <!-- 1. PANEL DE DESTINO DE CIERRE Y VARIANTES TÁCTICAS (DEBAJO DE ESTACIÓN DE SALIDA) -->
-        <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-4">
-          <h3 id="i18n-dest-panel-title" class="text-xs font-black uppercase tracking-wider text-slate-300">
-            Closing Destination &amp; Tactical Variants
-          </h3>
-          <div id="strategy-controls-container" class="space-y-3"></div>
-          <div class="pt-3 border-t border-slate-800">
+        <!-- 1. PANEL DE DESTINO DE CIERRE (OPTIMIZA AUTOMÁTICAMENTE AL SELECCIONAR O EDITAR) -->
+        <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 id="i18n-dest-panel-title" class="text-xs font-black uppercase tracking-wider text-slate-300">
+              Closing Destination
+            </h3>
+            <span id="i18n-dest-auto-badge" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+              ⚡ Auto-Optimizes Route
+            </span>
+          </div>
+          <div>
             <label id="i18n-dest-label" class="block text-xs text-slate-400 font-bold mb-2">Closing Destination After Finishing Route:</label>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               <button id="endmode-home" onclick="setEndMode('home')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Home</button>
@@ -503,7 +514,6 @@
             </span>
             <div class="flex items-center gap-2">
               <span id="metrics-counter" class="text-xs text-slate-400 font-semibold">0/10 done</span>
-              <button id="i18n-btn-auto-opt" onclick="autoOptimizeCurrentStops()" class="text-[11px] text-emerald-400 hover:underline font-bold">⚡ Auto-Optimize</button>
               <button id="i18n-btn-reset-seq" onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reset</button>
             </div>
           </div>
@@ -719,7 +729,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:01 PM - 11/08/2026 ↻
+        Actualizado: 06:11 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -962,7 +972,8 @@
       setTxt('i18n-lbl-start', 'Start Time', 'Hora Comienzo');
       setTxt('i18n-lbl-end', 'End Time', 'Hora Terminar');
 
-      setTxt('i18n-dest-panel-title', 'Closing Destination & Tactical Variants', 'Destino de Cierre y Variantes Tácticas');
+      setTxt('i18n-dest-panel-title', 'Closing Destination', 'Destino de Cierre');
+      setTxt('i18n-dest-auto-badge', '⚡ Auto-Optimizes Route', '⚡ Auto-Optimiza la Ruta');
       setTxt('i18n-dest-label', 'Closing Destination After Finishing Route:', 'Destino de Cierre al Terminar la Ruta:');
       setTxt('endmode-home', 'Home', 'Home');
       setTxt('endmode-return', 'Return to P1', 'Regresar a P1');
@@ -1517,6 +1528,85 @@
       };
     }
 
+    const liveGpsState = {
+      lat: null,
+      lng: null,
+      accuracy: null,
+      speedMps: null,
+      updatedAt: 0,
+      active: false,
+      watchId: null,
+      lastOsrmOriginLat: null,
+      lastOsrmOriginLng: null
+    };
+
+    function handleMobileGpsPosition(pos) {
+      if (!pos || !pos.coords) return;
+      const lat = Number(pos.coords.latitude);
+      const lng = Number(pos.coords.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+      liveGpsState.lat = lat;
+      liveGpsState.lng = lng;
+      liveGpsState.accuracy = Number(pos.coords.accuracy) || null;
+      liveGpsState.speedMps = Number.isFinite(pos.coords.speed) ? pos.coords.speed : null;
+      liveGpsState.updatedAt = Date.now();
+      liveGpsState.active = true;
+
+      const movedMiles =
+        liveGpsState.lastOsrmOriginLat !== null && liveGpsState.lastOsrmOriginLng !== null
+          ? haversineMiles(liveGpsState.lastOsrmOriginLat, liveGpsState.lastOsrmOriginLng, lat, lng)
+          : 999;
+
+      if (movedMiles > 0.015) {
+        liveGpsState.lastOsrmOriginLat = lat;
+        liveGpsState.lastOsrmOriginLng = lng;
+        state.currentLegStartedAt = Date.now();
+        fetchOsrmRouteForActiveStops();
+        renderSvgMap();
+      }
+      updateLiveTelemetryTick();
+    }
+
+    function startLiveMobileGpsTracking() {
+      if (!('geolocation' in navigator)) return;
+      try {
+        navigator.geolocation.getCurrentPosition(
+          handleMobileGpsPosition,
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 4000, timeout: 10000 }
+        );
+        if (liveGpsState.watchId !== null) {
+          navigator.geolocation.clearWatch(liveGpsState.watchId);
+        }
+        liveGpsState.watchId = navigator.geolocation.watchPosition(
+          handleMobileGpsPosition,
+          () => {},
+          { enableHighAccuracy: true, maximumAge: 2500, timeout: 12000 }
+        );
+      } catch (e) {}
+    }
+
+    function requestImmediateGpsRefresh() {
+      if (!('geolocation' in navigator)) {
+        showToast(tr('GPS not available on this device', 'GPS no disponible en este dispositivo'));
+        return;
+      }
+      showToast(tr('📍 Refreshing live mobile GPS...', '📍 Actualizando ubicación GPS en vivo...'));
+      try {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            handleMobileGpsPosition(pos);
+            showToast(tr('📍 Live GPS updated!', '📍 ¡Ubicación GPS en vivo actualizada!'));
+          },
+          () => {
+            showToast(tr('Enable Location Permission for live GPS', 'Activa permiso de ubicación para GPS en vivo'));
+          },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
+        );
+      } catch (e) {}
+    }
+
     function getStationCoordinates() {
       return {
         lat: 25.8219,
@@ -1536,7 +1626,8 @@
         lat: stationCoords.lat,
         lng: stationCoords.lng,
         label: stationCoords.label,
-        originalNumber: 1
+        originalNumber: 1,
+        isLiveGps: false
       };
       if (completedStops.length > 0) {
         const lastDone = completedStops[completedStops.length - 1];
@@ -1544,8 +1635,25 @@
           lat: lastDone.lat,
           lng: lastDone.lng,
           originalNumber: lastDone.originalNumber,
-          label: `Parada ${lastDone.originalNumber} (Última entregada)`
+          label: `Parada ${lastDone.originalNumber} (Última entregada)`,
+          isLiveGps: false
         };
+      }
+
+      // Si el dispositivo móvil reporta ubicación GPS en tiempo real (dentro de un radio operativo razonable de las paradas),
+      // usamos la ubicación real del móvil como punto de partida en vivo hacia la siguiente parada (Going to stop #)
+      if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
+        const refStop = activeStops[0] || stationCoords;
+        const distFromRouteMiles = haversineMiles(liveGpsState.lat, liveGpsState.lng, refStop.lat, refStop.lng);
+        if (distFromRouteMiles <= 120) {
+          originPt = {
+            lat: liveGpsState.lat,
+            lng: liveGpsState.lng,
+            originalNumber: completedStops.length > 0 ? completedStops[completedStops.length - 1].originalNumber : 1,
+            label: tr('Live Mobile GPS', 'Ubicación Móvil GPS en Vivo'),
+            isLiveGps: true
+          };
+        }
       }
 
       const waypoints = [originPt];
@@ -1808,11 +1916,39 @@
       return hh * 60 + mm;
     }
 
+    function renderHeaderLiveGpsBar(telemetry) {
+      const t = telemetry || computeRouteTelemetry();
+      const timeBadge = document.getElementById('header-live-time-badge');
+      const goingText = document.getElementById('header-going-to-stop-text');
+      const gpsDot = document.getElementById('header-gps-dot');
+      const nextStop = state.stops.find((s) => !s.completed);
+
+      if (gpsDot) {
+        gpsDot.className = liveGpsState.active
+          ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0'
+          : 'w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0';
+      }
+
+      if (!nextStop || t.activeCount === 0) {
+        if (timeBadge) timeBadge.textContent = '⏱️ 0m';
+        if (goingText) goingText.textContent = tr('Route Completed ✓', 'Ruta Completada ✓');
+        return;
+      }
+
+      const totalDurationStr = formatDurationHuman(t.totalRemainingSec, true);
+      if (timeBadge) {
+        timeBadge.textContent = `⏱️ ${totalDurationStr}`;
+      }
+      if (goingText) {
+        goingText.textContent = `Going to stop #${nextStop.originalNumber}`;
+      }
+    }
+
     function renderLiveDurationPanel() {
       const panel = document.getElementById('route-live-duration-panel');
-      if (!panel) return;
-
       const t = computeRouteTelemetry();
+      renderHeaderLiveGpsBar(t);
+      if (!panel) return;
 
       if (t.activeCount === 0) {
         panel.innerHTML = `
@@ -1824,6 +1960,7 @@
         return;
       }
 
+      const nextStop = state.stops.find((s) => !s.completed);
       const elapsedStr = formatDurationHuman(t.elapsedTotalSec, true);
       const finishTimeStr = formatClock12h(t.estimatedFinishDate, false);
       const scheduledEndStr = formatClock12h(t.scheduledEndDate, false);
@@ -1839,22 +1976,28 @@
         ? `<span class="px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-[11px] font-extrabold text-emerald-300">✓ ${tr(`Block ends ${scheduledEndStr} (${bufferMin}m ahead)`, `Cierre bloque ${scheduledEndStr} (${bufferMin}m a favor)`)}</span>`
         : `<span class="px-2 py-0.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[11px] font-extrabold text-rose-300">⚠️ ${tr(`+${bufferMin}m over ${scheduledEndStr}`, `+${bufferMin}m sobre cierre ${scheduledEndStr}`)}</span>`;
 
+      const gpsOriginTag = liveGpsState.active
+        ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-[10px] font-black text-emerald-300">📍 ${tr('Live Mobile GPS', 'GPS Móvil en Vivo')}</span>`
+        : `<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/30 text-[10px] font-bold text-cyan-300">📍 ${tr('Station P1 / Active Route', 'Estación P1 / Ruta Activa')}</span>`;
+
       panel.innerHTML = `
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <div class="flex items-center gap-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
               <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">
                 ${tr(
-                  `Time to Complete Route (Station P1 → Last Stop #${t.lastStopNumber || t.totalCount})`,
-                  `Tiempo para Completar Ruta (Estación P1 → Última Parada #${t.lastStopNumber || t.totalCount})`
+                  `Live Time to Complete Route → Stop #${t.lastStopNumber || t.totalCount}`,
+                  `Tiempo en Vivo para Completar Ruta → Parada #${t.lastStopNumber || t.totalCount}`
                 )}
               </span>
+              ${gpsOriginTag}
             </div>
             <div class="flex flex-wrap items-baseline gap-2 mt-0.5">
               <span class="text-lg sm:text-xl font-black text-white font-mono tracking-tight">
                 ⏱️ ${totalDurationStr}
               </span>
+              ${nextStop ? `<span class="px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-xs font-black text-amber-300">Going to stop #${nextStop.originalNumber}</span>` : ''}
               <span class="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-xs font-black text-cyan-300">
                 🏁 ${tr('Last delivery:', 'Última entrega:')} ${finishTimeStr}
               </span>
@@ -2266,15 +2409,46 @@
       state.stops = ordered;
     }
 
+    function getClosingTargetCoordinates() {
+      if (state.endMode === 'home') {
+        return { lat: HOME_CLOSING_COORDS.lat, lng: HOME_CLOSING_COORDS.lng, label: 'Home' };
+      }
+      if (state.endMode === 'return_to_start') {
+        const st = getStationCoordinates();
+        return { lat: st.lat, lng: st.lng, label: 'Station P1' };
+      }
+      if (state.endMode === 'brickell') {
+        return { lat: 25.7617, lng: -80.1918, label: 'Brickell' };
+      }
+      if (state.endMode === 'custom' && state.customEndAddress && state.customEndAddress.trim().length >= 3) {
+        const est = estimateCoordinatesFromAddress(state.customEndAddress.trim(), 'Miami, FL', 0);
+        return { lat: est.lat, lng: est.lng, label: state.customEndAddress.trim() };
+      }
+      return null;
+    }
+
+    let customEndOptimizeTimer = null;
+
     function setEndMode(mode) {
       state.endMode = mode;
-      renderAll();
+      if (mode !== 'custom' || (state.customEndAddress && state.customEndAddress.trim().length >= 3)) {
+        autoOptimizeCurrentStops(true);
+      } else {
+        renderAll();
+      }
     }
 
     function updateCustomEndAddress(val) {
       state.customEndAddress = val.trim();
-      renderMultiStopLinks();
-      renderSequencePills();
+      if (customEndOptimizeTimer) clearTimeout(customEndOptimizeTimer);
+      customEndOptimizeTimer = setTimeout(() => {
+        if (state.endMode === 'custom' && state.customEndAddress.length >= 3) {
+          autoOptimizeCurrentStops(true);
+        } else {
+          renderMultiStopLinks();
+          renderSequencePills();
+        }
+      }, 280);
     }
 
     function toggleStopCompleted(stopId, ev) {
@@ -2861,58 +3035,155 @@
       const normalStops = stopsArray.filter((s) => !s.urgent && !s.completed);
       const completedStops = stopsArray.filter((s) => s.completed);
 
-      const orderByNearest = (list, startLat, startLng, startNum = null) => {
-        const remaining = [...list];
-        const ordered = [];
-        let curLat = startLat;
-        let curLng = startLng;
-        let curNum = startNum;
-        while (remaining.length > 0) {
-          let bestIdx = 0;
-          let bestDist = Infinity;
-          for (let i = 0; i < remaining.length; i++) {
-            const cand = remaining[i];
-            const dLat = cand.lat - curLat;
-            const dLng = cand.lng - curLng;
-            let dist = dLat * dLat + dLng * dLng;
-            // Si la calle directa entre curNum y cand.originalNumber está clausurada (ej. 8 ↔ 6),
-            // penalizar para que el optimizador no encadene 8 → 6 directamente si hay otra parada intermedia abierta
-            if (curNum && isClosedStreetBetweenNumbers(curNum, cand.originalNumber)) {
-              dist = dist * 6.5 + 0.00045;
-            }
-            if (dist < bestDist) {
-              bestDist = dist;
-              bestIdx = i;
-            }
-          }
-          const next = remaining.splice(bestIdx, 1)[0];
-          ordered.push(next);
-          curLat = next.lat;
-          curLng = next.lng;
-          curNum = next.originalNumber;
+      const stationCoords = getStationCoordinates();
+      let originPt = { lat: stationCoords.lat, lng: stationCoords.lng, originalNumber: 1 };
+      if (completedStops.length > 0) {
+        const lastDone = completedStops[completedStops.length - 1];
+        originPt = { lat: lastDone.lat, lng: lastDone.lng, originalNumber: lastDone.originalNumber };
+      } else if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
+        const refStop = stopsArray[0] || stationCoords;
+        if (haversineMiles(liveGpsState.lat, liveGpsState.lng, refStop.lat, refStop.lng) <= 120) {
+          originPt = { lat: liveGpsState.lat, lng: liveGpsState.lng, originalNumber: 1 };
         }
-        return ordered;
+      }
+
+      const closingTarget = getClosingTargetCoordinates();
+
+      const stepCost = (lat1, lng1, num1, lat2, lng2, num2) => {
+        let d = Math.hypot(lat2 - lat1, lng2 - lng1);
+        // Penalizar fuertemente calles clausuradas (ej. 8 ↔ 6) para nunca encadenarlas directo
+        if (num1 && num2 && isClosedStreetBetweenNumbers(num1, num2)) {
+          d = d * 6.5 + 0.04;
+        }
+        return d;
       };
 
-      const orderedUrgent = orderByNearest(urgentStops, 25.82, -80.26, 1);
+      const orderSublist = (list, startLat, startLng, startNum, endTarget) => {
+        if (list.length <= 1) return [...list];
+
+        const buildGreedyFromSeed = (seedIdx) => {
+          const remaining = [...list];
+          const first = remaining.splice(seedIdx, 1)[0];
+          const ordered = [first];
+          let curLat = first.lat;
+          let curLng = first.lng;
+          let curNum = first.originalNumber;
+          while (remaining.length > 0) {
+            let bestIdx = 0;
+            let bestScore = Infinity;
+            for (let i = 0; i < remaining.length; i++) {
+              const cand = remaining[i];
+              const dCur = stepCost(curLat, curLng, curNum, cand.lat, cand.lng, cand.originalNumber);
+              const dEnd =
+                endTarget && remaining.length > 1
+                  ? Math.hypot(cand.lat - endTarget.lat, cand.lng - endTarget.lng)
+                  : 0;
+              const score = dCur - 0.32 * dEnd;
+              if (score < bestScore) {
+                bestScore = score;
+                bestIdx = i;
+              }
+            }
+            const next = remaining.splice(bestIdx, 1)[0];
+            ordered.push(next);
+            curLat = next.lat;
+            curLng = next.lng;
+            curNum = next.originalNumber;
+          }
+          return ordered;
+        };
+
+        const seqCost = (arr) => {
+          const startWeight = endTarget ? 0.25 : 1.0;
+          let total = startWeight * stepCost(startLat, startLng, startNum, arr[0].lat, arr[0].lng, arr[0].originalNumber);
+          for (let i = 0; i < arr.length - 1; i++) {
+            total += stepCost(
+              arr[i].lat,
+              arr[i].lng,
+              arr[i].originalNumber,
+              arr[i + 1].lat,
+              arr[i + 1].lng,
+              arr[i + 1].originalNumber
+            );
+          }
+          if (endTarget) {
+            const last = arr[arr.length - 1];
+            total += 1.65 * Math.hypot(last.lat - endTarget.lat, last.lng - endTarget.lng);
+          }
+          return total;
+        };
+
+        let bestOverall = null;
+        let bestOverallCost = Infinity;
+        for (let sIdx = 0; sIdx < list.length; sIdx++) {
+          const candidateSeq = buildGreedyFromSeed(sIdx);
+          let improved = true;
+          let iter = 0;
+          while (improved && iter < 25) {
+            improved = false;
+            iter++;
+            let currentBest = seqCost(candidateSeq);
+            for (let i = 0; i < candidateSeq.length - 1; i++) {
+              for (let k = i + 1; k < candidateSeq.length; k++) {
+                const rev = [
+                  ...candidateSeq.slice(0, i),
+                  ...candidateSeq.slice(i, k + 1).reverse(),
+                  ...candidateSeq.slice(k + 1)
+                ];
+                const cCost = seqCost(rev);
+                if (cCost + 1e-6 < currentBest) {
+                  candidateSeq.splice(0, candidateSeq.length, ...rev);
+                  currentBest = cCost;
+                  improved = true;
+                }
+              }
+            }
+          }
+          const finalC = seqCost(candidateSeq);
+          if (finalC < bestOverallCost) {
+            bestOverallCost = finalC;
+            bestOverall = candidateSeq;
+          }
+        }
+        return bestOverall || [...list];
+      };
+
+      const orderedUrgent = orderSublist(
+        urgentStops,
+        originPt.lat,
+        originPt.lng,
+        originPt.originalNumber,
+        normalStops.length === 0 ? closingTarget : null
+      );
       const lastUrgent = orderedUrgent[orderedUrgent.length - 1];
-      const orderedNormal = orderByNearest(
+      const orderedNormal = orderSublist(
         normalStops,
-        lastUrgent ? lastUrgent.lat : 25.82,
-        lastUrgent ? lastUrgent.lng : -80.26,
-        lastUrgent ? lastUrgent.originalNumber : 1
+        lastUrgent ? lastUrgent.lat : originPt.lat,
+        lastUrgent ? lastUrgent.lng : originPt.lng,
+        lastUrgent ? lastUrgent.originalNumber : originPt.originalNumber,
+        closingTarget
       );
 
       return [...orderedUrgent, ...orderedNormal, ...completedStops];
     }
 
-    function autoOptimizeCurrentStops() {
+    function autoOptimizeCurrentStops(fromClosingChange = false) {
       state.stops = autoOptimizeStopsList(state.stops);
+      if (state.stops.length > 0) {
+        const firstActive = state.stops.find((s) => !s.completed) || state.stops[0];
+        state.selectedStopId = firstActive.id;
+      }
       const seqStr = state.stops.map((s) => s.originalNumber).join(' → ');
-      state.tacticalNotes = `Secuencia Táctica Auto-Optimizada (${seqStr}): Evita calles clausuradas (8 ↔ 6) y prioriza entregas urgentes sin retrocesos.`;
+      const destLabel = getFinalDestinationVisualLabel() || tr('No extra closing', 'Sin cierre extra');
+      state.tacticalNotes = `Auto-Optimized Sequence (${seqStr}) → Closing: ${destLabel}. Avoids closed street (8 ↔ 6) & prioritizes urgent stops.`;
+      state.tacticalNotesEs = `Secuencia Auto-Optimizada (${seqStr}) → Cierre: ${destLabel}. Evita calle clausurada (8 ↔ 6) y prioriza paradas urgentes.`;
       Object.keys(osrmRouteCache).forEach((k) => delete osrmRouteCache[k]);
       renderAll();
-      showToast('Ruta optimizada evitando calles clausuradas ⚡');
+      showToast(
+        fromClosingChange
+          ? tr(`⚡ Route auto-optimized for closing: ${destLabel}`, `⚡ Ruta optimizada automáticamente hacia: ${destLabel}`)
+          : tr('⚡ Route optimized avoiding closed streets', '⚡ Ruta optimizada evitando calles clausuradas')
+      );
     }
 
     function handleAddStopSubmit(e) {
@@ -3221,87 +3492,6 @@
     }
 
     function renderStrategyControls() {
-      const container = document.getElementById('strategy-controls-container');
-      if (state.activePresetId === 'miami-beach') {
-        container.innerHTML = `
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-            <button onclick="applyMiamiBeachVariant('option-b')" class="p-2 rounded-xl text-left border text-xs ${
-              state.activeVariant === 'option-b'
-                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400'
-            }">
-              <div class="font-black">${tr('Option B (South → North)', 'Opción B (Sur → Norte)')}</div>
-              <div class="text-[10px] opacity-80">5 → Venetian → Collins</div>
-            </button>
-            <button onclick="applyMiamiBeachVariant('option-a')" class="p-2 rounded-xl text-left border text-xs ${
-              state.activeVariant === 'option-a'
-                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400'
-            }">
-              <div class="font-black">${tr('Option A (Venetian 1st)', 'Opción A (Venetian 1º)')}</div>
-              <div class="text-[10px] opacity-80">6..11 → 5 → Collins</div>
-            </button>
-            <button onclick="applyMiamiBeachVariant('original')" class="p-2 rounded-xl text-left border text-xs ${
-              state.activeVariant === 'original'
-                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400'
-            }">
-              <div class="font-black">${tr('Original Order', 'Orden Original')}</div>
-              <div class="text-[10px] opacity-80">2 → 3 → 4 ... → 11</div>
-            </button>
-          </div>
-          <div class="flex items-center justify-between gap-2 pt-1">
-            <span class="text-xs text-slate-400 font-semibold">${tr('Belle Isle Sweep:', 'Barrido en Belle Isle:')}</span>
-            <div class="flex gap-1.5">
-              <button onclick="applyMiamiBeachVariant(null, '11-10-9')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
-                state.belleIsleMode === '11-10-9'
-                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
-                  : 'bg-slate-900 border-slate-800 text-slate-400'
-              }">${tr('11 → 10 → 9 (Green Light)', '11 → 10 → 9 (Luz Verde)')}</button>
-              <button onclick="applyMiamiBeachVariant(null, '9-10-11')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
-                state.belleIsleMode === '9-10-11'
-                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
-                  : 'bg-slate-900 border-slate-800 text-slate-400'
-              }">9 → 10 → 11</button>
-            </div>
-          </div>
-        `;
-      } else if (state.activePresetId === 'hialeah-brickell') {
-        container.innerHTML = `
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            <button onclick="applyHialeahVariant('optimized')" class="p-2.5 rounded-xl text-left border text-xs ${
-              state.activeVariant === 'optimized'
-                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400'
-            }">
-              <div class="font-black">${tr('North → South Tactical (Recommended)', 'Norte → Sur Táctico (Recomendado)')}</div>
-              <div class="text-[10px] opacity-80">${tr('Inverts 4→3, 7→6 (#3234) & 13→12', 'Invierte 4→3, 7→6 (#3234) y 13→12')}</div>
-            </button>
-            <button onclick="applyHialeahVariant('original')" class="p-2.5 rounded-xl text-left border text-xs ${
-              state.activeVariant === 'original'
-                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
-                : 'bg-slate-900/80 border-slate-800 text-slate-400'
-            }">
-              <div class="font-black">${tr('Numerical Order (2 → 13)', 'Orden Numérico (2 → 13)')}</div>
-              <div class="text-[10px] opacity-80">${tr('Unoptimized sequence', 'Secuencia sin optimizar')}</div>
-            </button>
-          </div>
-        `;
-      } else {
-        container.innerHTML = `
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            <button onclick="autoOptimizeCurrentStops()" class="p-2.5 rounded-xl text-left border text-xs bg-cyan-500/20 border-cyan-400 text-white font-bold">
-              <div class="font-black">${tr('⚡ Re-Optimize (Avoid Closed St 8 ↔ 6)', '⚡ Re-Optimizar (Evitando Calle 8 ↔ 6)')}</div>
-              <div class="text-[10px] opacity-80">${tr('Prioritizes deadlines & bypasses closed streets', 'Prioriza vencimientos y desvía calles clausuradas')}</div>
-            </button>
-            <button onclick="reorderStopsByOriginalNumbers([...state.stops].map(s=>s.originalNumber).sort((a,b)=>a-b)); renderAll();" class="p-2.5 rounded-xl text-left border text-xs bg-slate-900/80 border-slate-800 text-slate-300 font-bold">
-              <div class="font-black">${tr('Amazon Flex Numerical Order', 'Orden Numérico de Amazon Flex')}</div>
-              <div class="text-[10px] opacity-80">${tr('Sort stops from lowest to highest number', 'Ordenar de menor a mayor número')}</div>
-            </button>
-          </div>
-        `;
-      }
-
       const modeMap = {
         return_to_start: 'endmode-return',
         brickell: 'endmode-brickell',
@@ -3321,13 +3511,15 @@
 
       const customWrapper = document.getElementById('custom-end-wrapper');
       const customInput = document.getElementById('custom-end-input');
-      if (state.endMode === 'custom') {
-        customWrapper.classList.remove('hidden');
-        if (customInput.value !== state.customEndAddress) {
-          customInput.value = state.customEndAddress;
+      if (customWrapper && customInput) {
+        if (state.endMode === 'custom') {
+          customWrapper.classList.remove('hidden');
+          if (customInput.value !== state.customEndAddress) {
+            customInput.value = state.customEndAddress;
+          }
+        } else {
+          customWrapper.classList.add('hidden');
         }
-      } else {
-        customWrapper.classList.add('hidden');
       }
     }
 
@@ -3462,23 +3654,39 @@
       return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
     }
 
+    // Escala perceptual de 9 anclas (Rojo Carmesí → Escarlata → Naranja Mandarina → Ámbar → Amarillo Puro en t=0.50 → Lima Limón → Verde Manzana → Verde Esmeralda → Verde Bosque)
+    // Garantiza que cada parada consecutiva tenga un color claramente distinguible y que la parada exacta de la mitad sea Amarillo Puro
+    const PERCEPTUAL_GRADIENT_STOPS = [
+      { t: 0.00, r: 175, g: 18,  b: 34  }, // #af1222 Rojo Carmesí Profundo (Parada #1)
+      { t: 0.12, r: 239, g: 55,  b: 42  }, // #ef372a Rojo Escarlata Vivo
+      { t: 0.25, r: 250, g: 100, b: 18  }, // #fa6412 Naranja Mandarina
+      { t: 0.38, r: 247, g: 158, b: 12  }, // #f79e0c Ámbar Dorado
+      { t: 0.50, r: 253, g: 216, b: 16  }, // #fdd810 Amarillo Puro Vibrante (Mitad Exacta de la Ruta)
+      { t: 0.62, r: 190, g: 238, b: 48  }, // #beee30 Verde Lima Limón
+      { t: 0.75, r: 112, g: 214, b: 42  }, // #70d62a Verde Manzana Fresco
+      { t: 0.88, r: 34,  g: 186, b: 92  }, // #22ba5c Verde Esmeralda Medio
+      { t: 1.00, r: 6,   g: 108, b: 68  }  // #066c44 Verde Bosque Intenso (Última Parada)
+    ];
+
+    function rgbToHex(r, g, b) {
+      const toH = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+      return `#${toH(r)}${toH(g)}${toH(b)}`;
+    }
+
     function getColorMetaFromProgress(tRaw) {
       const t = Math.max(0, Math.min(1, tRaw));
-      let h, s, l;
-      if (t <= 0.5) {
-        // Primera mitad: de Rojo Intenso (h=0) en t=0 a Amarillo Puro Vibrante (h=50, s=98, l=50) justo en la mitad (t=0.5)
-        const u = t / 0.5;
-        h = Math.round(50 * u);
-        s = Math.round(92 + 6 * u);
-        l = Math.round(48 + 2 * u);
-      } else {
-        // Segunda mitad: de Amarillo Puro Vibrante (h=50) en t=0.5 a Verde Intenso (h=140, s=88, l=42) al final (t=1.0)
-        const u = (t - 0.5) / 0.5;
-        h = Math.round(50 + 90 * u);
-        s = Math.round(98 - 10 * u);
-        l = Math.round(50 - 8 * u);
+      let i = 0;
+      while (i < PERCEPTUAL_GRADIENT_STOPS.length - 2 && t > PERCEPTUAL_GRADIENT_STOPS[i + 1].t) {
+        i++;
       }
-      return { t, h, s, l, hex: hslToHex(h, s, l) };
+      const a = PERCEPTUAL_GRADIENT_STOPS[i];
+      const b = PERCEPTUAL_GRADIENT_STOPS[i + 1];
+      const span = Math.max(0.0001, b.t - a.t);
+      const u = Math.max(0, Math.min(1, (t - a.t) / span));
+      const r = Math.round(a.r + (b.r - a.r) * u);
+      const g = Math.round(a.g + (b.g - a.g) * u);
+      const bl = Math.round(a.b + (b.b - a.b) * u);
+      return { t, r, g, b: bl, hex: rgbToHex(r, g, bl) };
     }
 
     function getStopColorMeta(idx, total) {
@@ -3501,10 +3709,7 @@
         const t = fromMeta.t + (toMeta.t - fromMeta.t) * clamped;
         return getColorMetaFromProgress(t).hex;
       }
-      const h = fromMeta.h + (toMeta.h - fromMeta.h) * clamped;
-      const s = fromMeta.s + (toMeta.s - fromMeta.s) * clamped;
-      const l = fromMeta.l + (toMeta.l - fromMeta.l) * clamped;
-      return hslToHex(h, s, l);
+      return fromMeta.hex || '#fdd810';
     }
 
     function subdivideCoordinatePath(coords, minPoints = 18) {
@@ -3631,6 +3836,18 @@
         L.marker(p1Coords, { icon: p1Icon })
           .bindPopup(`<div class="text-xs font-bold">${tr('Stop 1 (Departure)', 'Parada 1 (Salida)')}<br/><span class="font-normal text-slate-300">${station.address || state.pickupAddress}</span></div>`)
           .addTo(googleMarkersLayer);
+
+        if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
+          const gpsIcon = L.divIcon({
+            className: '',
+            html: `<div style="width:22px;height:22px;border-radius:9999px;background:#06b6d4;border:3px solid #ffffff;box-shadow:0 0 0 6px rgba(6,182,212,0.35),0 2px 8px rgba(0,0,0,0.6);"></div>`,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+          });
+          L.marker([liveGpsState.lat, liveGpsState.lng], { icon: gpsIcon, zIndexOffset: 1500 })
+            .bindPopup(`<div class="text-xs font-black text-cyan-400">📍 ${tr('Your Live Mobile Location', 'Tu Ubicación Móvil en Vivo')}</div>`)
+            .addTo(googleMarkersLayer);
+        }
 
         const totalStops = state.stops.length;
         state.stops.forEach((stop, idx) => {
@@ -3946,7 +4163,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:01 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:11 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
@@ -4035,6 +4252,9 @@
         state.langInitializedV1 = true;
         loadPresetRoute('dmi9-kendall');
       }
+
+      // Iniciar rastreo GPS móvil en tiempo real para calcular el tiempo de ruta desde la posición actual del dispositivo
+      startLiveMobileGpsTracking();
 
       // Actualizar en tiempo real cada 1 segundo (reloj activo, tráfico y descuento de tiempo en vivo)
       setInterval(updateLiveTelemetryTick, 1000);
