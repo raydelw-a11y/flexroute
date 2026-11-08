@@ -721,7 +721,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:50 PM - 11/08/2026 ↻
+        Actualizado: 06:52 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1630,20 +1630,16 @@
         };
       }
 
-      // Si el dispositivo móvil reporta ubicación GPS en tiempo real (dentro de un radio operativo razonable de las paradas),
-      // usamos la ubicación real del móvil como punto de partida en vivo hacia la siguiente parada (Going to stop #)
+      // Si el dispositivo móvil reporta ubicación GPS en tiempo real, usamos la ubicación actual en tiempo real
+      // como punto de partida hacia la siguiente parada (Going to stop #)
       if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
-        const refStop = activeStops[0] || stationCoords;
-        const distFromRouteMiles = haversineMiles(liveGpsState.lat, liveGpsState.lng, refStop.lat, refStop.lng);
-        if (distFromRouteMiles <= 120) {
-          originPt = {
-            lat: liveGpsState.lat,
-            lng: liveGpsState.lng,
-            originalNumber: completedStops.length > 0 ? completedStops[completedStops.length - 1].originalNumber : 1,
-            label: tr('Live Mobile GPS', 'Ubicación Móvil GPS en Vivo'),
-            isLiveGps: true
-          };
-        }
+        originPt = {
+          lat: liveGpsState.lat,
+          lng: liveGpsState.lng,
+          originalNumber: completedStops.length > 0 ? completedStops[completedStops.length - 1].originalNumber : 1,
+          label: tr('Live Mobile GPS', 'Ubicación Móvil GPS en Vivo'),
+          isLiveGps: true
+        };
       }
 
       const waypoints = [originPt];
@@ -1809,6 +1805,9 @@
       let totalTrafficDrivingSec = 0;
       let totalServiceSec = 0;
       let totalMiles = 0;
+      let initialLegDriveSec = 0;
+      let initialLegMiles = 0;
+      let firstStopReached = false;
 
       const headlineTraffic = getLiveTrafficProfile(
         runningClock,
@@ -1836,6 +1835,11 @@
         const legTraffic = getLiveTrafficProfile(runningClock, fromPt, toPt);
         const legWithTrafficSec = Math.round(legBaseSec * legTraffic.multiplier);
 
+        if (!firstStopReached) {
+          initialLegDriveSec += legWithTrafficSec;
+          initialLegMiles += legMiles;
+        }
+
         totalMiles += legMiles;
         totalBaseDrivingSec += legBaseSec;
         totalTrafficDrivingSec += legWithTrafficSec;
@@ -1843,8 +1847,13 @@
         runningClock = new Date(runningClock.getTime() + legWithTrafficSec * 1000);
 
         if (toPt.stop) {
+          if (!firstStopReached) {
+            firstStopReached = true;
+            toPt.stop.liveLegMin = Math.max(1, Math.round(initialLegDriveSec / 60));
+          } else {
+            toPt.stop.liveLegMin = Math.max(1, Math.round(legWithTrafficSec / 60));
+          }
           toPt.stop.liveEtaDate = new Date(runningClock.getTime());
-          toPt.stop.liveLegMin = Math.max(1, Math.round(legWithTrafficSec / 60));
           toPt.stop.liveTrafficPct = legTraffic.surgePct;
 
           const svcSec = estimateStopServiceSeconds(toPt.stop);
@@ -1856,6 +1865,7 @@
       const totalRemainingSec = totalTrafficDrivingSec + totalServiceSec;
       const trafficDelaySec = Math.max(0, totalTrafficDrivingSec - totalBaseDrivingSec);
       const bufferVsEndSec = Math.round((scheduledEndDate.getTime() - runningClock.getTime()) / 1000);
+      const firstActiveStop = activeStops.length > 0 ? activeStops[0] : null;
       const lastActiveStop = activeStops.length > 0 ? activeStops[activeStops.length - 1] : null;
 
       return {
@@ -1873,6 +1883,9 @@
         totalServiceSec,
         trafficDelaySec,
         totalMiles: Number(totalMiles.toFixed(1)),
+        initialLegDriveSec,
+        initialLegMiles: Number(initialLegMiles.toFixed(1)),
+        nextStopNumber: firstActiveStop ? firstActiveStop.originalNumber : null,
         activeCount: activeStops.length,
         completedCount: completedStops.length,
         totalCount: state.stops.length,
@@ -1943,6 +1956,7 @@
       const scheduledEndStr = formatClock12h(t.scheduledEndDate, false);
       const activeClockStr = formatClock12h(t.activeRouteClock, false);
       const totalDurationStr = formatDurationHuman(t.totalRemainingSec, false);
+      const initialDriveStr = formatDurationHuman(t.initialLegDriveSec || t.totalTrafficDrivingSec, false);
       const drivingStr = formatDurationHuman(t.totalTrafficDrivingSec, false);
       const serviceStr = formatDurationHuman(t.totalServiceSec, false);
       const delayMin = Math.max(1, Math.round(t.trafficDelaySec / 60));
@@ -1955,7 +1969,7 @@
 
       const gpsOriginTag = liveGpsState.active
         ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-[10px] font-black text-emerald-300">📍 ${tr('Live Mobile GPS', 'GPS Móvil en Vivo')}</span>`
-        : `<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/30 text-[10px] font-bold text-cyan-300">📍 ${tr('Station P1 / Active Route', 'Estación P1 / Ruta Activa')}</span>`;
+        : `<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/30 text-[10px] font-bold text-cyan-300">📍 ${tr('Current Origin', 'Ubicación Actual')}</span>`;
 
       panel.innerHTML = `
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -1988,15 +2002,15 @@
               <span>${t.dayName} • ${t.trafficLabel} (+${t.trafficSurgePct}%)</span>
             </span>
             <span class="text-[10px] text-slate-400 font-mono">
-              ${tr('Start:', 'Inicio:')} ${activeClockStr} • ${t.totalMiles} mi ${tr('remaining', 'restantes')}
+              ${tr('Total drive:', 'Manejo total:')} ${drivingStr} (${t.totalMiles} mi)
             </span>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-800/90 text-[11px]">
-          <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-            <span class="text-slate-400 font-semibold">🚗 ${tr('Drive P1→#', 'Manejo P1→#')}${t.lastStopNumber || t.totalCount} (${t.totalMiles} mi):</span>
-            <span class="font-black text-white">${drivingStr}</span>
+          <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-cyan-500/35 flex items-center justify-between">
+            <span class="text-cyan-300 font-bold">🚗 ${tr('Drive Now → Stop #', 'Manejo Actual → Parada #')}${t.nextStopNumber || (nextStop ? nextStop.originalNumber : '')} (${t.initialLegMiles} mi):</span>
+            <span class="font-black text-white">${initialDriveStr}</span>
           </div>
           <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
             <span class="text-slate-400 font-semibold">📦 ${tr(`At ${t.activeCount} stops:`, `En ${t.activeCount} paradas:`)}</span>
@@ -4213,7 +4227,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:50 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:52 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
