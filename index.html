@@ -721,7 +721,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:31 PM - 11/08/2026 ↻
+        Actualizado: 06:39 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -2012,6 +2012,15 @@
 
     function updateStopCardsLiveEtaBadges() {
       state.stops.forEach((stop) => {
+        const mapEtaEl = document.getElementById(`map-pin-eta-${stop.id}`);
+        if (mapEtaEl) {
+          if (stop.completed) {
+            mapEtaEl.textContent = tr('✓ Done', '✓ Lista');
+          } else if (stop.liveEtaDate) {
+            mapEtaEl.textContent = formatClock12h(stop.liveEtaDate, false);
+          }
+        }
+
         const badge = document.getElementById(`stop-eta-badge-${stop.id}`);
         if (!badge) return;
         if (stop.completed) {
@@ -3877,6 +3886,9 @@
             .addTo(googleMarkersLayer);
         }
 
+        // Asegurar que cada parada tenga calculada su hora de entrega en tiempo real (stop.liveEtaDate)
+        computeRouteTelemetry();
+
         const totalStops = state.stops.length;
         state.stops.forEach((stop, idx) => {
           const isSelected = stop.id === state.selectedStopId;
@@ -3890,10 +3902,18 @@
           const ring = isSelected
             ? `0 0 0 5px ${colorMeta.hex}66, 0 4px 12px rgba(0,0,0,0.6)`
             : '0 3px 8px rgba(0,0,0,0.5)';
+          const pinEtaText = stop.completed
+            ? tr('✓ Done', '✓ Lista')
+            : stop.liveEtaDate
+            ? formatClock12h(stop.liveEtaDate, false)
+            : stop.deadline || '';
 
           const pinIcon = L.divIcon({
             className: '',
-            html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};opacity:${opacity};border:2.5px solid ${border};color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,0.92),0 0 2px rgba(0,0,0,0.92);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.completed ? '✓' : stop.originalNumber}</div>`,
+            html: `<div style="position:relative;width:${size}px;height:${size}px;">
+              <div id="map-pin-eta-${stop.id}" style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;padding:1px 4px;border-radius:5px;background:rgba(4,8,18,0.92);border:1px solid ${bg};color:#f8fafc;font-weight:800;font-size:9px;line-height:1.15;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,0.65);pointer-events:none;">${pinEtaText}</div>
+              <div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};opacity:${opacity};border:2.5px solid ${border};color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,0.92),0 0 2px rgba(0,0,0,0.92);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.completed ? '✓' : stop.originalNumber}</div>
+            </div>`,
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2]
           });
@@ -4191,7 +4211,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:31 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:39 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
