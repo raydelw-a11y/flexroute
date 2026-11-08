@@ -247,37 +247,34 @@
           <div id="route-live-duration-panel" class="p-3.5 rounded-xl bg-slate-950/95 border border-cyan-500/35 space-y-2.5 shadow-inner"></div>
         </div>
 
-        <!-- 1. SECUENCIA TÁCTICA ACTIVA -->
-        <div class="glass-card rounded-2xl border border-cyan-500/30 p-4 shadow-xl">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-black uppercase tracking-wider text-cyan-400">
-              Secuencia Táctica Activa
-            </span>
-            <div class="flex items-center gap-2">
-              <span id="metrics-counter" class="text-xs text-slate-400 font-semibold">0/10 listas</span>
-              <button onclick="autoOptimizeCurrentStops()" class="text-[11px] text-emerald-400 hover:underline font-bold">⚡ Auto-Optimizar</button>
-              <button onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reiniciar</button>
+        <!-- 1. PANEL DE DESTINO DE CIERRE Y VARIANTES TÁCTICAS (DEBAJO DE ESTACIÓN DE SALIDA) -->
+        <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-4">
+          <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">
+            Destino de Cierre y Variantes Tácticas
+          </h3>
+          <div id="strategy-controls-container" class="space-y-3"></div>
+          <div class="pt-3 border-t border-slate-800">
+            <label class="block text-xs text-slate-400 font-bold mb-2">Destino de Cierre al Terminar la Ruta:</label>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+              <button id="endmode-home" onclick="setEndMode('home')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Home</button>
+              <button id="endmode-return" onclick="setEndMode('return_to_start')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Regresar a Parada 1</button>
+              <button id="endmode-brickell" onclick="setEndMode('brickell')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Ir a Brickell</button>
+              <button id="endmode-custom" onclick="setEndMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Otra Dirección</button>
+              <button id="endmode-none" onclick="setEndMode('none')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Sin Cierre Extra</button>
+            </div>
+            <div id="custom-end-wrapper" class="mt-2.5 hidden">
+              <input
+                id="custom-end-input"
+                type="text"
+                placeholder="Ej: 1200 Brickell Ave, Miami, FL"
+                oninput="updateCustomEndAddress(this.value)"
+                class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+              />
             </div>
           </div>
-          <div id="sequence-pill-chain" class="flex flex-wrap items-center gap-1.5 my-3"></div>
-          <div id="tactical-notes-box" class="text-xs text-slate-300 leading-relaxed bg-slate-950/90 p-3 rounded-xl border border-slate-800"></div>
         </div>
 
-        <!-- 2. LANZADOR MULTIPARADA CON GOOGLE MAPS -->
-        <div class="glass-card rounded-2xl border border-emerald-500/35 p-4 space-y-3 shadow-lg">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-extrabold text-white">Conexión Multiparada con Google Maps</h2>
-            <span class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
-              RUTA COMPLETA
-            </span>
-          </div>
-          <p class="text-[11px] text-slate-400">
-            Envía todas las paradas activas en un solo enlace directo hacia la app oficial de Google Maps.
-          </p>
-          <div id="multi-stop-links-container" class="space-y-2"></div>
-        </div>
-
-        <!-- 3. MAPA TÁCTICO REAL DE GOOGLE MAPS (TOCA PARA PANTALLA COMPLETA) -->
+        <!-- 2. MAPA TÁCTICO REAL DE GOOGLE MAPS (DEBAJO DEL PANEL DE DESTINO) -->
         <div id="map-card-container" class="glass-card rounded-2xl border border-slate-800 overflow-hidden transition-all">
           <div class="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -312,31 +309,34 @@
           </div>
         </div>
 
-        <!-- 4. VARIANTES TÁCTICAS Y DESTINO FINAL -->
-        <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-4">
-          <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">
-            Variantes Tácticas y Destino Final
-          </h3>
-          <div id="strategy-controls-container" class="space-y-3"></div>
-          <div class="pt-3 border-t border-slate-800">
-            <label class="block text-xs text-slate-400 font-bold mb-2">Destino de Cierre al Terminar la Ruta:</label>
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-              <button id="endmode-home" onclick="setEndMode('home')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Home</button>
-              <button id="endmode-return" onclick="setEndMode('return_to_start')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Regresar a Parada 1</button>
-              <button id="endmode-brickell" onclick="setEndMode('brickell')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Ir a Brickell</button>
-              <button id="endmode-custom" onclick="setEndMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Otra Dirección</button>
-              <button id="endmode-none" onclick="setEndMode('none')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Sin Cierre Extra</button>
-            </div>
-            <div id="custom-end-wrapper" class="mt-2.5 hidden">
-              <input
-                id="custom-end-input"
-                type="text"
-                placeholder="Ej: 1200 Brickell Ave, Miami, FL"
-                oninput="updateCustomEndAddress(this.value)"
-                class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
-              />
+        <!-- 3. SECUENCIA TÁCTICA ACTIVA -->
+        <div class="glass-card rounded-2xl border border-cyan-500/30 p-4 shadow-xl">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black uppercase tracking-wider text-cyan-400">
+              Secuencia Táctica Activa
+            </span>
+            <div class="flex items-center gap-2">
+              <span id="metrics-counter" class="text-xs text-slate-400 font-semibold">0/10 listas</span>
+              <button onclick="autoOptimizeCurrentStops()" class="text-[11px] text-emerald-400 hover:underline font-bold">⚡ Auto-Optimizar</button>
+              <button onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reiniciar</button>
             </div>
           </div>
+          <div id="sequence-pill-chain" class="flex flex-wrap items-center gap-1.5 my-3"></div>
+          <div id="tactical-notes-box" class="text-xs text-slate-300 leading-relaxed bg-slate-950/90 p-3 rounded-xl border border-slate-800"></div>
+        </div>
+
+        <!-- 4. LANZADOR MULTIPARADA CON GOOGLE MAPS -->
+        <div class="glass-card rounded-2xl border border-emerald-500/35 p-4 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-extrabold text-white">Conexión Multiparada con Google Maps</h2>
+            <span class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+              RUTA COMPLETA
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Envía todas las paradas activas en un solo enlace directo hacia la app oficial de Google Maps.
+          </p>
+          <div id="multi-stop-links-container" class="space-y-2"></div>
         </div>
       </div>
 
@@ -533,7 +533,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 05:10 PM - 11/08/2026 ↻
+        Actualizado: 05:28 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -596,13 +596,13 @@
       },
       'dmi9-kendall': {
         id: 'dmi9-kendall',
-        name: 'Ruta 11/08 (10:00 AM – 12:00 PM) • Kendall / Venezia Lakes / Country Walk',
+        name: 'Miami (Kendall / Venezia Lakes) • 11/08 (10:00 AM – 12:00 PM) • 12 Paradas',
         pickupAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
         pickupTime: '10:00 AM',
         endMode: 'home',
         customEndAddress: '',
         tacticalNotes:
-          'Ruta 11/08 (10:00 AM – 12:00 PM): Salida desde Estación Hialeah (1125 SE 8th St, Suite 700). Bajas directo al sector noreste de Kendall (Parada 13 en 12372 SW 124th Ct → 12 → 11 → 10 → 9), entras a Venezia Lakes por el puente norte de SW 132nd Ave (Paradas 7 → 8) y sales obligatoriamente de regreso al norte hacia SW 136th St y Lindgren Rd (SR-825) para entrar a Green Turtle Club (Parada 6) sin cruzar el paso bloqueado de SW Caribe Way / SW 144th Ter, cerrando en Country Walk (3 → 2 → 5 → 4).',
+          'Miami (Kendall / Venezia Lakes) • 11/08 (10:00 AM – 12:00 PM): Salida desde Estación Hialeah (1125 SE 8th St, Suite 700). Bajas directo al sector noreste de Kendall (Parada 13 en 12372 SW 124th Ct → 12 → 11 → 10 → 9), entras a Venezia Lakes por el puente norte de SW 132nd Ave (Paradas 7 → 8) y sales obligatoriamente de regreso al norte hacia SW 136th St y Lindgren Rd (SR-825) para entrar a Green Turtle Club (Parada 6) sin cruzar el paso bloqueado de SW Caribe Way / SW 144th Ter, cerrando en Country Walk (3 → 2 → 5 → 4).',
         defaultOrder: [13, 12, 11, 10, 9, 7, 8, 6, 3, 2, 5, 4],
         stops: [
           { id: 'dk-2', originalNumber: 2, code: 'FLEX.DMI9', address: '14250 SW 146th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6318, lng: -80.4235, zone: 'Country Walk Oeste', urgent: false, arcgisGeocoded: true },
@@ -1040,16 +1040,6 @@
       if (waypoints.length < 2) return;
       const key = getWaypointsCacheKey(waypoints);
       if (osrmRouteCache[key]) {
-        if (googleMapInstance && osrmRouteCache[key].geometry && osrmRouteCache[key].geometry.length > 1) {
-          if (googleRoutePolyline) {
-            googleMapInstance.removeLayer(googleRoutePolyline);
-          }
-          googleRoutePolyline = L.polyline(osrmRouteCache[key].geometry, {
-            color: '#06b6d4',
-            weight: 4.5,
-            opacity: 0.92
-          }).addTo(googleMapInstance);
-        }
         return;
       }
       if (osrmFetchInFlightKey === key) return;
@@ -1057,7 +1047,7 @@
       osrmFetchInFlightKey = key;
       try {
         const coordsQuery = waypoints.map((p) => `${p.lng},${p.lat}`).join(';');
-        const url = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson&steps=true`;
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
@@ -1067,23 +1057,28 @@
               r.geometry && Array.isArray(r.geometry.coordinates)
                 ? r.geometry.coordinates.map(([lng, lat]) => [lat, lng])
                 : null;
+            const legGeometries = (r.legs || []).map((leg) => {
+              const pts = [];
+              (leg.steps || []).forEach((st) => {
+                if (st.geometry && Array.isArray(st.geometry.coordinates)) {
+                  st.geometry.coordinates.forEach(([lng, lat]) => {
+                    if (pts.length === 0 || pts[pts.length - 1][0] !== lat || pts[pts.length - 1][1] !== lng) {
+                      pts.push([lat, lng]);
+                    }
+                  });
+                }
+              });
+              return pts;
+            });
             osrmRouteCache[key] = {
               legs: r.legs || [],
+              legGeometries,
               totalDistanceMeters: r.distance || 0,
               totalBaseDurationSec: r.duration || 0,
               geometry: latLngGeometry
             };
             updateLiveTelemetryTick();
-            if (googleMapInstance && latLngGeometry && latLngGeometry.length > 1) {
-              if (googleRoutePolyline) {
-                googleMapInstance.removeLayer(googleRoutePolyline);
-              }
-              googleRoutePolyline = L.polyline(latLngGeometry, {
-                color: '#06b6d4',
-                weight: 4.5,
-                opacity: 0.92
-              }).addTo(googleMapInstance);
-            }
+            renderSvgMap();
           }
         }
       } catch (e) {
@@ -1347,7 +1342,26 @@
         : `📅 ${dateFormatted} • ⏰ ${startFormatted}`;
     }
 
-    function formatShortSavedRouteLabel(sched, stopCount) {
+    function getRoutePrimaryCity(stopsList, routeId) {
+      if (routeId === 'miami-beach') return 'Miami Beach';
+      if (routeId === 'hialeah-brickell') return 'Hialeah / Miami';
+      if (routeId === 'dmi9-kendall') return 'Miami (Kendall)';
+      const list = Array.isArray(stopsList) && stopsList.length > 0 ? stopsList : state.stops || [];
+      if (list.length === 0) return 'Miami';
+      if (list.some((s) => typeof s.lat === 'number' && s.lat < 25.68)) {
+        return 'Miami (Kendall)';
+      }
+      const counts = {};
+      list.forEach((s) => {
+        const cleanCity = ((s.city || 'Miami').split(',')[0] || 'Miami').trim();
+        counts[cleanCity] = (counts[cleanCity] || 0) + 1;
+      });
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      return sorted[0] ? sorted[0][0] : 'Miami';
+    }
+
+    function formatShortSavedRouteLabel(sched, stopCount, stopsList, routeId) {
+      const city = getRoutePrimaryCity(stopsList, routeId);
       const safeSched = sched || { date: '2026-11-08', time: '10:00', endTime: '12:00' };
       let shortDate = safeSched.date || '2026-11-08';
       if (/^\d{4}-\d{2}-\d{2}$/.test(shortDate)) {
@@ -1356,7 +1370,7 @@
       }
       const startStr = format24hTo12hStr(safeSched.time || '10:00');
       const endStr = safeSched.endTime ? format24hTo12hStr(safeSched.endTime) : '';
-      return `${shortDate} • ${startStr}${endStr ? '–' + endStr : ''} (${stopCount || 0})`;
+      return `${city} • ${shortDate} • ${startStr}${endStr ? '–' + endStr : ''} (${stopCount || 0})`;
     }
 
     function registerCurrentRoute(silent = false) {
@@ -1364,14 +1378,16 @@
       const sched = getActiveRouteSchedule();
       if (!Array.isArray(state.savedRoutes)) state.savedRoutes = [];
 
+      const city = getRoutePrimaryCity(state.stops, state.activePresetId);
       const routeKey = `saved-${sched.date}-${(sched.time || '10:00').replace(':', '')}-${(sched.endTime || '12:00').replace(':', '')}`;
       const record = {
         id: routeKey,
+        city,
         date: sched.date,
         time: sched.time,
         endTime: sched.endTime,
         schedule: { date: sched.date, time: sched.time, endTime: sched.endTime },
-        label: formatShortSavedRouteLabel(sched, state.stops.length),
+        label: formatShortSavedRouteLabel(sched, state.stops.length, state.stops),
         pickupAddress: state.pickupAddress,
         endMode: state.endMode,
         customEndAddress: state.customEndAddress,
@@ -1426,7 +1442,7 @@
       state.currentLegStartedAt = Date.now();
       lastFittedPreset = null;
       renderAll();
-      showToast(`Ruta cargada: ${found.label || formatShortSavedRouteLabel(fSched, state.stops.length)}`);
+      showToast(`Ruta cargada: ${formatShortSavedRouteLabel(fSched, state.stops.length, state.stops, found.id)}`);
     }
 
     function deleteSavedRoute(routeId, ev) {
@@ -1458,7 +1474,7 @@
           activeSaved.time = sched.time;
           activeSaved.endTime = sched.endTime;
           activeSaved.schedule = { date: sched.date, time: sched.time, endTime: sched.endTime };
-          activeSaved.label = formatShortSavedRouteLabel(sched, state.stops.length);
+          activeSaved.label = formatShortSavedRouteLabel(sched, state.stops.length, state.stops, activeSaved.id);
         }
       }
 
@@ -2429,16 +2445,34 @@
       const bar = document.getElementById('saved-routes-bar');
       if (bar) {
         const savedList = Array.isArray(state.savedRoutes) ? state.savedRoutes : [];
+        const mbSched = (state.routeSchedules && state.routeSchedules['miami-beach']) || {
+          date: '2026-11-08',
+          time: '07:49',
+          endTime: '11:30'
+        };
+        const hbSched = (state.routeSchedules && state.routeSchedules['hialeah-brickell']) || {
+          date: '2026-11-08',
+          time: '09:54',
+          endTime: '13:30'
+        };
         const dmi9Sched = (state.routeSchedules && state.routeSchedules['dmi9-kendall']) || {
           date: '2026-11-08',
           time: '10:00',
           endTime: '12:00'
         };
-        const dmi9Label = `📅 ${formatShortSavedRouteLabel(dmi9Sched, PRESET_ROUTES['dmi9-kendall'].stops.length)}`;
         const presetBtnsHtml = [
-          { id: 'miami-beach', label: 'Ruta 1: Miami Beach' },
-          { id: 'hialeah-brickell', label: 'Ruta 2: Hialeah → Brickell' },
-          { id: 'dmi9-kendall', label: dmi9Label }
+          {
+            id: 'miami-beach',
+            label: formatShortSavedRouteLabel(mbSched, PRESET_ROUTES['miami-beach'].stops.length, PRESET_ROUTES['miami-beach'].stops, 'miami-beach')
+          },
+          {
+            id: 'hialeah-brickell',
+            label: formatShortSavedRouteLabel(hbSched, PRESET_ROUTES['hialeah-brickell'].stops.length, PRESET_ROUTES['hialeah-brickell'].stops, 'hialeah-brickell')
+          },
+          {
+            id: 'dmi9-kendall',
+            label: formatShortSavedRouteLabel(dmi9Sched, PRESET_ROUTES['dmi9-kendall'].stops.length, PRESET_ROUTES['dmi9-kendall'].stops, 'dmi9-kendall')
+          }
         ]
           .map((p) => {
             const active = state.activePresetId === p.id;
@@ -2453,14 +2487,19 @@
           .map((sr) => {
             const active = state.activePresetId === sr.id;
             const srSched = sr.schedule || { date: sr.date, time: sr.time, endTime: sr.endTime };
-            const label = sr.label || formatShortSavedRouteLabel(srSched, Array.isArray(sr.stops) ? sr.stops.length : 0);
+            const label = formatShortSavedRouteLabel(
+              srSched,
+              Array.isArray(sr.stops) ? sr.stops.length : 0,
+              sr.stops,
+              sr.id
+            );
             const cls = active
               ? 'px-2.5 py-1.5 rounded-lg text-xs font-black transition-all bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow flex items-center gap-1.5'
               : 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-900/90 border border-emerald-500/30 text-emerald-300 hover:text-white flex items-center gap-1.5';
             return `
               <div class="inline-flex items-center">
                 <button onclick="loadSavedRoute('${sr.id}')" class="${cls}" title="Ruta registrada • Toca para abrir">
-                  <span>📅 ${label}</span>
+                  <span>${label}</span>
                   <span onclick="deleteSavedRoute('${sr.id}', event)" title="Eliminar ruta guardada" class="ml-1 px-1 rounded hover:bg-rose-500/30 text-[10px] opacity-75 hover:opacity-100">✕</span>
                 </button>
               </div>
@@ -2809,6 +2848,132 @@
       map.fitBounds(boundsPoints, { padding: [28, 28] });
     }
 
+    function hslToHex(h, s, l) {
+      const sNorm = s / 100;
+      const lNorm = l / 100;
+      const k = (n) => (n + h / 30) % 12;
+      const a = sNorm * Math.min(lNorm, 1 - lNorm);
+      const f = (n) => lNorm - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+      const toHex = (x) => Math.round(255 * x).toString(16).padStart(2, '0');
+      return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+    }
+
+    function getStopColorMeta(idx, total) {
+      const t = total <= 1 ? 0 : Math.max(0, Math.min(1, idx / (total - 1)));
+      // De Rojo Intenso (h=0) en la primera parada a Verde Intenso (h=138) en la última parada
+      const h = Math.round(t * 138);
+      const s = Math.round(92 - t * 6);
+      const l = Math.round(47 - Math.sin(t * Math.PI) * 5 - t * 4);
+      return { h, s, l, hex: hslToHex(h, s, l) };
+    }
+
+    function interpolateStopColorHex(fromMeta, toMeta, u) {
+      const clamped = Math.max(0, Math.min(1, u));
+      const h = fromMeta.h + (toMeta.h - fromMeta.h) * clamped;
+      const s = fromMeta.s + (toMeta.s - fromMeta.s) * clamped;
+      const l = fromMeta.l + (toMeta.l - fromMeta.l) * clamped;
+      return hslToHex(h, s, l);
+    }
+
+    function subdivideCoordinatePath(coords, minPoints = 18) {
+      if (!Array.isArray(coords) || coords.length < 2) return coords || [];
+      if (coords.length >= minPoints) return coords;
+      const result = [];
+      const segCount = coords.length - 1;
+      const stepsPerSeg = Math.max(2, Math.ceil(minPoints / segCount));
+      for (let i = 0; i < segCount; i++) {
+        const [lat1, lng1] = coords[i];
+        const [lat2, lng2] = coords[i + 1];
+        for (let k = 0; k < stepsPerSeg; k++) {
+          const t = k / stepsPerSeg;
+          result.push([lat1 + (lat2 - lat1) * t, lng1 + (lng2 - lng1) * t]);
+        }
+      }
+      result.push(coords[coords.length - 1]);
+      return result;
+    }
+
+    function drawRouteGradientPolylines(map, waypoints, cachedOsrm) {
+      if (googleRoutePolyline) {
+        map.removeLayer(googleRoutePolyline);
+        googleRoutePolyline = null;
+      }
+      if (!Array.isArray(waypoints) || waypoints.length < 2) return;
+
+      googleRoutePolyline = L.layerGroup().addTo(map);
+      const totalStops = Math.max(1, state.stops.length);
+
+      function getWaypointColorMeta(wp, wpIdx) {
+        if (wp && wp.stop) {
+          const sIdx = state.stops.findIndex((s) => s.id === wp.stop.id);
+          return getStopColorMeta(sIdx >= 0 ? sIdx : 0, totalStops);
+        }
+        if (wp && wp.originalNumber && wp.originalNumber > 1) {
+          const sIdx = state.stops.findIndex((s) => s.originalNumber === wp.originalNumber);
+          if (sIdx >= 0) return getStopColorMeta(sIdx, totalStops);
+        }
+        // Estación de salida P1 arranca en Rojo Intenso como origen hacia la primera parada
+        return { h: 0, s: 94, l: 44, hex: hslToHex(0, 94, 44) };
+      }
+
+      // Agrupar tramos entre paradas reales (fusionando puntos intermedios de desvío en el mismo degradado procedente → destino)
+      let startWpIdx = 0;
+      while (startWpIdx < waypoints.length - 1) {
+        let endWpIdx = startWpIdx + 1;
+        while (endWpIdx < waypoints.length - 1 && waypoints[endWpIdx].isDetourBypass) {
+          endWpIdx++;
+        }
+
+        const fromMeta = getWaypointColorMeta(waypoints[startWpIdx], startWpIdx);
+        const toMeta = getWaypointColorMeta(waypoints[endWpIdx], endWpIdx);
+
+        let transitionCoords = [];
+        for (let legIdx = startWpIdx; legIdx < endWpIdx; legIdx++) {
+          const osrmLegPts =
+            cachedOsrm &&
+            Array.isArray(cachedOsrm.legGeometries) &&
+            Array.isArray(cachedOsrm.legGeometries[legIdx]) &&
+            cachedOsrm.legGeometries[legIdx].length > 1
+              ? cachedOsrm.legGeometries[legIdx]
+              : [
+                  [waypoints[legIdx].lat, waypoints[legIdx].lng],
+                  [waypoints[legIdx + 1].lat, waypoints[legIdx + 1].lng]
+                ];
+
+          osrmLegPts.forEach((pt) => {
+            if (
+              transitionCoords.length === 0 ||
+              transitionCoords[transitionCoords.length - 1][0] !== pt[0] ||
+              transitionCoords[transitionCoords.length - 1][1] !== pt[1]
+            ) {
+              transitionCoords.push(pt);
+            }
+          });
+        }
+
+        const denseCoords = subdivideCoordinatePath(transitionCoords, 18);
+        const sliceCount = Math.min(20, Math.max(8, denseCoords.length - 1));
+        for (let s = 0; s < sliceCount; s++) {
+          const idxStart = Math.floor((s * (denseCoords.length - 1)) / sliceCount);
+          const idxEnd = Math.max(idxStart + 1, Math.floor(((s + 1) * (denseCoords.length - 1)) / sliceCount));
+          const slicePts = denseCoords.slice(idxStart, idxEnd + 1);
+          if (slicePts.length >= 2) {
+            const u = sliceCount <= 1 ? 0.5 : s / (sliceCount - 1);
+            const segColor = interpolateStopColorHex(fromMeta, toMeta, u);
+            L.polyline(slicePts, {
+              color: segColor,
+              weight: 5,
+              opacity: 0.94,
+              lineCap: 'round',
+              lineJoin: 'round'
+            }).addTo(googleRoutePolyline);
+          }
+        }
+
+        startWpIdx = endWpIdx;
+      }
+    }
+
     function renderSvgMap() {
       const selectedBar = document.getElementById('map-selected-bar');
       if (state.stops.length === 0) return;
@@ -2816,21 +2981,20 @@
       const map = initGoogleMapIfNeeded();
       if (map && googleMarkersLayer) {
         googleMarkersLayer.clearLayers();
-        if (googleRoutePolyline) {
-          map.removeLayer(googleRoutePolyline);
-          googleRoutePolyline = null;
-        }
 
         const { waypoints, closedBarriers } = getActiveWaypointsList(false);
         const cacheKey = getWaypointsCacheKey(waypoints);
         const cachedOsrm = osrmRouteCache[cacheKey];
 
-        // Punto de salida P1 (Estación detectada: DMI9 Amazon o Hialeah)
+        // Dibujar primero el trazo vial con degradado parada por parada (Rojo Intenso → Verde)
+        drawRouteGradientPolylines(map, waypoints, cachedOsrm);
+
+        // Punto de salida P1 (Estación Hialeah)
         const station = getStationCoordinates();
         const p1Coords = [station.lat, station.lng];
         const p1Icon = L.divIcon({
           className: '',
-          html: `<div style="width:28px;height:28px;border-radius:9999px;background:#f59e0b;border:2.5px solid #ffffff;color:#040812;font-weight:900;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.45);">P1</div>`,
+          html: `<div style="width:28px;height:28px;border-radius:9999px;background:#dc2626;border:2.5px solid #ffffff;color:#ffffff;font-weight:900;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.45);">P1</div>`,
           iconSize: [28, 28],
           iconAnchor: [14, 14]
         });
@@ -2838,24 +3002,23 @@
           .bindPopup(`<div class="text-xs font-bold">Parada 1 (Salida)<br/><span class="font-normal text-slate-300">${station.address || state.pickupAddress}</span></div>`)
           .addTo(googleMarkersLayer);
 
+        const totalStops = state.stops.length;
         state.stops.forEach((stop, idx) => {
           const isSelected = stop.id === state.selectedStopId;
           const latlng = [stop.lat, stop.lng];
+          const colorMeta = getStopColorMeta(idx, totalStops);
 
-          const bg = stop.completed
-            ? '#10b981'
-            : stop.urgent
-            ? '#f43f5e'
-            : isSelected
-            ? '#06b6d4'
-            : '#0f172a';
-          const border = isSelected ? '#ffffff' : stop.urgent ? '#fda4af' : '#22d3ee';
+          const bg = colorMeta.hex;
+          const border = isSelected ? '#ffffff' : 'rgba(255,255,255,0.92)';
           const size = isSelected ? 34 : 28;
-          const ring = isSelected ? '0 0 0 5px rgba(34,211,238,0.35), 0 4px 12px rgba(0,0,0,0.5)' : '0 3px 8px rgba(0,0,0,0.45)';
+          const opacity = stop.completed ? '0.55' : '1';
+          const ring = isSelected
+            ? `0 0 0 5px ${colorMeta.hex}66, 0 4px 12px rgba(0,0,0,0.6)`
+            : '0 3px 8px rgba(0,0,0,0.5)';
 
           const pinIcon = L.divIcon({
             className: '',
-            html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};border:2.5px solid ${border};color:#ffffff;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.originalNumber}</div>`,
+            html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};opacity:${opacity};border:2.5px solid ${border};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.completed ? '✓' : stop.originalNumber}</div>`,
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2]
           });
@@ -2874,10 +3037,10 @@
 
           marker.bindPopup(`
             <div style="min-width:170px;">
-              <div style="font-weight:900;font-size:12px;color:#22d3ee;">#${idx + 1} en Ruta • Parada ${stop.originalNumber}</div>
+              <div style="font-weight:900;font-size:12px;color:${colorMeta.hex};">#${idx + 1} en Ruta • Parada ${stop.originalNumber}</div>
               <div style="font-weight:800;font-size:12px;margin-top:2px;">${stop.address}${stop.unit ? ' (' + stop.unit + ')' : ''}</div>
               <div style="font-size:11px;color:#94a3b8;margin-top:2px;">⏰ ${stop.deadline}${stop.gateCode ? ' • Gate: ' + stop.gateCode : ''}</div>
-              <a href="${getSingleStopMapsUrl(stop)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:4px 10px;border-radius:6px;background:#22d3ee;color:#040812;font-weight:900;font-size:11px;text-decoration:none;">Abrir en Google Maps ↗</a>
+              <a href="${getSingleStopMapsUrl(stop)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;padding:4px 10px;border-radius:6px;background:${colorMeta.hex};color:#ffffff;font-weight:900;font-size:11px;text-decoration:none;">Abrir en Google Maps ↗</a>
             </div>
           `);
 
@@ -2923,24 +3086,6 @@
             .addTo(googleMarkersLayer);
         }
 
-        // Si ya tenemos el trazado vial real de OSRM con el desvío aplicado, dibujarlo sin pisarlo con líneas rectas
-        if (cachedOsrm && Array.isArray(cachedOsrm.geometry) && cachedOsrm.geometry.length > 1) {
-          googleRoutePolyline = L.polyline(cachedOsrm.geometry, {
-            color: '#06b6d4',
-            weight: 4.5,
-            opacity: 0.92
-          }).addTo(map);
-        } else {
-          // Mientras carga OSRM, usar los waypoints con el punto de desvío (nunca cruzando directo 8 ↔ 6)
-          const fallbackCoords = waypoints.map((w) => [w.lat, w.lng]);
-          googleRoutePolyline = L.polyline(fallbackCoords, {
-            color: '#06b6d4',
-            weight: 4,
-            opacity: 0.8,
-            dashArray: '8, 6'
-          }).addTo(map);
-        }
-
         const routeSignature = `${state.activePresetId}-${state.stops.length}-${state.endMode}`;
         if (lastFittedPreset !== routeSignature) {
           lastFittedPreset = routeSignature;
@@ -2966,13 +3111,12 @@
     }
 
     function renderStopCards() {
-      const preset = PRESET_ROUTES[state.activePresetId];
-      const schedLabel = formatScheduleDisplay(getActiveRouteSchedule());
-      const baseTitle = preset
-        ? preset.name
-        : `Ruta Importada de Amazon Flex (${state.stops.length} Paradas)`;
+      const sched = getActiveRouteSchedule();
+      const schedLabel = formatScheduleDisplay(sched);
+      const cityFirst = getRoutePrimaryCity(state.stops, state.activePresetId);
+      const baseTitle = `${cityFirst} • ${schedLabel.replace(/^📅\s*/, '')} (${state.stops.length} Paradas)`;
       document.getElementById('route-title-heading').textContent = baseTitle;
-      document.getElementById('route-summary-subtitle').textContent = `${schedLabel} • Desvío activo en calle clausurada (8 ↔ 6) • Toca cualquier parada para enfocarla en el mapa.`;
+      document.getElementById('route-summary-subtitle').textContent = `Iconos y trazo con degradado Rojo → Verde • Desvío activo en calle clausurada (8 ↔ 6).`;
 
       const totalPkgs = state.stops.reduce((acc, s) => acc + (s.packages || 1), 0);
       const urgentCount = state.stops.filter((s) => s.urgent && !s.completed).length;
@@ -3169,7 +3313,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '05:10 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '05:28 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
