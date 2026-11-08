@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#040812" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FlexRoute" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="./flexroute-icon.svg" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <title>FlexRoute</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #040812;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .safe-top-header {
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+    .safe-bottom-bar {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    @media (max-width: 768px) {
+      input, textarea, select {
+        font-size: 16px !important;
+      }
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .neon-cyan-shadow {
+      box-shadow: 0 0 25px -5px rgba(34, 211, 238, 0.35);
+    }
+    .neon-emerald-shadow {
+      box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #040812; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="min-h-screen pb-36 selection:bg-cyan-400 selection:text-slate-950">
+
+  <!-- INDICADOR DE ACTUALIZACIÓN EN ESQUINA -->
+  <div class="fixed top-1 right-2 z-50 pointer-events-none text-[10px] text-slate-500/80 font-mono">
+    Actualizado: 10:36 AM - 11/08/2026
+  </div>
+
+  <!-- TOP COCKPIT HEADER -->
+  <header class="sticky top-0 z-30 glass-card border-b border-slate-800/90 px-4 pb-3 safe-top-header">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-500 flex items-center justify-center neon-cyan-shadow shrink-0">
+          <svg class="w-5 h-5 text-slate-950 fill-slate-950" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-black tracking-tight text-white">
+              FlexRoute
+            </h1>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              Google Maps Direct
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Optimizador táctico en tiempo real • Miami Beach, Venetian Islands, Hialeah y Brickell
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- SELECTOR DE RUTA PRECARGADA -->
+        <div class="flex items-center gap-1.5 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+          <button id="preset-btn-miami-beach" onclick="loadPresetRoute('miami-beach')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">
+            Ruta 1: Miami Beach (11)
+          </button>
+          <button id="preset-btn-hialeah-brickell" onclick="loadPresetRoute('hialeah-brickell')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">
+            Ruta 2: Hialeah → Brickell (13)
+          </button>
+        </div>
+
+        <!-- PESTAÑAS DE MODO -->
+        <div class="flex items-center gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+          <button id="tab-btn-cockpit" onclick="switchTab('cockpit')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+            Cabina
+          </button>
+          <button id="tab-btn-parser" onclick="switchTab('parser')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
+            Importar
+          </button>
+          <button id="tab-btn-add" onclick="switchTab('add')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">
+            + Parada
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PANEL 1: CABINA TÁCTICA PRINCIPAL -->
+  <div id="tab-panel-cockpit">
+    <!-- MAIN CONTENT GRID -->
+    <main class="max-w-7xl mx-auto px-4 pt-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <!-- COLUMNA IZQUIERDA (5 Cols) -->
+      <div class="lg:col-span-5 space-y-4">
+        <!-- 1. SECUENCIA TÁCTICA ACTIVA -->
+        <div class="glass-card rounded-2xl border border-cyan-500/30 p-4 shadow-xl">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black uppercase tracking-wider text-cyan-400">
+              Secuencia Táctica Activa
+            </span>
+            <div class="flex items-center gap-2">
+              <span id="metrics-counter" class="text-xs text-slate-400 font-semibold">0/10 listas</span>
+              <button onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reiniciar</button>
+            </div>
+          </div>
+          <div id="sequence-pill-chain" class="flex flex-wrap items-center gap-1.5 my-3"></div>
+          <div id="tactical-notes-box" class="text-xs text-slate-300 leading-relaxed bg-slate-950/90 p-3 rounded-xl border border-slate-800"></div>
+        </div>
+
+        <!-- 2. LANZADOR MULTIPARADA CON GOOGLE MAPS -->
+        <div class="glass-card rounded-2xl border border-emerald-500/35 p-4 space-y-3 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-extrabold text-white">Conexión Multiparada con Google Maps</h2>
+            <span class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+              SIN RECORTE DE PARADAS
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Genera enlaces directos hacia la app oficial de Google Maps divididos automáticamente en tramos de máximo 9 paradas intermedias cuando supera el límite móvil.
+          </p>
+          <div id="multi-stop-links-container" class="space-y-2"></div>
+        </div>
+
+        <!-- 3. MAPA TÁCTICO INTERACTIVO SVG -->
+        <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-200">
+              Mapa Táctico Interactivo (Toca un Pin)
+            </h3>
+            <span id="map-route-badge" class="text-[10px] text-cyan-400 font-bold">Vista Vectorial</span>
+          </div>
+          <div class="p-2 bg-[#050914]">
+            <svg id="tactical-svg-map" viewBox="0 0 620 340" class="w-full h-64 rounded-xl bg-[#030710] border border-slate-800/80 select-none"></svg>
+            <div id="map-selected-bar" class="mt-2 px-3 py-2 rounded-xl bg-slate-900/95 border border-slate-800 flex items-center justify-between gap-2"></div>
+          </div>
+        </div>
+
+        <!-- 4. VARIANTES TÁCTICAS Y DESTINO FINAL -->
+        <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-4">
+          <h3 class="text-xs font-black uppercase tracking-wider text-slate-300">
+            Variantes Tácticas y Destino Final
+          </h3>
+          <div id="strategy-controls-container" class="space-y-3"></div>
+          <div class="pt-3 border-t border-slate-800">
+            <label class="block text-xs text-slate-400 font-bold mb-2">Destino de Cierre al Terminar la Ruta:</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              <button id="endmode-return" onclick="setEndMode('return_to_start')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Regresar a Parada 1</button>
+              <button id="endmode-brickell" onclick="setEndMode('brickell')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Ir a Brickell</button>
+              <button id="endmode-custom" onclick="setEndMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Otra Dirección</button>
+              <button id="endmode-none" onclick="setEndMode('none')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Sin Cierre Extra</button>
+            </div>
+            <div id="custom-end-wrapper" class="mt-2.5 hidden">
+              <input
+                id="custom-end-input"
+                type="text"
+                placeholder="Ej: 1200 Brickell Ave, Miami, FL"
+                oninput="updateCustomEndAddress(this.value)"
+                class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA (7 Cols): ITINERARIO OPERATIVO PASO A PASO -->
+      <div class="lg:col-span-7 space-y-4">
+        <!-- ESTACIÓN DE SALIDA (PARADA 1) -->
+        <div class="glass-card rounded-2xl border border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center font-black text-sm shrink-0">
+              P1
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Estación de Salida (Pickup)</span>
+                <span id="pickup-time-badge" class="text-[11px] font-bold text-slate-400">7:49 AM</span>
+              </div>
+              <p id="pickup-address-display" class="text-sm font-bold text-white">1125 SE 8th Street, Suite 700, Hialeah, FL</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="copyTextToClipboard(state.pickupAddress, 'Dirección Parada 1')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+              Copiar P1
+            </button>
+            <a id="pickup-maps-link" href="#" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold">
+              Ir a P1
+            </a>
+          </div>
+        </div>
+
+        <!-- CABECERA DE PARADAS Y MÉTRICAS RÁPIDAS -->
+        <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+          <div>
+            <h2 id="route-title-heading" class="text-base font-black text-white">Hoja de Ruta Táctica</h2>
+            <p id="route-summary-subtitle" class="text-xs text-slate-400">Toca cualquier parada para enfocarla en el mapa o abrir navegación individual.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="total-packages-badge" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-bold text-cyan-300">
+              0 paquetes
+            </span>
+            <span id="urgent-stops-badge" class="px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-xs font-bold text-rose-300">
+              0 urgentes
+            </span>
+          </div>
+        </div>
+
+        <!-- LISTA DE TARJETAS DE PARADAS -->
+        <div id="stops-cards-container" class="space-y-3"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- PANEL 2: IMPORTADOR DE TEXTO DE ITINERARIO -->
+  <div id="tab-panel-parser" class="hidden max-w-4xl mx-auto px-4 pt-6">
+    <div class="glass-card rounded-2xl border border-cyan-500/30 p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 class="text-base font-black text-white">Importador de Itinerario en Texto</h2>
+          <p class="text-xs text-slate-400">Pega el texto copiado de tu itinerario para generar paradas automáticamente.</p>
+        </div>
+        <button onclick="loadSampleTextIntoParser()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-300 border border-slate-700">
+          Cargar Ejemplo
+        </button>
+      </div>
+      <textarea
+        id="raw-itinerary-textarea"
+        rows="8"
+        placeholder="Pega aquí las paradas del itinerario..."
+        class="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-400"
+      ></textarea>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <button onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
+          Cancelar
+        </button>
+        <button onclick="parseRawItineraryText()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black">
+          Procesar y Cargar al Mapa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 3: AÑADIR PARADA MANUAL -->
+  <div id="tab-panel-add" class="hidden max-w-2xl mx-auto px-4 pt-6">
+    <form onsubmit="handleAddStopSubmit(event)" class="glass-card rounded-2xl border border-emerald-500/30 p-5 space-y-4">
+      <div>
+        <h2 class="text-base font-black text-white">Añadir Nueva Parada a la Ruta Activa</h2>
+        <p class="text-xs text-slate-400">Se integrará inmediatamente en la secuencia táctica y en los enlaces de Google Maps.</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">N.º Parada</label>
+          <input id="add-num" type="number" placeholder="Auto" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Hora Límite (Deadline)</label>
+          <input id="add-deadline" type="text" placeholder="12:00 PM" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Gate Code (#)</label>
+          <input id="add-gate" type="text" placeholder="Ej: #3234" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-slate-400 mb-1">Dirección (Calle y Número) *</label>
+          <input id="add-address" type="text" required placeholder="Ej: 810 7th St" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Unidad / Apt</label>
+          <input id="add-unit" type="text" placeholder="APT 207" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Ciudad</label>
+          <input id="add-city" type="text" placeholder="Miami Beach, FL" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Paquetes</label>
+          <input id="add-packages" type="number" value="1" min="1" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="switchTab('cockpit')" class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-300">
+          Cancelar
+        </button>
+        <button type="submit" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-black">
+          Guardar Parada
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- BARRA INFERIOR DE ACCIÓN RÁPIDA (MODO CONDUCTOR) -->
+  <div class="fixed bottom-0 inset-x-0 z-30 glass-card border-t border-slate-800/90 px-4 pt-3 safe-bottom-bar">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div id="bottom-next-stop-info" class="flex items-center gap-3 min-w-0"></div>
+      <div id="bottom-action-buttons" class="flex items-center gap-2 shrink-0"></div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN TOAST -->
+  <div id="toast-notification" class="hidden fixed bottom-20 right-4 z-50 px-4 py-2.5 rounded-xl bg-slate-900 border border-cyan-400/50 text-cyan-300 text-xs font-bold shadow-2xl">
+    <span id="toast-text">Copiado</span>
+  </div>
+
+  <!-- BASE DE DATOS DE RUTAS REALES PRECARGADAS Y MOTOR JAVASCRIPT -->
+  <script>
+    const PRESET_ROUTES = {
+      'miami-beach': {
+        id: 'miami-beach',
+        name: 'Miami Beach + Venetian Islands (11 Paradas)',
+        pickupAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
+        pickupTime: '7:49 AM',
+        endMode: 'return_to_start',
+        customEndAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
+        tacticalNotes:
+          'Opción B Activa (5 → 11 → 10 → 9 → 8 → 7 → 6 → 2 → 3 → 4 → 1): Entras por I-395 directo a la Parada 5 (vence 9:50 AM). Subes al Venetian Causeway y aprovechas el semáforo largo con giro protegido a la izquierda hacia Island Ave para barrer Belle Isle de adentro hacia afuera (11 → 10 → 9). Sigues hacia el oeste por Rivo Alto y Di Lido (8 → 7 → 6, vence 10:00 AM), regresas a Miami Beach para subir en línea recta por Collins Ave (2 → 3 → 4) y tomas la calle 41 (I-195 W / SR-112 W) directo a la Parada 1 en Hialeah.',
+        defaultOrder: [5, 11, 10, 9, 8, 7, 6, 2, 3, 4],
+        stops: [
+          { id: 'mb-2', originalNumber: 2, code: 'C.L08.OV', address: '4775 Collins Ave', unit: 'APT 1503', city: 'Miami Beach, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8226, lng: -80.1223, zone: 'Mid-Beach', urgent: false },
+          { id: 'mb-3', originalNumber: 3, code: 'C.L08.OV', address: '4779 Collins Ave', unit: 'APT 2703', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8235, lng: -80.1221, zone: 'Mid-Beach', urgent: false },
+          { id: 'mb-4', originalNumber: 4, code: 'C.L08.OV', address: '5025 Collins Ave', unit: 'APT 1501', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 4, locations: 3, gateCode: '', lat: 25.8273, lng: -80.1216, zone: 'Mid-Beach', urgent: false },
+          { id: 'mb-5', originalNumber: 5, code: 'C.L08.OV', address: '810 7th St', unit: 'UNIT 207', city: 'Miami Beach, FL', deadline: '9:50 AM', packages: 1, locations: 1, gateCode: '', lat: 25.7768, lng: -80.1369, zone: 'South Beach (Urgente)', urgent: true },
+          { id: 'mb-6', originalNumber: 6, code: 'C.L08.OV', address: '28 W Dilido Dr', unit: '', city: 'Miami Beach, FL', deadline: '10:00 AM', packages: 2, locations: 1, gateCode: '', lat: 25.7903, lng: -80.1599, zone: 'Di Lido Island (Urgente)', urgent: true },
+          { id: 'mb-7', originalNumber: 7, code: 'C.L08.OV', address: '220 W Rivo Alto Dr', unit: '', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7908, lng: -80.1548, zone: 'Rivo Alto Island', urgent: false },
+          { id: 'mb-8', originalNumber: 8, code: 'C.L08.OV', address: '303 E Rivo Alto Dr', unit: '', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7916, lng: -80.1524, zone: 'Rivo Alto Island', urgent: false },
+          { id: 'mb-9', originalNumber: 9, code: 'C.L08.OV', address: '1 Century Ln', unit: 'APT 609', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7898, lng: -80.1484, zone: 'Belle Isle (Salida Oeste)', urgent: false },
+          { id: 'mb-10', originalNumber: 10, code: 'C.L08.OV', address: '5 Island Ave', unit: 'APT 16E', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7889, lng: -80.1465, zone: 'Belle Isle (Centro)', urgent: false },
+          { id: 'mb-11', originalNumber: 11, code: 'C.L08.OV', address: '11 Island Ave', unit: 'APT 1111', city: 'Miami Beach, FL', deadline: '12:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7879, lng: -80.1451, zone: 'Belle Isle (Giro Luz Verde)', urgent: false }
+        ]
+      },
+      'hialeah-brickell': {
+        id: 'hialeah-brickell',
+        name: 'Hialeah → Miami → Cierre en Brickell (13 Paradas)',
+        pickupAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
+        pickupTime: '9:54 AM',
+        endMode: 'brickell',
+        customEndAddress: 'Brickell, Miami, FL',
+        tacticalNotes:
+          'Secuencia Optimizada Norte → Sur (2 → 4 → 3 → 5 → 7 → 6 → 8 → 9 → 10 → 11 → 13 → 12 → Brickell): Barres Hialeah primero (invirtiendo 4 y 3 por cercanía), cruzas hacia el este haciendo 7 antes que 6 (Gate #3234) para no retroceder, bajas por Allapattah y haces 13 antes que 12 para terminar en NW 3rd St, a solo 4 minutos de Brickell.',
+        defaultOrder: [2, 4, 3, 5, 7, 6, 8, 9, 10, 11, 13, 12],
+        stops: [
+          { id: 'hb-2', originalNumber: 2, code: 'D.L06.OV', address: '730 E 6th St', unit: '', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8262, lng: -80.2682, zone: 'Hialeah Este', urgent: false },
+          { id: 'hb-3', originalNumber: 3, code: 'D.L06.OV', address: '445 E 16th St', unit: '', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8362, lng: -80.2731, zone: 'Hialeah Centro-Norte', urgent: false },
+          { id: 'hb-4', originalNumber: 4, code: 'D.L06.OV', address: '590 E 9th St', unit: 'APT 4', city: 'Hialeah, FL', deadline: '3:00 PM', packages: 2, locations: 1, gateCode: '', lat: 25.8295, lng: -80.2704, zone: 'Hialeah Centro', urgent: false },
+          { id: 'hb-5', originalNumber: 5, code: 'D.L06.OV', address: '2640 NW 46th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8168, lng: -80.2392, zone: 'Brownsville / NW 46th', urgent: false },
+          { id: 'hb-6', originalNumber: 6, code: 'D.L06.OV', address: '1420 NW 36th St', unit: 'APT 302', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '#3234', lat: 25.8092, lng: -80.2195, zone: 'Allapattah Este (Gate #3234)', urgent: false },
+          { id: 'hb-7', originalNumber: 7, code: 'D.L06.OV', address: '1950 NW 36th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8094, lng: -80.2284, zone: 'Allapattah Oeste', urgent: false },
+          { id: 'hb-8', originalNumber: 8, code: 'D.L06.OV', address: '1745 NW 28th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.8024, lng: -80.2248, zone: 'Allapattah Sur', urgent: false },
+          { id: 'hb-9', originalNumber: 9, code: 'D.L06.OV', address: '1530 NW 21st Ter', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 2, locations: 1, gateCode: '', lat: 25.7965, lng: -80.2211, zone: 'Allapattah / Civic Center', urgent: false },
+          { id: 'hb-10', originalNumber: 10, code: 'D.L06.OV', address: '1450 NW 14th St', unit: 'STE 200', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7879, lng: -80.2192, zone: 'Distrito Médico / Civic', urgent: false },
+          { id: 'hb-11', originalNumber: 11, code: 'D.L06.OV', address: '1320 NW 7th St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7798, lng: -80.2173, zone: 'Little Havana Norte', urgent: false },
+          { id: 'hb-12', originalNumber: 12, code: 'D.L06.OV', address: '1129 NW 3rd St', unit: '', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7758, lng: -80.2138, zone: 'Cierre Pegado a Brickell', urgent: false },
+          { id: 'hb-13', originalNumber: 13, code: 'D.L06.OV', address: '1245 NW 5th St', unit: 'APT 8', city: 'Miami, FL', deadline: '3:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.7779, lng: -80.2156, zone: 'Little Havana Este', urgent: false }
+        ]
+      }
+    };
+
+    let state = {
+      activePresetId: 'miami-beach',
+      activeVariant: 'option-b',
+      belleIsleMode: '11-10-9',
+      pickupAddress: PRESET_ROUTES['miami-beach'].pickupAddress,
+      pickupTime: PRESET_ROUTES['miami-beach'].pickupTime,
+      endMode: 'return_to_start',
+      customEndAddress: PRESET_ROUTES['miami-beach'].customEndAddress,
+      tacticalNotes: PRESET_ROUTES['miami-beach'].tacticalNotes,
+      stops: [],
+      selectedStopId: null,
+      activeTab: 'cockpit'
+    };
+
+    function cleanAddressForMaps(address, city) {
+      const street = (address || '').replace(/^KDR\s+/i, '').trim();
+      return `${street}, ${city || 'Miami, FL'}`;
+    }
+
+    function getSingleStopMapsUrl(stop) {
+      if (!stop) return 'https://www.google.com/maps';
+      const dest = encodeURIComponent(cleanAddressForMaps(stop.address, stop.city));
+      return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
+    }
+
+    function getFinalDestinationAddress() {
+      if (state.endMode === 'return_to_start') return state.pickupAddress;
+      if (state.endMode === 'brickell') return 'Brickell, Miami, FL';
+      if (state.endMode === 'custom') return state.customEndAddress || state.pickupAddress;
+      return null;
+    }
+
+    function buildMultiStopBatches() {
+      const activeStops = state.stops.filter((s) => !s.completed);
+      if (activeStops.length === 0) return [];
+
+      const finalDest = getFinalDestinationAddress();
+      const allAddresses = [
+        state.pickupAddress,
+        ...activeStops.map((s) => cleanAddressForMaps(s.address, s.city)),
+        ...(finalDest ? [finalDest] : [])
+      ];
+
+      const MAX_POINTS_PER_URL = 11; // 1 Origen + 9 Waypoints + 1 Destino
+      const batches = [];
+
+      if (allAddresses.length <= MAX_POINTS_PER_URL) {
+        const origin = encodeURIComponent(allAddresses[0]);
+        const destination = encodeURIComponent(allAddresses[allAddresses.length - 1]);
+        const waypoints = allAddresses
+          .slice(1, allAddresses.length - 1)
+          .map((a) => encodeURIComponent(a))
+          .join('|');
+        const url = waypoints
+          ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`
+          : `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+
+        batches.push({
+          title: 'Abrir Ruta Completa en Google Maps',
+          subtitle: `${activeStops.length} paradas en orden táctico${finalDest ? ' + cierre' : ''}`,
+          url
+        });
+      } else {
+        let start = 0;
+        let leg = 1;
+        while (start < allAddresses.length - 1) {
+          const end = Math.min(start + MAX_POINTS_PER_URL - 1, allAddresses.length - 1);
+          const segment = allAddresses.slice(start, end + 1);
+          const origin = encodeURIComponent(segment[0]);
+          const destination = encodeURIComponent(segment[segment.length - 1]);
+          const waypoints = segment
+            .slice(1, segment.length - 1)
+            .map((a) => encodeURIComponent(a))
+            .join('|');
+          const url = waypoints
+            ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`
+            : `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+
+          batches.push({
+            title: `Abrir Tramo ${leg} en Google Maps`,
+            subtitle: `Puntos ${start + 1} al ${end + 1} de ${allAddresses.length} (máx. 9 paradas intermedias)`,
+            url
+          });
+          start = end;
+          leg++;
+        }
+      }
+
+      return batches;
+    }
+
+    function loadPresetRoute(presetId) {
+      const preset = PRESET_ROUTES[presetId];
+      if (!preset) return;
+      state.activePresetId = presetId;
+      state.pickupAddress = preset.pickupAddress;
+      state.pickupTime = preset.pickupTime;
+      state.endMode = preset.endMode;
+      state.customEndAddress = preset.customEndAddress;
+      state.tacticalNotes = preset.tacticalNotes;
+      state.activeVariant = presetId === 'miami-beach' ? 'option-b' : 'optimized';
+      state.belleIsleMode = '11-10-9';
+
+      const stopMap = new Map(preset.stops.map((s) => [s.originalNumber, { ...s, completed: false }]));
+      state.stops = preset.defaultOrder.map((num) => stopMap.get(num)).filter(Boolean);
+      state.selectedStopId = state.stops[0] ? state.stops[0].id : null;
+      renderAll();
+    }
+
+    function applyMiamiBeachVariant(variant, belleIsleMode) {
+      state.activeVariant = variant || state.activeVariant;
+      state.belleIsleMode = belleIsleMode || state.belleIsleMode;
+
+      const belleOrder = state.belleIsleMode === '11-10-9' ? [11, 10, 9] : [9, 10, 11];
+      let targetOrder;
+      if (state.activeVariant === 'option-b') {
+        targetOrder = [5, ...belleOrder, 8, 7, 6, 2, 3, 4];
+        state.tacticalNotes =
+          `Opción B Activa (5 → ${belleOrder.join(' → ')} → 8 → 7 → 6 → 2 → 3 → 4 → 1): Entras por I-395 directo a la Parada 5 (vence 9:50 AM), haces Venetian Islands (${belleOrder.join(' → ')} → 8 → 7 → 6) y subes por Collins Ave (2 → 3 → 4) para regresar por I-195 W.`;
+      } else if (state.activeVariant === 'option-a') {
+        targetOrder = [6, 7, 8, ...belleOrder.slice().reverse(), 5, 2, 3, 4];
+        state.tacticalNotes =
+          'Opción A Activa (Oeste → Este por Venetian Causeway): Entras por Venetian Causeway desde Miami hacia Di Lido (6 → 7 → 8), pasas por Belle Isle, bajas a South Beach (5) y subes por Collins Ave (2 → 3 → 4).';
+      } else {
+        targetOrder = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        state.tacticalNotes = 'Orden Numérico Original del Itinerario (2 → 11).';
+      }
+
+      reorderStopsByOriginalNumbers(targetOrder);
+      renderAll();
+    }
+
+    function applyHialeahVariant(variant) {
+      state.activeVariant = variant;
+      if (variant === 'optimized') {
+        reorderStopsByOriginalNumbers([2, 4, 3, 5, 7, 6, 8, 9, 10, 11, 13, 12]);
+        state.tacticalNotes = PRESET_ROUTES['hialeah-brickell'].tacticalNotes;
+      } else {
+        reorderStopsByOriginalNumbers([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+        state.tacticalNotes = 'Orden Numérico Original (2 → 13) sin inversiones tácticas.';
+      }
+      renderAll();
+    }
+
+    function reorderStopsByOriginalNumbers(orderArray) {
+      const byNum = new Map(state.stops.map((s) => [s.originalNumber, s]));
+      const ordered = [];
+      orderArray.forEach((n) => {
+        if (byNum.has(n)) {
+          ordered.push(byNum.get(n));
+          byNum.delete(n);
+        }
+      });
+      byNum.forEach((s) => ordered.push(s));
+      state.stops = ordered;
+    }
+
+    function setEndMode(mode) {
+      state.endMode = mode;
+      renderAll();
+    }
+
+    function updateCustomEndAddress(val) {
+      state.customEndAddress = val.trim();
+      renderMultiStopLinks();
+      renderSequencePills();
+    }
+
+    function toggleStopCompleted(stopId, ev) {
+      if (ev) ev.stopPropagation();
+      const stop = state.stops.find((s) => s.id === stopId);
+      if (stop) {
+        stop.completed = !stop.completed;
+        renderAll();
+      }
+    }
+
+    function resetAllCompleted() {
+      state.stops.forEach((s) => (s.completed = false));
+      renderAll();
+    }
+
+    function selectStop(stopId) {
+      state.selectedStopId = stopId;
+      renderAll();
+    }
+
+    function moveStopInSequence(index, direction, ev) {
+      if (ev) ev.stopPropagation();
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= state.stops.length) return;
+      const temp = state.stops[index];
+      state.stops[index] = state.stops[targetIndex];
+      state.stops[targetIndex] = temp;
+      renderAll();
+    }
+
+    function copyTextToClipboard(text, label) {
+      if (window.event) window.event.stopPropagation();
+      const tempInput = document.createElement('textarea');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      const toast = document.getElementById('toast-notification');
+      document.getElementById('toast-text').textContent = `Copiado: ${label || text}`;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 1800);
+    }
+
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      ['cockpit', 'parser', 'add'].forEach((t) => {
+        const panel = document.getElementById(`tab-panel-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabName) {
+          panel.classList.remove('hidden');
+          if (btn) btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+        } else {
+          panel.classList.add('hidden');
+          if (btn) btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
+        }
+      });
+    }
+
+    function handleAddStopSubmit(e) {
+      e.preventDefault();
+      const numVal = document.getElementById('add-num').value;
+      const deadlineVal = document.getElementById('add-deadline').value || '12:00 PM';
+      const gateVal = document.getElementById('add-gate').value.trim();
+      const addressVal = document.getElementById('add-address').value.trim();
+      const unitVal = document.getElementById('add-unit').value.trim();
+      const cityVal = document.getElementById('add-city').value.trim() || 'Miami Beach, FL';
+      const pkgsVal = parseInt(document.getElementById('add-packages').value, 10) || 1;
+      if (!addressVal) return;
+
+      const nextNum = numVal
+        ? parseInt(numVal, 10)
+        : state.stops.length > 0
+        ? Math.max(...state.stops.map((s) => s.originalNumber)) + 1
+        : 2;
+
+      const newStop = {
+        id: `custom-${Date.now()}`,
+        originalNumber: nextNum,
+        code: 'FLEX.ADD',
+        address: addressVal,
+        unit: unitVal,
+        city: cityVal,
+        deadline: deadlineVal,
+        packages: pkgsVal,
+        locations: 1,
+        gateCode: gateVal,
+        lat: 25.792 + (Math.random() - 0.5) * 0.02,
+        lng: -80.148 + (Math.random() - 0.5) * 0.02,
+        zone: 'Parada Añadida',
+        completed: false,
+        urgent: /9:|10:|11:/i.test(deadlineVal)
+      };
+      state.stops.push(newStop);
+      state.selectedStopId = newStop.id;
+      e.target.reset();
+      switchTab('cockpit');
+      renderAll();
+    }
+
+    function loadSampleTextIntoParser() {
+      document.getElementById('raw-itinerary-textarea').value =
+        "5 Expected by 9:50 AM\n810 7TH ST UNIT 207\nMIAMI BEACH\n\n11 Expected by 12:00 PM\n11 ISLAND AVE APT 1111\nMIAMI BEACH";
+    }
+
+    function parseRawItineraryText() {
+      const raw = document.getElementById('raw-itinerary-textarea').value.trim();
+      if (!raw) return;
+      const blocks = raw.split(/\n\s*\n/);
+      const parsedStops = [];
+      blocks.forEach((block, idx) => {
+        const lines = block.split('\n').map((l) => l.trim()).filter(Boolean);
+        if (lines.length === 0) return;
+        const headerMatch = lines[0].match(/^(\d+)\s*(?:Expected by\s*(.+))?/i);
+        const stopNum = headerMatch ? parseInt(headerMatch[1], 10) : idx + 2;
+        const deadline = headerMatch && headerMatch[2] ? headerMatch[2].trim() : '12:00 PM';
+        const addressLine = lines[1] || lines[0];
+        const cityLine = lines[2] ? `${lines[2]}, FL` : 'Miami, FL';
+        parsedStops.push({
+          id: `parsed-${Date.now()}-${idx}`,
+          originalNumber: stopNum,
+          code: 'FLEX.IMP',
+          address: addressLine,
+          unit: '',
+          city: cityLine,
+          deadline,
+          packages: 1,
+          locations: 1,
+          gateCode: '',
+          lat: 25.79 + (idx * 0.006),
+          lng: -80.16 + (idx * 0.006),
+          zone: 'Importada',
+          completed: false,
+          urgent: /9:|10:/i.test(deadline)
+        });
+      });
+
+      if (parsedStops.length > 0) {
+        state.stops = parsedStops;
+        state.selectedStopId = parsedStops[0].id;
+        state.tacticalNotes = `Itinerario importado manualmente (${parsedStops.length} paradas).`;
+        switchTab('cockpit');
+        renderAll();
+      }
+    }
+
+    function renderHeaderControls() {
+      ['miami-beach', 'hialeah-brickell'].forEach((id) => {
+        const btn = document.getElementById(`preset-btn-${id}`);
+        if (!btn) return;
+        if (state.activePresetId === id) {
+          btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow';
+        } else {
+          btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white';
+        }
+      });
+
+      document.getElementById('pickup-time-badge').textContent = state.pickupTime;
+      document.getElementById('pickup-address-display').textContent = state.pickupAddress;
+      document.getElementById('pickup-maps-link').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(state.pickupAddress)}&travelmode=driving`;
+    }
+
+    function renderSequencePills() {
+      const completedCount = state.stops.filter((s) => s.completed).length;
+      document.getElementById('metrics-counter').textContent = `${completedCount}/${state.stops.length} listas`;
+      document.getElementById('tactical-notes-box').textContent = state.tacticalNotes;
+
+      const chain = document.getElementById('sequence-pill-chain');
+      const pillsHtml = [];
+
+      pillsHtml.push(`
+        <span class="px-2 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black">
+          P1
+        </span>
+      `);
+
+      state.stops.forEach((s) => {
+        const isSelected = s.id === state.selectedStopId;
+        const baseCls = s.completed
+          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 line-through opacity-60'
+          : s.urgent
+          ? 'bg-rose-500/20 border-rose-500/50 text-rose-200'
+          : 'bg-slate-900 border-slate-700 text-slate-200';
+        const ringCls = isSelected ? 'ring-2 ring-cyan-400' : '';
+        pillsHtml.push(`<span class="text-slate-600 text-xs font-bold">→</span>`);
+        pillsHtml.push(`
+          <button onclick="selectStop('${s.id}')" class="px-2.5 py-1 rounded-lg border text-xs font-black transition-all ${baseCls} ${ringCls}">
+            ${s.originalNumber}
+          </button>
+        `);
+      });
+
+      const endLabel =
+        state.endMode === 'return_to_start'
+          ? 'P1'
+          : state.endMode === 'brickell'
+          ? 'Brickell'
+          : state.endMode === 'custom'
+          ? 'Destino'
+          : null;
+
+      if (endLabel) {
+        pillsHtml.push(`<span class="text-slate-600 text-xs font-bold">→</span>`);
+        pillsHtml.push(`
+          <span class="px-2 py-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-black">
+            ${endLabel}
+          </span>
+        `);
+      }
+
+      chain.innerHTML = pillsHtml.join('');
+    }
+
+    function renderMultiStopLinks() {
+      const container = document.getElementById('multi-stop-links-container');
+      const batches = buildMultiStopBatches();
+      if (batches.length === 0) {
+        container.innerHTML = `
+          <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 font-bold text-center">
+            ¡Todas las paradas están marcadas como entregadas!
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = batches
+        .map(
+          (b) => `
+          <a href="${b.url}" target="_blank" rel="noopener" class="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-cyan-500/20 hover:from-emerald-500/30 hover:to-cyan-500/30 border border-emerald-400/40 transition-all group">
+            <div>
+              <div class="text-xs font-black text-white group-hover:text-emerald-300 transition-colors">${b.title}</div>
+              <div class="text-[11px] text-slate-300">${b.subtitle}</div>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 text-xs font-black shrink-0">
+              Abrir Maps ↗
+            </span>
+          </a>
+        `
+        )
+        .join('');
+    }
+
+    function renderStrategyControls() {
+      const container = document.getElementById('strategy-controls-container');
+      if (state.activePresetId === 'miami-beach') {
+        container.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            <button onclick="applyMiamiBeachVariant('option-b')" class="p-2 rounded-xl text-left border text-xs ${
+              state.activeVariant === 'option-b'
+                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400'
+            }">
+              <div class="font-black">Opción B (Sur → Norte)</div>
+              <div class="text-[10px] opacity-80">5 → Venetian → Collins</div>
+            </button>
+            <button onclick="applyMiamiBeachVariant('option-a')" class="p-2 rounded-xl text-left border text-xs ${
+              state.activeVariant === 'option-a'
+                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400'
+            }">
+              <div class="font-black">Opción A (Venetian 1º)</div>
+              <div class="text-[10px] opacity-80">6..11 → 5 → Collins</div>
+            </button>
+            <button onclick="applyMiamiBeachVariant('original')" class="p-2 rounded-xl text-left border text-xs ${
+              state.activeVariant === 'original'
+                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400'
+            }">
+              <div class="font-black">Orden Original</div>
+              <div class="text-[10px] opacity-80">2 → 3 → 4 ... → 11</div>
+            </button>
+          </div>
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <span class="text-xs text-slate-400 font-semibold">Barrido en Belle Isle:</span>
+            <div class="flex gap-1.5">
+              <button onclick="applyMiamiBeachVariant(null, '11-10-9')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
+                state.belleIsleMode === '11-10-9'
+                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-400'
+              }">11 → 10 → 9 (Luz Verde)</button>
+              <button onclick="applyMiamiBeachVariant(null, '9-10-11')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
+                state.belleIsleMode === '9-10-11'
+                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-400'
+              }">9 → 10 → 11</button>
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <button onclick="applyHialeahVariant('optimized')" class="p-2.5 rounded-xl text-left border text-xs ${
+              state.activeVariant === 'optimized'
+                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400'
+            }">
+              <div class="font-black">Norte → Sur Táctico (Recomendado)</div>
+              <div class="text-[10px] opacity-80">Invierte 4→3, 7→6 (#3234) y 13→12</div>
+            </button>
+            <button onclick="applyHialeahVariant('original')" class="p-2.5 rounded-xl text-left border text-xs ${
+              state.activeVariant === 'original'
+                ? 'bg-cyan-500/20 border-cyan-400 text-white font-bold'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400'
+            }">
+              <div class="font-black">Orden Numérico (2 → 13)</div>
+              <div class="text-[10px] opacity-80">Secuencia sin optimizar</div>
+            </button>
+          </div>
+        `;
+      }
+
+      const modeMap = {
+        return_to_start: 'endmode-return',
+        brickell: 'endmode-brickell',
+        custom: 'endmode-custom',
+        none: 'endmode-none'
+      };
+      Object.entries(modeMap).forEach(([mode, btnId]) => {
+        const el = document.getElementById(btnId);
+        if (!el) return;
+        if (state.endMode === mode) {
+          el.className = 'py-2 px-2 rounded-xl text-[11px] font-bold border bg-emerald-500/20 border-emerald-400 text-emerald-300';
+        } else {
+          el.className = 'py-2 px-2 rounded-xl text-[11px] font-bold border bg-slate-900 border-slate-800 text-slate-400 hover:text-white';
+        }
+      });
+
+      const customWrapper = document.getElementById('custom-end-wrapper');
+      const customInput = document.getElementById('custom-end-input');
+      if (state.endMode === 'custom') {
+        customWrapper.classList.remove('hidden');
+        if (customInput.value !== state.customEndAddress) {
+          customInput.value = state.customEndAddress;
+        }
+      } else {
+        customWrapper.classList.add('hidden');
+      }
+    }
+
+    function renderSvgMap() {
+      const svg = document.getElementById('tactical-svg-map');
+      const selectedBar = document.getElementById('map-selected-bar');
+      if (!svg || state.stops.length === 0) return;
+
+      const lats = state.stops.map((s) => s.lat);
+      const lngs = state.stops.map((s) => s.lng);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+
+      const padX = 55;
+      const padY = 40;
+      const width = 620;
+      const height = 340;
+
+      const project = (lat, lng) => {
+        const xRatio = maxLng === minLng ? 0.5 : (lng - minLng) / (maxLng - minLng);
+        const yRatio = maxLat === minLat ? 0.5 : (maxLat - lat) / (maxLat - minLat);
+        return {
+          x: Math.round(padX + xRatio * (width - padX * 2)),
+          y: Math.round(padY + yRatio * (height - padY * 2))
+        };
+      };
+
+      const pts = state.stops.map((s, idx) => ({
+        stop: s,
+        orderIndex: idx + 1,
+        ...project(s.lat, s.lng)
+      }));
+
+      const polylinePoints = pts.map((p) => `${p.x},${p.y}`).join(' ');
+
+      let svgContent = `
+        <defs>
+          <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#22d3ee" />
+            <stop offset="100%" stop-color="#10b981" />
+          </linearGradient>
+        </defs>
+        <g stroke="#0f172a" stroke-width="1">
+          <line x1="0" y1="85" x2="620" y2="85" />
+          <line x1="0" y1="170" x2="620" y2="170" />
+          <line x1="0" y1="255" x2="620" y2="255" />
+          <line x1="155" y1="0" x2="155" y2="340" />
+          <line x1="310" y1="0" x2="310" y2="340" />
+          <line x1="465" y1="0" x2="465" y2="340" />
+        </g>
+        <polyline fill="none" stroke="url(#routeGrad)" stroke-width="3" stroke-dasharray="6 4" points="${polylinePoints}" opacity="0.85" />
+      `;
+
+      pts.forEach((p) => {
+        const isSelected = p.stop.id === state.selectedStopId;
+        const fill = p.stop.completed
+          ? '#10b981'
+          : p.stop.urgent
+          ? '#f43f5e'
+          : isSelected
+          ? '#22d3ee'
+          : '#0f172a';
+        const stroke = isSelected ? '#ffffff' : p.stop.urgent ? '#fda4af' : '#22d3ee';
+        const radius = isSelected ? 15 : 12;
+
+        svgContent += `
+          <g class="cursor-pointer" onclick="selectStop('${p.stop.id}')">
+            ${isSelected ? `<circle cx="${p.x}" cy="${p.y}" r="22" fill="rgba(34,211,238,0.18)" />` : ''}
+            <circle cx="${p.x}" cy="${p.y}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="2.5" />
+            <text x="${p.x}" y="${p.y + 4}" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="900">
+              ${p.stop.originalNumber}
+            </text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = svgContent;
+
+      const selectedStop = state.stops.find((s) => s.id === state.selectedStopId) || state.stops[0];
+      if (selectedStop) {
+        selectedBar.innerHTML = `
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[11px] font-black">Parada ${selectedStop.originalNumber}</span>
+              <span class="text-xs font-bold text-white truncate">${selectedStop.address}${selectedStop.unit ? ' • ' + selectedStop.unit : ''}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate">${selectedStop.zone} • Límite: ${selectedStop.deadline}${selectedStop.gateCode ? ' • Gate: ' + selectedStop.gateCode : ''}</div>
+          </div>
+          <a href="${getSingleStopMapsUrl(selectedStop)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-xs font-black shrink-0">
+            Navegar ↗
+          </a>
+        `;
+      }
+    }
+
+    function renderStopCards() {
+      const preset = PRESET_ROUTES[state.activePresetId];
+      document.getElementById('route-title-heading').textContent = preset ? preset.name : 'Hoja de Ruta Táctica';
+
+      const totalPkgs = state.stops.reduce((acc, s) => acc + (s.packages || 1), 0);
+      const urgentCount = state.stops.filter((s) => s.urgent && !s.completed).length;
+      document.getElementById('total-packages-badge').textContent = `${totalPkgs} paquetes`;
+      document.getElementById('urgent-stops-badge').textContent = `${urgentCount} urgentes`;
+
+      const container = document.getElementById('stops-cards-container');
+      container.innerHTML = state.stops
+        .map((stop, idx) => {
+          const isSelected = stop.id === state.selectedStopId;
+          const cardBorder = stop.completed
+            ? 'border-emerald-500/30 opacity-65'
+            : isSelected
+            ? 'border-cyan-400 ring-1 ring-cyan-400/50'
+            : stop.urgent
+            ? 'border-rose-500/40'
+            : 'border-slate-800';
+
+          return `
+            <div onclick="selectStop('${stop.id}')" class="glass-card rounded-2xl border ${cardBorder} p-4 transition-all cursor-pointer hover:border-slate-700">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-xl ${
+                    stop.completed
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : stop.urgent
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                      : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                  } flex flex-col items-center justify-center shrink-0">
+                    <span class="text-[9px] font-bold uppercase opacity-75">#${idx + 1}</span>
+                    <span class="text-sm font-black leading-none">${stop.originalNumber}</span>
+                  </div>
+                  <div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="text-sm font-black text-white ${stop.completed ? 'line-through' : ''}">
+                        ${stop.address}
+                      </span>
+                      ${
+                        stop.unit
+                          ? `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 text-[11px] font-extrabold border border-slate-700">${stop.unit}</span>`
+                          : ''
+                      }
+                      ${
+                        stop.gateCode
+                          ? `<button onclick="copyTextToClipboard('${stop.gateCode}', 'Gate ${stop.gateCode}')" class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[11px] font-black border border-amber-500/40">Gate ${stop.gateCode}</button>`
+                          : ''
+                      }
+                    </div>
+                    <div class="text-xs text-slate-400 mt-0.5">
+                      ${stop.city} • <span class="text-slate-300 font-semibold">${stop.zone}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px]">
+                      <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">
+                        ⏰ Límite: ${stop.deadline}
+                      </span>
+                      <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">
+                        📦 ${stop.packages} paq (${stop.locations || 1} ubic.)
+                      </span>
+                      <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">
+                        ${stop.code}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button onclick="moveStopInSequence(${idx}, -1, event)" title="Subir en secuencia" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
+                    ↑
+                  </button>
+                  <button onclick="moveStopInSequence(${idx}, 1, event)" title="Bajar en secuencia" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
+                    ↓
+                  </button>
+                  <button onclick="copyTextToClipboard('${cleanAddressForMaps(stop.address, stop.city)}', 'Dirección Parada ${stop.originalNumber}')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold">
+                    Copiar
+                  </button>
+                  <a href="${getSingleStopMapsUrl(stop)}" onclick="event.stopPropagation()" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-extrabold">
+                    Maps ↗
+                  </a>
+                  <button onclick="toggleStopCompleted('${stop.id}', event)" class="px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
+                    stop.completed
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                      : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                  }">
+                    ${stop.completed ? '✓ Lista' : 'Marcar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    function renderBottomActionBar() {
+      const nextStop = state.stops.find((s) => !s.completed);
+      const infoEl = document.getElementById('bottom-next-stop-info');
+      const btnsEl = document.getElementById('bottom-action-buttons');
+
+      if (!nextStop) {
+        const finalDest = getFinalDestinationAddress() || state.pickupAddress;
+        infoEl.innerHTML = `
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 flex items-center justify-center font-black text-sm">✓</div>
+          <div>
+            <div class="text-xs font-black text-emerald-300">Ruta Completada</div>
+            <div class="text-xs text-slate-300 truncate">Destino final sugerido: ${finalDest}</div>
+          </div>
+        `;
+        btnsEl.innerHTML = `
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(finalDest)}&travelmode=driving" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-black">
+            Ir al Destino de Cierre ↗
+          </a>
+        `;
+        return;
+      }
+
+      infoEl.innerHTML = `
+        <div class="w-9 h-9 rounded-xl bg-cyan-400 text-slate-950 flex items-center justify-center font-black text-sm shrink-0">
+          ${nextStop.originalNumber}
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">Siguiente Parada</span>
+            <span class="text-[11px] font-bold text-slate-400">⏰ ${nextStop.deadline}</span>
+          </div>
+          <div class="text-xs sm:text-sm font-black text-white truncate">
+            ${nextStop.address}${nextStop.unit ? ' (' + nextStop.unit + ')' : ''}
+          </div>
+        </div>
+      `;
+
+      btnsEl.innerHTML = `
+        <button onclick="toggleStopCompleted('${nextStop.id}')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+          ✓ Entregada
+        </button>
+        <a href="${getSingleStopMapsUrl(nextStop)}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow-lg">
+          Navegar Parada ${nextStop.originalNumber} ↗
+        </a>
+      `;
+    }
+
+    const STORAGE_KEY = 'flexroute_mobile_state_v1';
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function renderAll() {
+      saveStateToStorage();
+      renderHeaderControls();
+      renderSequencePills();
+      renderMultiStopLinks();
+      renderStrategyControls();
+      renderSvgMap();
+      renderStopCards();
+      renderBottomActionBar();
+    }
+
+    function initApp() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && Array.isArray(parsed.stops) && parsed.stops.length > 0) {
+            state = { ...state, ...parsed };
+            renderAll();
+            return;
+          }
+        }
+      } catch (e) {}
+      loadPresetRoute('miami-beach');
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    // Inicializar aplicación
+    initApp();
+  </script>
+</body>
+</html>

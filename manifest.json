@@ -1,0 +1,25 @@
+{
+  "name": "FlexRoute",
+  "short_name": "FlexRoute",
+  "description": "Optimizador táctico de rutas en tiempo real con conexión directa multiparada a Google Maps.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#040812",
+  "theme_color": "#040812",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./flexroute-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
