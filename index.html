@@ -115,10 +115,10 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <!-- BOTÓN RÁPIDO DE ESCANEO DE CAPTURAS DE AMAZON FLEX -->
+        <!-- BOTÓN RÁPIDO DE ESCANEO DE VIDEO O CAPTURAS DE AMAZON FLEX -->
         <button onclick="openScreenshotPicker()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
-          <span>📸</span>
-          <span>Capturas Flex</span>
+          <span>🎬📸</span>
+          <span>Video / Capturas Flex</span>
         </button>
 
         <!-- SELECTOR DE RUTA PRECARGADA -->
@@ -147,11 +147,11 @@
     </div>
   </header>
 
-  <!-- INPUT OCULTO GLOBAL PARA SUBIR CAPTURAS DE PANTALLA DESDE CUALQUIER PESTAÑA -->
+  <!-- INPUT OCULTO GLOBAL PARA SUBIR VIDEO DE PANTALLA O CAPTURAS DESDE CUALQUIER PESTAÑA -->
   <input
     id="flex-screenshots-input"
     type="file"
-    accept="image/*"
+    accept="image/*,video/*"
     multiple
     class="hidden"
     onchange="handleScreenshotsSelected(event)"
@@ -338,22 +338,22 @@
 
   <!-- PANEL 2: AUTO-IMPORTADOR DESDE AMAZON FLEX (CAPTURAS + ATAJO IPHONE + PORTAPAPELES) -->
   <div id="tab-panel-parser" class="hidden max-w-4xl mx-auto px-4 pt-5 space-y-5">
-    <!-- TARJETA 1: ESCÁNER DE CAPTURAS DE PANTALLA DE AMAZON FLEX -->
+    <!-- TARJETA 1: ESCÁNER DE VIDEO DE PANTALLA O CAPTURAS DE AMAZON FLEX -->
     <div class="glass-card rounded-2xl border border-amber-500/40 p-5 space-y-4 shadow-xl">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase">
-              Automático con Visión OCR
+              Video Screen Recording + Visión OCR
             </span>
-            <h2 class="text-base font-black text-white">1. Escanear Capturas de Pantalla de Amazon Flex</h2>
+            <h2 class="text-base font-black text-white">1. Subir Video de Pantalla o Capturas de Amazon Flex</h2>
           </div>
           <p class="text-xs text-slate-300 mt-1">
-            En la app de <strong>Amazon Flex</strong> ve a <strong>Itinerary → List</strong>, toma 1, 2 o más capturas de pantalla y súbelas aquí. FlexRoute extraerá y ordenará todas las paradas automáticamente.
+            En la app de <strong>Amazon Flex</strong> ve a <strong>Itinerary → List</strong> y haz una <strong>Grabación de Pantalla en Video</strong> mientras bajas por la lista (o toma capturas). FlexRoute extraerá los cuadros del video automáticamente, eliminará duplicados y cargará toda la ruta.
           </p>
         </div>
         <button onclick="openScreenshotPicker()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-lg shrink-0">
-          📸 Seleccionar Capturas de Pantalla
+          🎬📸 Subir Video o Capturas de Pantalla
         </button>
       </div>
 
@@ -505,7 +505,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 03:48 PM - 11/08/2026 ↻
+        Actualizado: 03:52 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1355,18 +1355,156 @@
         const url = URL.createObjectURL(file);
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // Recortar el 7% superior (barra de hora/batería de iOS) y 6% inferior (barra inferior)
-          const cropTop = Math.round(img.height * 0.06);
+          // Recortar el 7% superior (barra de hora/batería de iOS) y 5% inferior (barra inferior)
+          const cropTop = Math.round(img.height * 0.065);
           const cropBottom = Math.round(img.height * 0.05);
           const croppedHeight = Math.max(100, img.height - cropTop - cropBottom);
-          canvas.width = img.width;
-          canvas.height = croppedHeight;
+          const scale = img.width > 1100 ? 1100 / img.width : 1;
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(croppedHeight * scale);
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, cropTop, img.width, croppedHeight, 0, 0, img.width, croppedHeight);
-          resolve({ dataUrl: canvas.toDataURL('image/png'), thumbUrl: url });
+          ctx.drawImage(
+            img,
+            0,
+            cropTop,
+            img.width,
+            croppedHeight,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+          const dataUrl = canvas.toDataURL('image/png');
+          resolve({ dataUrl, thumbUrl: url, label: '📸 Foto' });
         };
         img.onerror = reject;
         img.src = url;
+      });
+    }
+
+    function computeFrameSignature(ctx, width, height) {
+      try {
+        const tinyCanvas = document.createElement('canvas');
+        tinyCanvas.width = 24;
+        tinyCanvas.height = 24;
+        const tCtx = tinyCanvas.getContext('2d');
+        tCtx.drawImage(ctx.canvas, 0, 0, width, height, 0, 0, 24, 24);
+        const data = tCtx.getImageData(0, 0, 24, 24).data;
+        const luma = [];
+        for (let i = 0; i < data.length; i += 4) {
+          luma.push(Math.round(data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114));
+        }
+        return luma;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function isFrameDifferentEnough(sigA, sigB) {
+      if (!sigA || !sigB || sigA.length !== sigB.length) return true;
+      let diffSum = 0;
+      for (let i = 0; i < sigA.length; i++) {
+        diffSum += Math.abs(sigA[i] - sigB[i]);
+      }
+      const avgDiff = diffSum / sigA.length;
+      return avgDiff >= 4.2;
+    }
+
+    function extractKeyFramesFromVideo(videoFile, onStatus) {
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const url = URL.createObjectURL(videoFile);
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.preload = 'auto';
+        video.src = url;
+
+        const seekToTime = (t) =>
+          new Promise((resSeek) => {
+            let done = false;
+            const finish = () => {
+              if (done) return;
+              done = true;
+              video.removeEventListener('seeked', finish);
+              resSeek();
+            };
+            video.addEventListener('seeked', finish);
+            setTimeout(finish, 1400);
+            try {
+              video.currentTime = t;
+            } catch (e) {
+              finish();
+            }
+          });
+
+        video.onloadeddata = async () => {
+          try {
+            const rawDuration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 8;
+            const duration = Math.min(Math.max(rawDuration, 0.6), 90);
+            const targetSamples = Math.min(12, Math.max(3, Math.ceil(duration / 1.15)));
+            const step = duration / targetSamples;
+            const sampleTimes = [];
+            for (let k = 0; k < targetSamples; k++) {
+              const t = Math.min(duration - 0.08, Math.max(0.1, Number((k * step + 0.15).toFixed(2))));
+              if (!sampleTimes.includes(t)) sampleTimes.push(t);
+            }
+
+            const vWidth = video.videoWidth || 720;
+            const vHeight = video.videoHeight || 1280;
+            const cropTop = Math.round(vHeight * 0.07);
+            const cropBottom = Math.round(vHeight * 0.05);
+            const croppedHeight = Math.max(120, vHeight - cropTop - cropBottom);
+            const scale = vWidth > 1080 ? 1080 / vWidth : 1;
+
+            const extractedFrames = [];
+            let lastSig = null;
+
+            for (let idx = 0; idx < sampleTimes.length; idx++) {
+              const t = sampleTimes[idx];
+              if (onStatus) {
+                onStatus(`Extrayendo cuadro ${idx + 1}/${sampleTimes.length} del video (${t.toFixed(1)}s)...`);
+              }
+              await seekToTime(t);
+
+              const canvas = document.createElement('canvas');
+              canvas.width = Math.round(vWidth * scale);
+              canvas.height = Math.round(croppedHeight * scale);
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(
+                video,
+                0,
+                cropTop,
+                vWidth,
+                croppedHeight,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+              );
+
+              const sig = computeFrameSignature(ctx, canvas.width, canvas.height);
+              if (extractedFrames.length === 0 || isFrameDifferentEnough(lastSig, sig)) {
+                lastSig = sig;
+                const dataUrl = canvas.toDataURL('image/png');
+                extractedFrames.push({
+                  dataUrl,
+                  thumbUrl: dataUrl,
+                  label: `🎬 ${t.toFixed(1)}s`
+                });
+              }
+            }
+
+            resolve(extractedFrames);
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        video.onerror = (e) => reject(e);
+        video.load();
       });
     }
 
@@ -1384,29 +1522,58 @@
       statusBox.classList.remove('hidden');
       thumbsPreview.innerHTML = '';
 
+      const framesToRecognize = [];
       const combinedTexts = [];
 
       try {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          statusLabel.textContent = `Leyendo captura ${i + 1} de ${files.length} (${file.name})...`;
-          const baseProgress = Math.round((i / files.length) * 100);
+        // 1. Convertir cada archivo (video de pantalla o imagen fija) en cuadros listos para OCR
+        for (let fIdx = 0; fIdx < files.length; fIdx++) {
+          const file = files[fIdx];
+          const isVideo =
+            (file.type && file.type.startsWith('video/')) ||
+            /\.(mp4|mov|m4v|webm)$/i.test(file.name || '');
+
+          if (isVideo) {
+            statusLabel.textContent = `Procesando video de pantalla (${file.name})...`;
+            progressBar.style.width = '8%';
+            statusPercent.textContent = '8%';
+            const videoFrames = await extractKeyFramesFromVideo(file, (msg) => {
+              statusLabel.textContent = msg;
+            });
+            videoFrames.forEach((vf) => framesToRecognize.push(vf));
+          } else {
+            statusLabel.textContent = `Preparando captura ${fIdx + 1} (${file.name})...`;
+            const imgFrame = await preprocessImageForOcr(file);
+            framesToRecognize.push(imgFrame);
+          }
+        }
+
+        // Mostrar miniaturas de todos los cuadros únicos extraídos
+        framesToRecognize.forEach((frame) => {
+          thumbsPreview.insertAdjacentHTML(
+            'beforeend',
+            `<div class="relative shrink-0">
+              <img src="${frame.thumbUrl}" class="h-20 w-auto rounded-lg border border-slate-700 object-cover" />
+              <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-slate-950/90 text-[9px] font-black text-cyan-300 border border-slate-700">${frame.label}</span>
+            </div>`
+          );
+        });
+
+        // 2. Ejecutar OCR con Tesseract sobre cada cuadro único
+        for (let i = 0; i < framesToRecognize.length; i++) {
+          const frame = framesToRecognize[i];
+          statusLabel.textContent = `Leyendo paradas del cuadro ${i + 1} de ${framesToRecognize.length} (${frame.label})...`;
+          const baseProgress = Math.round((i / framesToRecognize.length) * 100);
           progressBar.style.width = `${baseProgress}%`;
           statusPercent.textContent = `${baseProgress}%`;
 
-          const { dataUrl, thumbUrl } = await preprocessImageForOcr(file);
-          thumbsPreview.insertAdjacentHTML(
-            'beforeend',
-            `<img src="${thumbUrl}" class="h-16 w-auto rounded-lg border border-slate-700 object-cover shrink-0" />`
-          );
-
           if (window.Tesseract) {
-            const result = await window.Tesseract.recognize(dataUrl, 'eng', {
+            const result = await window.Tesseract.recognize(frame.dataUrl, 'eng', {
               logger: (m) => {
                 if (m.status === 'recognizing text' && typeof m.progress === 'number') {
                   const totalPct = Math.min(
                     99,
-                    Math.round(((i + m.progress) / files.length) * 100)
+                    Math.round(((i + m.progress) / framesToRecognize.length) * 100)
                   );
                   progressBar.style.width = `${totalPct}%`;
                   statusPercent.textContent = `${totalPct}%`;
@@ -1421,17 +1588,15 @@
 
         progressBar.style.width = '100%';
         statusPercent.textContent = '100%';
-        statusLabel.textContent = `¡${files.length} captura(s) leída(s)! Extrayendo paradas de Amazon Flex...`;
+        statusLabel.textContent = `¡${framesToRecognize.length} cuadro(s) analizado(s) sin duplicados! Cargando ruta...`;
 
         const textarea = document.getElementById('raw-itinerary-textarea');
         const fullRawText = combinedTexts.join('\n\n');
-        textarea.value = textarea.value
-          ? `${textarea.value}\n\n${fullRawText}`
-          : fullRawText;
+        textarea.value = fullRawText;
 
         parseRawItineraryText(false);
       } catch (err) {
-        statusLabel.textContent = 'No se pudo procesar la imagen automáticamente. Intenta con otra captura.';
+        statusLabel.textContent = 'No se pudo procesar el archivo automáticamente. Intenta con otro video o captura.';
       }
     }
 
@@ -1581,7 +1746,38 @@
             continue;
           }
 
-          const dedupeKey = `${fullStreet.toUpperCase()}|${unit}`;
+          const normStreetKey = fullStreet
+            .toUpperCase()
+            .replace(/[.,#]/g, '')
+            .replace(/\bSTREET\b/g, 'ST')
+            .replace(/\bAVENUE\b/g, 'AVE')
+            .replace(/\bDRIVE\b/g, 'DR')
+            .replace(/\bTERRACE\b/g, 'TER')
+            .replace(/\bLANE\b/g, 'LN')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          const existingStop = detectedStops.find((s) => {
+            const sNorm = s.address
+              .toUpperCase()
+              .replace(/[.,#]/g, '')
+              .replace(/\s+/g, ' ')
+              .trim();
+            return sNorm === normStreetKey && (!s.unit || !unit || s.unit === unit);
+          });
+
+          if (existingStop) {
+            if (!existingStop.unit && unit) existingStop.unit = unit;
+            if (existingStop.deadline === '12:00 PM' && pendingDeadline) {
+              existingStop.deadline = pendingDeadline;
+            }
+            if (packages > existingStop.packages) existingStop.packages = packages;
+            pendingStopNum = null;
+            pendingDeadline = null;
+            continue;
+          }
+
+          const dedupeKey = `${normStreetKey}|${unit}`;
           if (seenAddresses.has(dedupeKey)) {
             pendingStopNum = null;
             pendingDeadline = null;
@@ -2435,7 +2631,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '03:48 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '03:52 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
