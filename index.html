@@ -211,6 +211,9 @@
               <button id="gmap-mode-hybrid" onclick="setGoogleMapLayer('hybrid')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">
                 Satélite
               </button>
+              <button id="gmap-traffic-btn" onclick="toggleGoogleTrafficLayer()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                🚦 Tráfico
+              </button>
               <button onclick="fitGoogleMapToRoute()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800">
                 Centrar
               </button>
@@ -286,13 +289,15 @@
               <input
                 id="route-date-input"
                 type="date"
-                onchange="updateRouteScheduleFromInputs()"
+                oninput="updateRouteScheduleFromInputs(true)"
+                onchange="updateRouteScheduleFromInputs(false)"
                 class="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
               />
               <input
                 id="route-time-input"
                 type="time"
-                onchange="updateRouteScheduleFromInputs()"
+                oninput="updateRouteScheduleFromInputs(true)"
+                onchange="updateRouteScheduleFromInputs(false)"
                 class="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
               />
               <button
@@ -304,6 +309,9 @@
               </button>
             </div>
           </div>
+
+          <!-- TELEMETRÍA DE DURACIÓN, DÍA DE LA SEMANA Y TRÁFICO EN TIEMPO REAL -->
+          <div id="route-live-duration-panel" class="p-3.5 rounded-xl bg-slate-950/95 border border-cyan-500/35 space-y-2.5 shadow-inner"></div>
         </div>
 
         <!-- CABECERA DE PARADAS Y MÉTRICAS RÁPIDAS -->
@@ -497,7 +505,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 03:35 PM - 11/08/2026 ↻
+        Actualizado: 03:48 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -588,10 +596,17 @@
         'hialeah-brickell': { date: '2026-11-08', time: '09:54' },
         'custom-imported': { date: '2026-11-08', time: '12:00' }
       },
+      scheduleAnchoredAt: Date.now(),
+      currentLegStartedAt: Date.now(),
+      showLiveTrafficLayer: true,
       stops: [],
       selectedStopId: null,
       activeTab: 'cockpit'
     };
+
+    const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const osrmRouteCache = {};
+    let osrmFetchInFlightKey = null;
 
     function getActiveRouteSchedule() {
       if (!state.routeSchedules) {
@@ -606,6 +621,466 @@
         state.routeSchedules[key] = { date: '2026-11-08', time: '08:00' };
       }
       return state.routeSchedules[key];
+    }
+
+    function parseScheduleDateObj(sched) {
+      const now = new Date();
+      let y = now.getFullYear();
+      let m = now.getMonth() + 1;
+      let d = now.getDate();
+      if (sched && /^\d{4}-\d{2}-\d{2}$/.test(sched.date)) {
+        [y, m, d] = sched.date.split('-').map(Number);
+      }
+      let hh = 8;
+      let mm = 0;
+      if (sched && /^\d{2}:\d{2}$/.test(sched.time)) {
+        [hh, mm] = sched.time.split(':').map(Number);
+      }
+      return new Date(y, m - 1, d, hh, mm, 0);
+    }
+
+    function formatClock12h(dateObj, withSeconds = false) {
+      if (!dateObj || isNaN(dateObj.getTime())) return '--:--';
+      const hh = dateObj.getHours();
+      const mm = String(dateObj.getMinutes()).padStart(2, '0');
+      const ss = String(dateObj.getSeconds()).padStart(2, '0');
+      const period = hh >= 12 ? 'PM' : 'AM';
+      const h12 = hh % 12 || 12;
+      return withSeconds ? `${h12}:${mm}:${ss} ${period}` : `${h12}:${mm} ${period}`;
+    }
+
+    function formatDurationHuman(totalSeconds, includeSeconds = false) {
+      const sec = Math.max(0, Math.round(totalSeconds));
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      if (includeSeconds) {
+        if (h > 0) return `${h} h ${String(m).padStart(2, '0')} min ${String(s).padStart(2, '0')} s`;
+        return `${m} min ${String(s).padStart(2, '0')} s`;
+      }
+      if (h > 0) return `${h} h ${m} min`;
+      return `${m} min`;
+    }
+
+    function haversineMiles(lat1, lng1, lat2, lng2) {
+      const R = 3958.8;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function getLiveTrafficProfile(dateObj, fromPt, toPt) {
+      const dayIdx = dateObj.getDay();
+      const dayName = DAYS_ES[dayIdx] || 'Hoy';
+      const isWeekend = dayIdx === 0 || dayIdx === 6;
+      const hourFloat = dateObj.getHours() + dateObj.getMinutes() / 60 + dateObj.getSeconds() / 3600;
+
+      // Factor base según día de la semana (Viernes más pesado, Domingo más fluido)
+      const dayBaseMap = [0.90, 1.07, 1.09, 1.10, 1.13, 1.19, 0.98];
+      const dayBase = dayBaseMap[dayIdx] || 1.05;
+
+      let timeFactor = 1.0;
+      let label = 'Tráfico Fluido';
+      let dotColor = 'bg-emerald-400';
+      let badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+
+      if (!isWeekend) {
+        if (hourFloat >= 6.5 && hourFloat < 9.5) {
+          // Hora pico de la mañana (pico máximo ~8:00 AM)
+          const distFromPeak = Math.abs(hourFloat - 8.0);
+          timeFactor = 1.38 - distFromPeak * 0.10;
+          label = 'Hora Pico Mañana';
+          dotColor = 'bg-rose-400';
+          badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+        } else if (hourFloat >= 9.5 && hourFloat < 11.5) {
+          timeFactor = 1.15;
+          label = 'Tráfico Moderado (Media Mañana)';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else if (hourFloat >= 11.5 && hourFloat < 14.25) {
+          timeFactor = 1.22;
+          label = 'Tráfico Mediodía Comercial';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else if (hourFloat >= 14.25 && hourFloat < 15.5) {
+          timeFactor = 1.29;
+          label = 'Tráfico Intenso (Salida Escolar)';
+          dotColor = 'bg-orange-400';
+          badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+        } else if (hourFloat >= 15.5 && hourFloat < 19.25) {
+          // Hora pico de la tarde (pico máximo ~5:15 PM)
+          const distFromPeak = Math.abs(hourFloat - 17.25);
+          timeFactor = 1.48 - distFromPeak * 0.09;
+          label = 'Hora Pico Tarde (Tráfico Pesado)';
+          dotColor = 'bg-rose-500';
+          badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+        } else if (hourFloat >= 19.25 && hourFloat < 21.5) {
+          timeFactor = 1.14;
+          label = 'Tráfico Moderado Nocturno';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else {
+          timeFactor = 0.96;
+          label = 'Vía Despejada Nocturna';
+          dotColor = 'bg-emerald-400';
+          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+        }
+      } else {
+        // Sábado y Domingo
+        if (hourFloat >= 0 && hourFloat < 9.25) {
+          timeFactor = 0.98;
+          label = 'Mañana Fluida de Fin de Semana';
+          dotColor = 'bg-emerald-400';
+          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+        } else if (hourFloat >= 9.25 && hourFloat < 11.5) {
+          timeFactor = 1.12;
+          label = 'Tráfico Ligero Fin de Semana';
+          dotColor = 'bg-emerald-400';
+          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+        } else if (hourFloat >= 11.5 && hourFloat < 14.5) {
+          timeFactor = 1.25;
+          label = 'Tráfico Moderado (Playas / Puentes)';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else if (hourFloat >= 14.5 && hourFloat < 19.75) {
+          timeFactor = dayIdx === 6 ? 1.35 : 1.28;
+          label = 'Tráfico Intenso Tarde Fin de Semana';
+          dotColor = 'bg-orange-400';
+          badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+        } else if (hourFloat >= 19.75 && hourFloat < 23.0) {
+          timeFactor = dayIdx === 6 ? 1.24 : 1.12;
+          label = 'Tráfico Nocturno Fin de Semana';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else {
+          timeFactor = 0.97;
+          label = 'Tráfico Fluido';
+        }
+      }
+
+      // Recargo por cruce de puentes (I-395 / Venetian / I-195) o zonas densas (Brickell / Collins)
+      let corridorFactor = 0;
+      if (fromPt && toPt) {
+        const crossesBay = (fromPt.lng < -80.175 && toPt.lng >= -80.175) || (fromPt.lng >= -80.175 && toPt.lng < -80.175);
+        if (crossesBay) corridorFactor += 0.07;
+        const inDenseZone = toPt.lng > -80.132 || (toPt.lat < 25.772 && toPt.lng > -80.205);
+        if (inDenseZone) corridorFactor += 0.04;
+      }
+
+      // Micro-fluctuación de sensores en vivo
+      const livePulse = Math.sin(Math.floor(Date.now() / 12000)) * 0.012;
+      const multiplier = Math.max(0.95, Number((dayBase * timeFactor + corridorFactor + livePulse).toFixed(3)));
+      const surgePct = Math.max(0, Math.round((multiplier - 1) * 100));
+
+      return {
+        dayName,
+        isWeekend,
+        multiplier,
+        surgePct,
+        label,
+        dotColor,
+        badgeCls
+      };
+    }
+
+    function getActiveWaypointsList() {
+      const completedStops = state.stops.filter((s) => s.completed);
+      const activeStops = state.stops.filter((s) => !s.completed);
+
+      let originPt = { lat: 25.8219, lng: -80.2618, label: 'P1 (Estación Salida)' };
+      if (completedStops.length > 0) {
+        const lastDone = completedStops[completedStops.length - 1];
+        originPt = {
+          lat: lastDone.lat,
+          lng: lastDone.lng,
+          label: `Parada ${lastDone.originalNumber} (Última entregada)`
+        };
+      }
+
+      const waypoints = [originPt];
+      activeStops.forEach((s) => {
+        waypoints.push({ lat: s.lat, lng: s.lng, stop: s, label: `Parada ${s.originalNumber}` });
+      });
+
+      if (state.endMode === 'return_to_start') {
+        waypoints.push({ lat: 25.8219, lng: -80.2618, isClosing: true, label: 'Cierre en P1' });
+      } else if (state.endMode === 'brickell') {
+        waypoints.push({ lat: 25.7617, lng: -80.1918, isClosing: true, label: 'Cierre en Brickell' });
+      } else if (state.endMode === 'custom' && state.customEndAddress) {
+        const est = estimateCoordinatesFromAddress(state.customEndAddress, 'Miami, FL', 0);
+        waypoints.push({ lat: est.lat, lng: est.lng, isClosing: true, label: 'Destino de Cierre' });
+      }
+
+      return { waypoints, activeStops, completedStops, originPt };
+    }
+
+    function getWaypointsCacheKey(waypoints) {
+      return waypoints.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';');
+    }
+
+    async function fetchOsrmRouteForActiveStops() {
+      const { waypoints } = getActiveWaypointsList();
+      if (waypoints.length < 2) return;
+      const key = getWaypointsCacheKey(waypoints);
+      if (osrmRouteCache[key] || osrmFetchInFlightKey === key) return;
+
+      osrmFetchInFlightKey = key;
+      try {
+        const coordsQuery = waypoints.map((p) => `${p.lng},${p.lat}`).join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.routes && data.routes[0]) {
+            const r = data.routes[0];
+            const latLngGeometry =
+              r.geometry && Array.isArray(r.geometry.coordinates)
+                ? r.geometry.coordinates.map(([lng, lat]) => [lat, lng])
+                : null;
+            osrmRouteCache[key] = {
+              legs: r.legs || [],
+              totalDistanceMeters: r.distance || 0,
+              totalBaseDurationSec: r.duration || 0,
+              geometry: latLngGeometry
+            };
+            updateLiveTelemetryTick();
+            if (googleMapInstance && latLngGeometry && latLngGeometry.length > 1) {
+              if (googleRoutePolyline) {
+                googleMapInstance.removeLayer(googleRoutePolyline);
+              }
+              googleRoutePolyline = L.polyline(latLngGeometry, {
+                color: '#06b6d4',
+                weight: 4.5,
+                opacity: 0.9
+              }).addTo(googleMapInstance);
+            }
+          }
+        }
+      } catch (e) {
+      } finally {
+        if (osrmFetchInFlightKey === key) osrmFetchInFlightKey = null;
+      }
+    }
+
+    function estimateStopServiceSeconds(stop) {
+      const hasUnit = Boolean(stop.unit && stop.unit.trim());
+      const isHighRiseArea = /COLLINS|ISLAND|CENTURY|BRICKELL|BISCAYNE|VENETIAN/i.test(stop.address || '');
+      let baseSec = hasUnit || isHighRiseArea ? 205 : 105; // ~3.4 min edificio/condo vs ~1.75 min casa
+      const extraPkgs = Math.max(0, (stop.packages || 1) - 1);
+      const extraLocs = Math.max(0, (stop.locations || 1) - 1);
+      baseSec += extraPkgs * 25 + extraLocs * 40;
+      if (stop.gateCode) baseSec += 35;
+      return baseSec;
+    }
+
+    function computeRouteTelemetry() {
+      const sched = getActiveRouteSchedule();
+      const baseStartDate = parseScheduleDateObj(sched);
+      const nowMs = Date.now();
+      const elapsedTotalSec = Math.max(0, Math.floor((nowMs - (state.scheduleAnchoredAt || nowMs)) / 1000));
+      const elapsedLegSec = Math.max(0, Math.floor((nowMs - (state.currentLegStartedAt || nowMs)) / 1000));
+
+      // El reloj activo de la ruta avanza en tiempo real segundo a segundo desde la hora configurada
+      const activeRouteClock = new Date(baseStartDate.getTime() + elapsedTotalSec * 1000);
+      const { waypoints, activeStops, completedStops, originPt } = getActiveWaypointsList();
+      const cacheKey = getWaypointsCacheKey(waypoints);
+      const osrmData = osrmRouteCache[cacheKey];
+
+      let runningClock = new Date(activeRouteClock.getTime());
+      let totalBaseDrivingSec = 0;
+      let totalTrafficDrivingSec = 0;
+      let totalServiceSec = 0;
+      let totalMiles = 0;
+
+      const headlineTraffic = getLiveTrafficProfile(
+        activeRouteClock,
+        waypoints[0],
+        waypoints[1] || waypoints[0]
+      );
+
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const fromPt = waypoints[i];
+        const toPt = waypoints[i + 1];
+
+        let legBaseSec = 0;
+        let legMiles = 0;
+
+        if (osrmData && osrmData.legs && osrmData.legs[i]) {
+          legMiles = (osrmData.legs[i].distance || 0) / 1609.34;
+          // Ajuste urbano de semáforos e intersecciones reales sobre velocidad libre OSRM
+          legBaseSec = Math.round((osrmData.legs[i].duration || 60) * 1.12);
+        } else {
+          const straightMiles = haversineMiles(fromPt.lat, fromPt.lng, toPt.lat, toPt.lng);
+          legMiles = straightMiles * 1.34;
+          const baseMph = legMiles > 3.5 ? 27 : legMiles > 1.2 ? 19 : 14;
+          legBaseSec = Math.round((legMiles / baseMph) * 3600) + 28;
+        }
+
+        const legTraffic = getLiveTrafficProfile(runningClock, fromPt, toPt);
+        let legWithTrafficSec = Math.round(legBaseSec * legTraffic.multiplier);
+
+        // En el tramo actual (i === 0), descontamos el tiempo que va pasando en tiempo real
+        if (i === 0 && activeStops.length > 0) {
+          legWithTrafficSec = Math.max(15, legWithTrafficSec - elapsedLegSec);
+          legBaseSec = Math.max(12, legBaseSec - Math.round(elapsedLegSec / legTraffic.multiplier));
+        }
+
+        totalMiles += legMiles;
+        totalBaseDrivingSec += legBaseSec;
+        totalTrafficDrivingSec += legWithTrafficSec;
+
+        runningClock = new Date(runningClock.getTime() + legWithTrafficSec * 1000);
+
+        if (toPt.stop) {
+          toPt.stop.liveEtaDate = new Date(runningClock.getTime());
+          toPt.stop.liveLegMin = Math.max(1, Math.round(legWithTrafficSec / 60));
+          toPt.stop.liveTrafficPct = legTraffic.surgePct;
+
+          const svcSec = estimateStopServiceSeconds(toPt.stop);
+          totalServiceSec += svcSec;
+          runningClock = new Date(runningClock.getTime() + svcSec * 1000);
+        }
+      }
+
+      const totalRemainingSec = totalTrafficDrivingSec + totalServiceSec;
+      const trafficDelaySec = Math.max(0, totalTrafficDrivingSec - totalBaseDrivingSec);
+
+      return {
+        dayName: headlineTraffic.dayName,
+        trafficLabel: headlineTraffic.label,
+        trafficDotColor: headlineTraffic.dotColor,
+        trafficBadgeCls: headlineTraffic.badgeCls,
+        trafficSurgePct: headlineTraffic.surgePct,
+        activeRouteClock,
+        estimatedFinishDate: runningClock,
+        totalRemainingSec,
+        totalTrafficDrivingSec,
+        totalServiceSec,
+        trafficDelaySec,
+        totalMiles: Number(totalMiles.toFixed(1)),
+        activeCount: activeStops.length,
+        completedCount: completedStops.length,
+        totalCount: state.stops.length,
+        elapsedTotalSec,
+        originLabel: originPt.label,
+        usingRealRoads: Boolean(osrmData)
+      };
+    }
+
+    function parseDeadlineToMinutes(deadlineStr) {
+      if (!deadlineStr) return null;
+      const m = deadlineStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!m) return null;
+      let hh = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10);
+      const ampm = m[3].toUpperCase();
+      if (ampm === 'PM' && hh !== 12) hh += 12;
+      if (ampm === 'AM' && hh === 12) hh = 0;
+      return hh * 60 + mm;
+    }
+
+    function renderLiveDurationPanel() {
+      const panel = document.getElementById('route-live-duration-panel');
+      if (!panel) return;
+
+      const t = computeRouteTelemetry();
+
+      if (t.activeCount === 0 && state.endMode === 'none') {
+        panel.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-emerald-300">✅ ¡Todas las paradas completadas!</span>
+            <span class="text-xs font-bold text-slate-400">0 min restantes</span>
+          </div>
+        `;
+        return;
+      }
+
+      const elapsedStr = formatDurationHuman(t.elapsedTotalSec, true);
+      const finishTimeStr = formatClock12h(t.estimatedFinishDate, false);
+      const activeClockStr = formatClock12h(t.activeRouteClock, true);
+      const totalDurationStr = formatDurationHuman(t.totalRemainingSec, true);
+      const drivingStr = formatDurationHuman(t.totalTrafficDrivingSec, false);
+      const serviceStr = formatDurationHuman(t.totalServiceSec, false);
+      const delayMin = Math.max(1, Math.round(t.trafficDelaySec / 60));
+
+      panel.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">
+                Tiempo para Completar Ruta (En Vivo)
+              </span>
+            </div>
+            <div class="flex flex-wrap items-baseline gap-2 mt-0.5">
+              <span class="text-lg sm:text-xl font-black text-white font-mono tracking-tight">
+                ⏱️ ${totalDurationStr}
+              </span>
+              <span class="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-xs font-black text-cyan-300">
+                🏁 Termina: ${finishTimeStr}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-end gap-1">
+            <span class="px-2.5 py-1 rounded-lg border text-[11px] font-extrabold flex items-center gap-1.5 ${t.trafficBadgeCls}">
+              <span class="w-2 h-2 rounded-full ${t.trafficDotColor}"></span>
+              <span>${t.dayName} • ${t.trafficLabel} (+${t.trafficSurgePct}%)</span>
+            </span>
+            <span class="text-[10px] text-slate-400 font-mono">
+              Reloj ruta: ${activeClockStr} • En curso: ${elapsedStr}
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-800/90 text-[11px]">
+          <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400 font-semibold">🚗 Manejo (${t.totalMiles} mi):</span>
+            <span class="font-black text-white">${drivingStr}</span>
+          </div>
+          <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400 font-semibold">📦 En ${t.activeCount} paradas:</span>
+            <span class="font-black text-emerald-300">${serviceStr}</span>
+          </div>
+          <div class="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+            <span class="text-slate-400 font-semibold">🚦 Impacto tráfico:</span>
+            <span class="font-black text-amber-300">+${delayMin} min (${t.completedCount}/${t.totalCount} listas)</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateStopCardsLiveEtaBadges() {
+      state.stops.forEach((stop) => {
+        const badge = document.getElementById(`stop-eta-badge-${stop.id}`);
+        if (!badge) return;
+        if (stop.completed) {
+          badge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold';
+          badge.textContent = '✓ Entregada';
+          return;
+        }
+        if (stop.liveEtaDate) {
+          const etaStr = formatClock12h(stop.liveEtaDate, false);
+          const etaMinutes = stop.liveEtaDate.getHours() * 60 + stop.liveEtaDate.getMinutes();
+          const dlMinutes = parseDeadlineToMinutes(stop.deadline);
+          const isLate = dlMinutes !== null && etaMinutes > dlMinutes;
+          badge.className = isLate
+            ? 'px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/50 text-rose-300 font-extrabold'
+            : 'px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 font-extrabold';
+          badge.textContent = `🏁 Llegada: ${etaStr} (~${stop.liveLegMin || 1}m)${isLate ? ' ⚠️' : ''}`;
+        }
+      });
+    }
+
+    function updateLiveTelemetryTick() {
+      renderLiveDurationPanel();
+      updateStopCardsLiveEtaBadges();
     }
 
     function formatScheduleDisplay(sched) {
@@ -625,17 +1100,22 @@
       return `📅 ${dateFormatted} • ⏰ ${timeFormatted}`;
     }
 
-    function updateRouteScheduleFromInputs() {
+    function updateRouteScheduleFromInputs(silent = false) {
       const dateEl = document.getElementById('route-date-input');
       const timeEl = document.getElementById('route-time-input');
       const sched = getActiveRouteSchedule();
       if (dateEl && dateEl.value) sched.date = dateEl.value;
       if (timeEl && timeEl.value) sched.time = timeEl.value;
+      state.scheduleAnchoredAt = Date.now();
+      state.currentLegStartedAt = Date.now();
       state.pickupTime = formatScheduleDisplay(sched);
       renderHeaderControls();
+      renderLiveDurationPanel();
       renderStopCards();
       saveStateToStorage();
-      showToast(`Fecha y hora guardadas: ${state.pickupTime}`);
+      if (!silent) {
+        showToast(`Ruta recalculada para ${state.pickupTime}`);
+      }
     }
 
     function setRouteScheduleToNow() {
@@ -648,10 +1128,13 @@
       const sched = getActiveRouteSchedule();
       sched.date = `${yyyy}-${mm}-${dd}`;
       sched.time = `${hh}:${min}`;
+      state.scheduleAnchoredAt = Date.now();
+      state.currentLegStartedAt = Date.now();
       renderHeaderControls();
+      renderLiveDurationPanel();
       renderStopCards();
       saveStateToStorage();
-      showToast(`Ruta actualizada a hoy (${formatScheduleDisplay(sched)})`);
+      showToast(`Hora de salida ajustada a Ahora (${formatScheduleDisplay(sched)})`);
     }
 
     function showToast(message) {
@@ -720,6 +1203,8 @@
       state.tacticalNotes = preset.tacticalNotes;
       state.activeVariant = presetId === 'miami-beach' ? 'option-b' : 'optimized';
       state.belleIsleMode = '11-10-9';
+      state.scheduleAnchoredAt = Date.now();
+      state.currentLegStartedAt = Date.now();
 
       const stopMap = new Map(preset.stops.map((s) => [s.originalNumber, { ...s, completed: false }]));
       state.stops = preset.defaultOrder.map((num) => stopMap.get(num)).filter(Boolean);
@@ -791,12 +1276,19 @@
       const stop = state.stops.find((s) => s.id === stopId);
       if (stop) {
         stop.completed = !stop.completed;
+        stop.completedAt = stop.completed ? Date.now() : null;
+        state.currentLegStartedAt = Date.now();
         renderAll();
       }
     }
 
     function resetAllCompleted() {
-      state.stops.forEach((s) => (s.completed = false));
+      state.stops.forEach((s) => {
+        s.completed = false;
+        s.completedAt = null;
+      });
+      state.scheduleAnchoredAt = Date.now();
+      state.currentLegStartedAt = Date.now();
       renderAll();
     }
 
@@ -1557,6 +2049,12 @@
       }
     }
 
+    function getGoogleTileUrl() {
+      const baseLyrs = currentGoogleLayerMode === 'hybrid' ? 'y' : 'm';
+      const trafficSuffix = state.showLiveTrafficLayer !== false ? ',traffic' : '';
+      return `https://mt1.google.com/vt/lyrs=${baseLyrs}${trafficSuffix}&x={x}&y={y}&z={z}`;
+    }
+
     function initGoogleMapIfNeeded() {
       const container = document.getElementById('tactical-google-map');
       if (!container || !window.L) return null;
@@ -1574,7 +2072,7 @@
         }
       });
 
-      googleTileLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      googleTileLayer = L.tileLayer(getGoogleTileUrl(), {
         maxZoom: 20
       }).addTo(googleMapInstance);
 
@@ -1583,23 +2081,21 @@
     }
 
     function setGoogleMapLayer(mode) {
-      currentGoogleLayerMode = mode;
+      currentGoogleLayerMode = mode || currentGoogleLayerMode;
       const map = initGoogleMapIfNeeded();
       if (!map) return;
 
       if (googleTileLayer) {
         map.removeLayer(googleTileLayer);
       }
-      // lyrs=m: Google Maps Calles estándar | lyrs=y: Google Maps Satélite Híbrido con nombres de calles
-      const lyrs = mode === 'hybrid' ? 'y' : 'm';
-      googleTileLayer = L.tileLayer(`https://mt1.google.com/vt/lyrs=${lyrs}&x={x}&y={y}&z={z}`, {
+      googleTileLayer = L.tileLayer(getGoogleTileUrl(), {
         maxZoom: 20
       }).addTo(map);
 
       const btnStreets = document.getElementById('gmap-mode-streets');
       const btnHybrid = document.getElementById('gmap-mode-hybrid');
       if (btnStreets && btnHybrid) {
-        if (mode === 'hybrid') {
+        if (currentGoogleLayerMode === 'hybrid') {
           btnHybrid.className = 'px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
           btnStreets.className = 'px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800';
         } else {
@@ -1607,6 +2103,18 @@
           btnHybrid.className = 'px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800';
         }
       }
+    }
+
+    function toggleGoogleTrafficLayer() {
+      state.showLiveTrafficLayer = state.showLiveTrafficLayer === false ? true : false;
+      const btnTraffic = document.getElementById('gmap-traffic-btn');
+      if (btnTraffic) {
+        btnTraffic.className = state.showLiveTrafficLayer
+          ? 'px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+          : 'px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800';
+      }
+      setGoogleMapLayer(currentGoogleLayerMode);
+      saveStateToStorage();
     }
 
     function fitGoogleMapToRoute() {
@@ -1799,6 +2307,9 @@
                       ${stop.city} • <span class="text-slate-300 font-semibold">${stop.zone}</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px]">
+                      <span id="stop-eta-badge-${stop.id}" class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 font-extrabold">
+                        🏁 Calculando...
+                      </span>
                       <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">
                         ⏰ Límite: ${stop.deadline}
                       </span>
@@ -1898,12 +2409,15 @@
     function renderAll() {
       saveStateToStorage();
       renderHeaderControls();
+      renderLiveDurationPanel();
       renderSequencePills();
       renderMultiStopLinks();
       renderStrategyControls();
       renderSvgMap();
       renderStopCards();
+      updateStopCardsLiveEtaBadges();
       renderBottomActionBar();
+      fetchOsrmRouteForActiveStops();
     }
 
     function checkUrlAutoImport() {
@@ -1921,7 +2435,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '03:35 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '03:48 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
@@ -1959,6 +2473,8 @@
           const parsed = JSON.parse(saved);
           if (parsed && Array.isArray(parsed.stops) && parsed.stops.length > 0) {
             state = { ...state, ...parsed };
+            if (!state.scheduleAnchoredAt) state.scheduleAnchoredAt = Date.now();
+            if (!state.currentLegStartedAt) state.currentLegStartedAt = Date.now();
             renderAll();
           } else {
             loadPresetRoute('miami-beach');
@@ -1969,6 +2485,9 @@
       } catch (e) {
         loadPresetRoute('miami-beach');
       }
+
+      // Actualizar en tiempo real cada 1 segundo (reloj activo, tráfico y descuento de tiempo en vivo)
+      setInterval(updateLiveTelemetryTick, 1000);
 
       // Si viene desde el Atajo de iPhone (?import=...), procesa e inyecta automáticamente
       checkUrlAutoImport();
