@@ -721,7 +721,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:20 PM - 11/08/2026 ↻
+        Actualizado: 06:25 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -2516,6 +2516,14 @@
           headerFlexVideoBtn.classList.add('hidden');
         }
       }
+      const savedRoutesBar = document.getElementById('saved-routes-bar');
+      if (savedRoutesBar) {
+        if (tabName === 'parser') {
+          savedRoutesBar.classList.add('hidden');
+        } else {
+          savedRoutesBar.classList.remove('hidden');
+        }
+      }
       ['cockpit', 'parser', 'add'].forEach((t) => {
         const panel = document.getElementById(`tab-panel-${t}`);
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -4180,7 +4188,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:20 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:25 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
