@@ -533,7 +533,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 04:45 PM - 11/08/2026 ↻
+        Actualizado: 04:55 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -647,7 +647,7 @@
     };
 
     const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    const osrmRouteCache = {};
+    let osrmRouteCache = {};
     let osrmFetchInFlightKey = null;
 
     function isInsideVeneziaLakes(pt) {
@@ -717,16 +717,208 @@
       );
     }
 
+    function getActiveRouteSchedule() {
+      if (!state.routeSchedules) {
+        state.routeSchedules = {
+          'miami-beach': { date: '2026-11-08', time: '07:49', endTime: '11:30' },
+          'hialeah-brickell': { date: '2026-11-08', time: '09:54', endTime: '13:30' },
+          'custom-imported': { date: '2026-11-08', time: '10:00', endTime: '12:00' }
+        };
+      }
+      const key = state.activePresetId || 'miami-beach';
+      if (!state.routeSchedules[key]) {
+        state.routeSchedules[key] = { date: '2026-11-08', time: '10:00', endTime: '12:00' };
+      }
+      if (!state.routeSchedules[key].endTime) {
+        state.routeSchedules[key].endTime =
+          key === 'miami-beach' ? '11:30' : key === 'hialeah-brickell' ? '13:30' : '12:00';
+      }
+      return state.routeSchedules[key];
+    }
+
+    function parseScheduleDateObj(sched, timeField = 'time') {
+      const now = new Date();
+      let y = now.getFullYear();
+      let m = now.getMonth() + 1;
+      let d = now.getDate();
+      if (sched && /^\d{4}-\d{2}-\d{2}$/.test(sched.date)) {
+        [y, m, d] = sched.date.split('-').map(Number);
+      }
+      let hh = timeField === 'endTime' ? 12 : 10;
+      let mm = 0;
+      const rawT = sched && sched[timeField] ? sched[timeField] : null;
+      if (rawT && /^\d{2}:\d{2}$/.test(rawT)) {
+        [hh, mm] = rawT.split(':').map(Number);
+      }
+      return new Date(y, m - 1, d, hh, mm, 0);
+    }
+
+    function formatClock12h(dateObj, withSeconds = false) {
+      if (!dateObj || isNaN(dateObj.getTime())) return '--:--';
+      const hh = dateObj.getHours();
+      const mm = String(dateObj.getMinutes()).padStart(2, '0');
+      const ss = String(dateObj.getSeconds()).padStart(2, '0');
+      const period = hh >= 12 ? 'PM' : 'AM';
+      const h12 = hh % 12 || 12;
+      return withSeconds ? `${h12}:${mm}:${ss} ${period}` : `${h12}:${mm} ${period}`;
+    }
+
+    function formatDurationHuman(totalSeconds, includeSeconds = false) {
+      const sec = Math.max(0, Math.round(totalSeconds));
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      if (includeSeconds) {
+        if (h > 0) return `${h} h ${String(m).padStart(2, '0')} min ${String(s).padStart(2, '0')} s`;
+        return `${m} min ${String(s).padStart(2, '0')} s`;
+      }
+      if (h > 0) return `${h} h ${m} min`;
+      return `${m} min`;
+    }
+
+    function haversineMiles(lat1, lng1, lat2, lng2) {
+      const R = 3958.8;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function getLiveTrafficProfile(dateObj, fromPt, toPt) {
+      const dayIdx = dateObj.getDay();
+      const dayName = DAYS_ES[dayIdx] || 'Hoy';
+      const isWeekend = dayIdx === 0 || dayIdx === 6;
+      const hourFloat = dateObj.getHours() + dateObj.getMinutes() / 60 + dateObj.getSeconds() / 3600;
+
+      const dayBaseMap = [0.90, 1.07, 1.09, 1.10, 1.13, 1.19, 0.98];
+      const dayBase = dayBaseMap[dayIdx] || 1.05;
+
+      let timeFactor = 1.0;
+      let label = 'Tráfico Fluido';
+      let dotColor = 'bg-emerald-400';
+      let badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+
+      if (!isWeekend) {
+        if (hourFloat >= 6.5 && hourFloat < 9.5) {
+          const distFromPeak = Math.abs(hourFloat - 8.0);
+          timeFactor = 1.38 - distFromPeak * 0.10;
+          label = 'Hora Pico Mañana';
+          dotColor = 'bg-rose-400';
+          badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+        } else if (hourFloat >= 9.5 && hourFloat < 11.5) {
+          timeFactor = 1.15;
+          label = 'Tráfico Moderado (Media Mañana)';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else if (hourFloat >= 11.5 && hourFloat < 14.25) {
+          timeFactor = 1.22;
+          label = 'Tráfico Mediodía Comercial';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else if (hourFloat >= 14.25 && hourFloat < 15.5) {
+          timeFactor = 1.29;
+          label = 'Tráfico Intenso (Salida Escolar)';
+          dotColor = 'bg-orange-400';
+          badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+        } else if (hourFloat >= 15.5 && hourFloat < 19.25) {
+          const distFromPeak = Math.abs(hourFloat - 17.25);
+          timeFactor = 1.48 - distFromPeak * 0.09;
+          label = 'Hora Pico Tarde (Tráfico Pesado)';
+          dotColor = 'bg-rose-500';
+          badgeCls = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+        } else if (hourFloat >= 19.25 && hourFloat < 21.5) {
+          timeFactor = 1.14;
+          label = 'Tráfico Moderado Nocturno';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else {
+          timeFactor = 0.96;
+          label = 'Vía Despejada Nocturna';
+          dotColor = 'bg-emerald-400';
+          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+        }
+      } else {
+        if (hourFloat >= 0 && hourFloat < 9.25) {
+          timeFactor = 0.98;
+          label = 'Mañana Fluida de Fin de Semana';
+          dotColor = 'bg-emerald-400';
+          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+        } else if (hourFloat >= 9.25 && hourFloat < 11.5) {
+          timeFactor = 1.12;
+          label = 'Tráfico Ligero Fin de Semana';
+          dotColor = 'bg-emerald-400';
+          badgeCls = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35';
+        } else if (hourFloat >= 11.5 && hourFloat < 14.5) {
+          timeFactor = 1.25;
+          label = 'Tráfico Moderado (Playas / Puentes)';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else if (hourFloat >= 14.5 && hourFloat < 19.75) {
+          timeFactor = dayIdx === 6 ? 1.35 : 1.28;
+          label = 'Tráfico Intenso Tarde Fin de Semana';
+          dotColor = 'bg-orange-400';
+          badgeCls = 'bg-orange-500/20 text-orange-300 border-orange-500/40';
+        } else if (hourFloat >= 19.75 && hourFloat < 23.0) {
+          timeFactor = dayIdx === 6 ? 1.24 : 1.12;
+          label = 'Tráfico Nocturno Fin de Semana';
+          dotColor = 'bg-amber-400';
+          badgeCls = 'bg-amber-500/15 text-amber-300 border-amber-500/35';
+        } else {
+          timeFactor = 0.97;
+          label = 'Tráfico Fluido';
+        }
+      }
+
+      let corridorFactor = 0;
+      if (fromPt && toPt) {
+        const crossesBay = (fromPt.lng < -80.175 && toPt.lng >= -80.175) || (fromPt.lng >= -80.175 && toPt.lng < -80.175);
+        if (crossesBay) corridorFactor += 0.07;
+        const inDenseZone = toPt.lng > -80.132 || (toPt.lat < 25.772 && toPt.lng > -80.205);
+        if (inDenseZone) corridorFactor += 0.04;
+      }
+
+      const livePulse = Math.sin(Math.floor(Date.now() / 12000)) * 0.012;
+      const multiplier = Math.max(0.95, Number((dayBase * timeFactor + corridorFactor + livePulse).toFixed(3)));
+      const surgePct = Math.max(0, Math.round((multiplier - 1) * 100));
+
+      return {
+        dayName,
+        isWeekend,
+        multiplier,
+        surgePct,
+        label,
+        dotColor,
+        badgeCls
+      };
+    }
+
     function getStationCoordinates() {
-      // Si la ruta está en el sur (DMI9 Amazon / Kendall / Three Lakes), usar coordenadas de DMI9 (13450 SW 131st St)
+      // Si la ruta está en el sur (DMI9 Amazon / Kendall / Three Lakes), usar coordenadas de DMI9 (13350 SW 131st St)
       const hasSouthStops =
         Array.isArray(state.stops) &&
         state.stops.length > 0 &&
         state.stops.some((s) => typeof s.lat === 'number' && s.lat < 25.68);
-      if (hasSouthStops || /DMI9|131ST|13450/i.test(state.pickupAddress || '')) {
-        return { lat: 25.6442, lng: -80.4112, label: 'P1 (Estación DMI9)' };
+      if (hasSouthStops || /DMI9|131ST|13450|13350/i.test(state.pickupAddress || '')) {
+        return {
+          lat: 25.6442,
+          lng: -80.4112,
+          label: 'P1 (Estación DMI9)',
+          isDmi9: true,
+          address: 'DMI9 Amazon (13350 SW 131st St, Miami, FL)'
+        };
       }
-      return { lat: 25.8219, lng: -80.2618, label: 'P1 (Estación Salida)' };
+      return {
+        lat: 25.8219,
+        lng: -80.2618,
+        label: 'P1 (Estación Salida)',
+        isDmi9: false,
+        address: state.pickupAddress || '1125 SE 8th Street, Suite 700, Hialeah, FL'
+      };
     }
 
     function getActiveWaypointsList(includeClosing = false) {
@@ -1144,14 +1336,15 @@
     }
 
     function formatShortSavedRouteLabel(sched, stopCount) {
-      let shortDate = sched.date || '';
+      const safeSched = sched || { date: '2026-11-08', time: '10:00', endTime: '12:00' };
+      let shortDate = safeSched.date || '2026-11-08';
       if (/^\d{4}-\d{2}-\d{2}$/.test(shortDate)) {
         const [, m, d] = shortDate.split('-');
         shortDate = `${m}/${d}`;
       }
-      const startStr = format24hTo12hStr(sched.time);
-      const endStr = sched.endTime ? format24hTo12hStr(sched.endTime) : '';
-      return `${shortDate} • ${startStr}${endStr ? '–' + endStr : ''} (${stopCount})`;
+      const startStr = format24hTo12hStr(safeSched.time || '10:00');
+      const endStr = safeSched.endTime ? format24hTo12hStr(safeSched.endTime) : '';
+      return `${shortDate} • ${startStr}${endStr ? '–' + endStr : ''} (${stopCount || 0})`;
     }
 
     function registerCurrentRoute(silent = false) {
@@ -1165,6 +1358,7 @@
         date: sched.date,
         time: sched.time,
         endTime: sched.endTime,
+        schedule: { date: sched.date, time: sched.time, endTime: sched.endTime },
         label: formatShortSavedRouteLabel(sched, state.stops.length),
         pickupAddress: state.pickupAddress,
         endMode: state.endMode,
@@ -1173,9 +1367,12 @@
         stops: JSON.parse(JSON.stringify(state.stops))
       };
 
-      const existingIdx = state.savedRoutes.findIndex(
-        (r) => r.id === routeKey || (r.date === sched.date && r.time === sched.time && r.endTime === sched.endTime)
-      );
+      const existingIdx = state.savedRoutes.findIndex((r) => {
+        const rDate = r.date || (r.schedule && r.schedule.date);
+        const rTime = r.time || (r.schedule && r.schedule.time);
+        const rEnd = r.endTime || (r.schedule && r.schedule.endTime);
+        return r.id === routeKey || (rDate === sched.date && rTime === sched.time && rEnd === sched.endTime);
+      });
       if (existingIdx >= 0) {
         state.savedRoutes[existingIdx] = record;
       } else {
@@ -1195,12 +1392,17 @@
       if (!Array.isArray(state.savedRoutes)) return;
       const found = state.savedRoutes.find((r) => r.id === routeId);
       if (!found) return;
+      const fSched = found.schedule || {
+        date: found.date || '2026-11-08',
+        time: found.time || '10:00',
+        endTime: found.endTime || '12:00'
+      };
       state.activePresetId = found.id;
       if (!state.routeSchedules) state.routeSchedules = {};
       state.routeSchedules[found.id] = {
-        date: found.date,
-        time: found.time,
-        endTime: found.endTime || '12:00'
+        date: fSched.date || '2026-11-08',
+        time: fSched.time || '10:00',
+        endTime: fSched.endTime || '12:00'
       };
       state.pickupAddress = found.pickupAddress || state.pickupAddress;
       state.endMode = found.endMode || state.endMode;
@@ -1212,7 +1414,7 @@
       state.currentLegStartedAt = Date.now();
       lastFittedPreset = null;
       renderAll();
-      showToast(`Ruta cargada: ${found.label}`);
+      showToast(`Ruta cargada: ${found.label || formatShortSavedRouteLabel(fSched, state.stops.length)}`);
     }
 
     function deleteSavedRoute(routeId, ev) {
@@ -1243,6 +1445,7 @@
           activeSaved.date = sched.date;
           activeSaved.time = sched.time;
           activeSaved.endTime = sched.endTime;
+          activeSaved.schedule = { date: sched.date, time: sched.time, endTime: sched.endTime };
           activeSaved.label = formatShortSavedRouteLabel(sched, state.stops.length);
         }
       }
@@ -2228,7 +2431,8 @@
         const savedBtnsHtml = savedList
           .map((sr) => {
             const active = state.activePresetId === sr.id;
-            const label = formatShortSavedRouteLabel(sr.schedule, Array.isArray(sr.stops) ? sr.stops.length : 0);
+            const srSched = sr.schedule || { date: sr.date, time: sr.time, endTime: sr.endTime };
+            const label = sr.label || formatShortSavedRouteLabel(srSched, Array.isArray(sr.stops) ? sr.stops.length : 0);
             const cls = active
               ? 'px-2.5 py-1.5 rounded-lg text-xs font-black transition-all bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow flex items-center gap-1.5'
               : 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-slate-900/90 border border-emerald-500/30 text-emerald-300 hover:text-white flex items-center gap-1.5';
@@ -2943,7 +3147,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '04:45 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '04:55 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
@@ -2975,8 +3179,8 @@
     }
 
     function initApp() {
-      osrmRouteCache = {};
       try {
+        Object.keys(osrmRouteCache).forEach((k) => delete osrmRouteCache[k]);
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -3000,14 +3204,18 @@
                 ci.endTime = '12:00';
               }
             }
-            // Si hay una ruta personalizada activa y aún no estaba guardada arriba, registrarla automáticamente
+            //Si la ruta importada activa aún no está en savedRoutes, registrarla arriba automáticamente
             if (state.activePresetId === 'custom-imported' && state.savedRoutes.length === 0 && state.stops.length > 0) {
               const sched = getActiveRouteSchedule();
               const autoId = 'saved-route-initial';
               state.routeSchedules[autoId] = { ...sched };
               state.savedRoutes.push({
                 id: autoId,
+                date: sched.date,
+                time: sched.time,
+                endTime: sched.endTime,
                 schedule: { ...sched },
+                label: formatShortSavedRouteLabel(sched, state.stops.length),
                 pickupAddress: getStationCoordinates().address || state.pickupAddress,
                 endMode: state.endMode,
                 customEndAddress: state.customEndAddress,
