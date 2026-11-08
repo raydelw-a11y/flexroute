@@ -719,7 +719,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 05:57 PM - 11/08/2026 ↻
+        Actualizado: 06:01 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -3462,17 +3462,45 @@
       return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
     }
 
+    function getColorMetaFromProgress(tRaw) {
+      const t = Math.max(0, Math.min(1, tRaw));
+      let h, s, l;
+      if (t <= 0.5) {
+        // Primera mitad: de Rojo Intenso (h=0) en t=0 a Amarillo Puro Vibrante (h=50, s=98, l=50) justo en la mitad (t=0.5)
+        const u = t / 0.5;
+        h = Math.round(50 * u);
+        s = Math.round(92 + 6 * u);
+        l = Math.round(48 + 2 * u);
+      } else {
+        // Segunda mitad: de Amarillo Puro Vibrante (h=50) en t=0.5 a Verde Intenso (h=140, s=88, l=42) al final (t=1.0)
+        const u = (t - 0.5) / 0.5;
+        h = Math.round(50 + 90 * u);
+        s = Math.round(98 - 10 * u);
+        l = Math.round(50 - 8 * u);
+      }
+      return { t, h, s, l, hex: hslToHex(h, s, l) };
+    }
+
     function getStopColorMeta(idx, total) {
-      const t = total <= 1 ? 0 : Math.max(0, Math.min(1, idx / (total - 1)));
-      // De Rojo Intenso (h=0) en la primera parada a Verde Intenso (h=138) en la última parada
-      const h = Math.round(t * 138);
-      const s = Math.round(92 - t * 6);
-      const l = Math.round(47 - Math.sin(t * Math.PI) * 5 - t * 4);
-      return { h, s, l, hex: hslToHex(h, s, l) };
+      if (total <= 1) return getColorMetaFromProgress(0);
+      if (total === 2) return getColorMetaFromProgress(idx === 0 ? 0 : 1);
+      // Anclar la parada exacta de la mitad de la ruta (midIdx) a t = 0.5 (Amarillo Puro)
+      const midIdx = Math.floor((total - 1) / 2);
+      let t;
+      if (idx <= midIdx) {
+        t = 0.5 * (idx / Math.max(1, midIdx));
+      } else {
+        t = 0.5 + 0.5 * ((idx - midIdx) / Math.max(1, total - 1 - midIdx));
+      }
+      return getColorMetaFromProgress(t);
     }
 
     function interpolateStopColorHex(fromMeta, toMeta, u) {
       const clamped = Math.max(0, Math.min(1, u));
+      if (typeof fromMeta.t === 'number' && typeof toMeta.t === 'number') {
+        const t = fromMeta.t + (toMeta.t - fromMeta.t) * clamped;
+        return getColorMetaFromProgress(t).hex;
+      }
       const h = fromMeta.h + (toMeta.h - fromMeta.h) * clamped;
       const s = fromMeta.s + (toMeta.s - fromMeta.s) * clamped;
       const l = fromMeta.l + (toMeta.l - fromMeta.l) * clamped;
@@ -3517,7 +3545,7 @@
           if (sIdx >= 0) return getStopColorMeta(sIdx, totalStops);
         }
         // Estación de salida P1 arranca en Rojo Intenso como origen hacia la primera parada
-        return { h: 0, s: 94, l: 44, hex: hslToHex(0, 94, 44) };
+        return { t: 0, h: 0, s: 94, l: 44, hex: hslToHex(0, 94, 44) };
       }
 
       // Agrupar tramos entre paradas reales (fusionando puntos intermedios de desvío en el mismo degradado procedente → destino)
@@ -3620,7 +3648,7 @@
 
           const pinIcon = L.divIcon({
             className: '',
-            html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};opacity:${opacity};border:2.5px solid ${border};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.completed ? '✓' : stop.originalNumber}</div>`,
+            html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};opacity:${opacity};border:2.5px solid ${border};color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,0.92),0 0 2px rgba(0,0,0,0.92);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.completed ? '✓' : stop.originalNumber}</div>`,
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2]
           });
@@ -3718,8 +3746,8 @@
       const baseTitle = `${cityFirst} • ${schedLabel.replace(/^📅\s*/, '')} (${state.stops.length} ${tr('Stops', 'Paradas')})`;
       document.getElementById('route-title-heading').textContent = baseTitle;
       document.getElementById('route-summary-subtitle').textContent = tr(
-        'Stop pins & road path with Red → Green gradient • Active detour on closed street (8 ↔ 6).',
-        'Iconos y trazo con degradado Rojo → Verde • Desvío activo en calle clausurada (8 ↔ 6).'
+        'Stop pins & road path with Red → Yellow (midpoint) → Green gradient • Active detour on closed street (8 ↔ 6).',
+        'Iconos y trazo con degradado Rojo → Amarillo (mitad) → Verde • Desvío activo en calle clausurada (8 ↔ 6).'
       );
 
       const totalPkgs = state.stops.reduce((acc, s) => acc + (s.packages || 1), 0);
@@ -3918,7 +3946,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '05:57 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:01 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
