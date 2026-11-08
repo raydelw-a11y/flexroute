@@ -533,7 +533,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Toca para forzar actualización inmediata" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 05:06 PM - 11/08/2026 ↻
+        Actualizado: 05:10 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -596,13 +596,13 @@
       },
       'dmi9-kendall': {
         id: 'dmi9-kendall',
-        name: 'Ruta 11/08 (10:00 AM – 12:00 PM) • DMI9 / Venezia Lakes / Country Walk',
-        pickupAddress: 'DMI9 Amazon (13350 SW 131st St, Miami, FL)',
+        name: 'Ruta 11/08 (10:00 AM – 12:00 PM) • Kendall / Venezia Lakes / Country Walk',
+        pickupAddress: '1125 SE 8th Street, Suite 700, Hialeah, FL',
         pickupTime: '10:00 AM',
         endMode: 'home',
         customEndAddress: '',
         tacticalNotes:
-          'Ruta DMI9 (11/08 • 10:00 AM – 12:00 PM): Salida desde estación DMI9 Amazon (SW 131st St). Comienzas por el sector noreste (Parada 13 en 12372 SW 124th Ct → 12 → 11 → 10 → 9), entras a Venezia Lakes por el puente norte de SW 132nd Ave (Paradas 7 → 8) y sales obligatoriamente de regreso al norte hacia SW 136th St y Lindgren Rd (SR-825) para entrar a Green Turtle Club (Parada 6) sin cruzar el paso bloqueado de SW Caribe Way / SW 144th Ter, cerrando en Country Walk (3 → 2 → 5 → 4).',
+          'Ruta 11/08 (10:00 AM – 12:00 PM): Salida desde Estación Hialeah (1125 SE 8th St, Suite 700). Bajas directo al sector noreste de Kendall (Parada 13 en 12372 SW 124th Ct → 12 → 11 → 10 → 9), entras a Venezia Lakes por el puente norte de SW 132nd Ave (Paradas 7 → 8) y sales obligatoriamente de regreso al norte hacia SW 136th St y Lindgren Rd (SR-825) para entrar a Green Turtle Club (Parada 6) sin cruzar el paso bloqueado de SW Caribe Way / SW 144th Ter, cerrando en Country Walk (3 → 2 → 5 → 4).',
         defaultOrder: [13, 12, 11, 10, 9, 7, 8, 6, 3, 2, 5, 4],
         stops: [
           { id: 'dk-2', originalNumber: 2, code: 'FLEX.DMI9', address: '14250 SW 146th St', unit: '', city: 'Miami, FL', deadline: '2:00 PM', packages: 1, locations: 1, gateCode: '', lat: 25.6318, lng: -80.4235, zone: 'Country Walk Oeste', urgent: false, arcgisGeocoded: true },
@@ -924,26 +924,12 @@
     }
 
     function getStationCoordinates() {
-      // Si la ruta está en el sur (DMI9 Amazon / Kendall / Three Lakes), usar coordenadas de DMI9 (13350 SW 131st St)
-      const hasSouthStops =
-        Array.isArray(state.stops) &&
-        state.stops.length > 0 &&
-        state.stops.some((s) => typeof s.lat === 'number' && s.lat < 25.68);
-      if (hasSouthStops || /DMI9|131ST|13450|13350/i.test(state.pickupAddress || '')) {
-        return {
-          lat: 25.6442,
-          lng: -80.4112,
-          label: 'P1 (Estación DMI9)',
-          isDmi9: true,
-          address: 'DMI9 Amazon (13350 SW 131st St, Miami, FL)'
-        };
-      }
       return {
         lat: 25.8219,
         lng: -80.2618,
         label: 'P1 (Estación Salida)',
         isDmi9: false,
-        address: state.pickupAddress || '1125 SE 8th Street, Suite 700, Hialeah, FL'
+        address: '1125 SE 8th Street, Suite 700, Hialeah, FL'
       };
     }
 
@@ -2493,10 +2479,7 @@
       if (timeInput && sched.time) timeInput.value = sched.time;
       if (endTimeInput && sched.endTime) endTimeInput.value = sched.endTime;
 
-      const stationInfo = getStationCoordinates();
-      if (stationInfo.isDmi9 && state.activePresetId !== 'miami-beach' && state.activePresetId !== 'hialeah-brickell') {
-        state.pickupAddress = stationInfo.address;
-      }
+      state.pickupAddress = '1125 SE 8th Street, Suite 700, Hialeah, FL';
 
       const formattedBadge = formatScheduleDisplay(sched);
       state.pickupTime = formattedBadge;
@@ -3186,7 +3169,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '05:06 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '05:10 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
