@@ -1,5 +1,5 @@
 // Network-first / No-stale-cache Service Worker for instant mobile updates
-const CACHE_NAME = 'flexroute-live-v18';
+const CACHE_NAME = 'flexroute-live-v19';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

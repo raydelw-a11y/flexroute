@@ -715,13 +715,13 @@
 
   <!-- BARRA INFERIOR DE ACCIÓN RÁPIDA (MODO CONDUCTOR) + INDICADOR DE ACTUALIZACIÓN ABAJO -->
   <div class="fixed bottom-0 inset-x-0 z-30 glass-card border-t border-slate-800/90 px-4 pt-2.5 safe-bottom-bar">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <div id="bottom-driver-row" class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
       <div id="bottom-next-stop-info" class="flex items-center gap-3 min-w-0"></div>
       <div id="bottom-action-buttons" class="flex items-center gap-2 shrink-0"></div>
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:25 PM - 11/08/2026 ↻
+        Actualizado: 06:28 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -2524,6 +2524,22 @@
           savedRoutesBar.classList.remove('hidden');
         }
       }
+      const headerLiveGpsBar = document.getElementById('header-live-gps-bar');
+      if (headerLiveGpsBar) {
+        if (tabName === 'parser') {
+          headerLiveGpsBar.classList.add('hidden');
+        } else {
+          headerLiveGpsBar.classList.remove('hidden');
+        }
+      }
+      const bottomDriverRow = document.getElementById('bottom-driver-row');
+      if (bottomDriverRow) {
+        if (tabName === 'parser') {
+          bottomDriverRow.classList.add('hidden');
+        } else {
+          bottomDriverRow.classList.remove('hidden');
+        }
+      }
       ['cockpit', 'parser', 'add'].forEach((t) => {
         const panel = document.getElementById(`tab-panel-${t}`);
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -4188,7 +4204,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:25 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:28 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
