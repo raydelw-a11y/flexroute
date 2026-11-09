@@ -341,185 +341,334 @@
     onchange="handleScreenshotsSelected(event)"
   />
 
-  <!-- PANEL 1: CABINA TÁCTICA PRINCIPAL -->
+  <!-- PANEL 1: INTERFAZ ESTILO AMAZON FLEX APP (LIST / MAP & TRAVEL / SUMMARY) -->
   <div id="tab-panel-cockpit">
-    <!-- MAIN CONTENT GRID -->
-    <main class="max-w-7xl mx-auto px-4 pt-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
-      <!-- COLUMNA IZQUIERDA (5 Cols) -->
-      <div class="lg:col-span-5 space-y-4">
-        <!-- 0. ESTACIÓN DE SALIDA (PARADA 1) + FECHA, HORA DE COMIENZO/TERMINAR Y TELEMETRÍA EN VIVO (DESPLEGABLE) -->
-        <div id="departure-station-card" class="glass-card rounded-2xl border border-amber-500/35 p-3.5 shadow-xl transition-all">
-          <div
-            onclick="toggleDepartureStationPanel()"
-            class="flex items-center justify-between gap-2 cursor-pointer select-none"
-            title="Tap to expand or collapse Departure Station panel"
-          >
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center font-black text-xs shrink-0">
-                P1
-              </div>
-              <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <span id="i18n-station-title" class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">Departure Station (Pickup)</span>
-                  <span id="pickup-time-badge" class="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-bold text-cyan-300">11/08/2026 • 10:00 AM – 12:00 PM</span>
-                </div>
-                <p id="pickup-address-display" class="text-xs font-bold text-white truncate">1125 SE 8th Street, Suite 700, Hialeah, FL</p>
-              </div>
-            </div>
+    <main class="max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-6 space-y-3">
+      <!-- CABECERA SUPERIOR OFICIAL ESTILO AMAZON FLEX: TÍTULO DINÁMICO + 3 PÍLDORAS (ITINERARY TOGGLES) -->
+      <div id="flex-app-header-banner" class="rounded-2xl overflow-hidden border border-[#9ab4c2]/50 shadow-xl" style="background: linear-gradient(180deg, #8ca5b4 0%, #7d98a7 100%);">
+        <!-- Fila 1: Título de vista actual ("Travel", "Itinerary list", "Itinerary summary") + Iconos rápidos estilo Amazon Flex -->
+        <div class="px-3.5 pt-2.5 pb-2 flex items-center justify-between gap-2 text-slate-900">
+          <div class="flex items-center gap-2.5 min-w-0">
             <button
-              id="departure-station-toggle-btn"
               type="button"
-              onclick="event.stopPropagation(); toggleDepartureStationPanel()"
-              class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/35 text-[11px] font-black text-amber-300 flex items-center gap-1 shrink-0"
+              onclick="toggleMainMenuDrawer()"
+              class="w-7 h-7 rounded-lg bg-slate-900/15 hover:bg-slate-900/25 flex items-center justify-center text-slate-900 font-black"
+              title="Open Menu"
             >
-              <span id="departure-station-toggle-label">▼ Details</span>
+              ☰
+            </button>
+            <h2 id="flex-screen-title" class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 truncate">
+              Travel
+            </h2>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onclick="toggleDepartureStationPanel()"
+              title="Toggle Departure Station & Schedule"
+              class="w-8 h-8 rounded-full border-2 border-slate-900/75 hover:bg-slate-900/10 flex items-center justify-center text-slate-900 font-black text-xs"
+            >
+              P1
+            </button>
+            <button
+              type="button"
+              onclick="toggleClosingDestPanel()"
+              title="Toggle Closing Destination"
+              class="w-8 h-8 rounded-full border-2 border-slate-900/75 hover:bg-slate-900/10 flex items-center justify-center text-slate-900 font-black text-xs"
+            >
+              🏁
+            </button>
+            <button
+              type="button"
+              onclick="openCalendarModal()"
+              title="Open Route Calendar"
+              class="w-8 h-8 rounded-full border-2 border-slate-900/75 hover:bg-slate-900/10 flex items-center justify-center text-slate-900 font-black text-xs"
+            >
+              📅
             </button>
           </div>
-
-          <!-- CUERPO DESPLEGABLE DE ESTACIÓN DE SALIDA, HORARIO Y LIVE TIME -->
-          <div id="departure-station-collapsible-body" class="hidden pt-3 mt-3 border-t border-slate-800/90 space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="text-[11px] font-semibold text-slate-400" id="i18n-station-actions-label">Station Quick Actions:</span>
-              <div class="flex items-center gap-2">
-                <button id="i18n-btn-copy-p1" onclick="copyTextToClipboard(state.pickupAddress, 'Stop 1 Address')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
-                  Copy P1
-                </button>
-                <a id="pickup-maps-link" href="#" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold">
-                  Go to P1
-                </a>
-              </div>
-            </div>
-
-            <!-- SELECTOR DE FECHA, HORA DE COMIENZO, HORA DE TERMINAR Y BOTÓN REGISTRAR RUTA ARRIBA -->
-            <div class="pt-2.5 border-t border-slate-800/90 space-y-2">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span id="i18n-schedule-heading" class="text-xs font-bold text-slate-300">📅 Route Date &amp; Schedule:</span>
-                <div class="flex items-center gap-1.5">
-                  <button
-                    id="i18n-btn-now"
-                    type="button"
-                    onclick="setRouteScheduleToNow()"
-                    class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 border border-slate-700"
-                  >
-                    Now
-                  </button>
-                  <button
-                    type="button"
-                    onclick="registerCurrentRoute()"
-                    class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-[11px] font-black shadow flex items-center gap-1"
-                  >
-                    <span id="i18n-btn-register-route">💾 Register Route</span>
-                  </button>
-                </div>
-              </div>
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label id="i18n-lbl-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
-                  <input
-                    id="route-date-input"
-                    type="date"
-                    oninput="updateRouteScheduleFromInputs(true)"
-                    onchange="updateRouteScheduleFromInputs(false)"
-                    class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
-                  />
-                </div>
-                <div>
-                  <label id="i18n-lbl-start" class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Start Time</label>
-                  <input
-                    id="route-time-input"
-                    type="time"
-                    oninput="updateRouteScheduleFromInputs(true)"
-                    onchange="updateRouteScheduleFromInputs(false)"
-                    class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
-                  />
-                </div>
-                <div>
-                  <label id="i18n-lbl-end" class="block text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">End Time</label>
-                  <input
-                    id="route-end-time-input"
-                    type="time"
-                    oninput="updateRouteScheduleFromInputs(true)"
-                    onchange="updateRouteScheduleFromInputs(false)"
-                    class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-emerald-400"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- TELEMETRÍA DE DURACIÓN, DÍA DE LA SEMANA Y TRÁFICO EN TIEMPO REAL -->
-            <div id="route-live-duration-panel" class="p-3.5 rounded-xl bg-slate-950/95 border border-cyan-500/35 space-y-2.5 shadow-inner"></div>
-          </div>
         </div>
 
-        <!-- 1. PANEL DE DESTINO DE CIERRE (OPTIMIZA AUTOMÁTICAMENTE AL SELECCIONAR O EDITAR) -->
-        <div class="glass-card rounded-2xl border border-slate-800 p-4 space-y-3">
-          <div class="flex items-center justify-between gap-2">
-            <h3 id="i18n-dest-panel-title" class="text-xs font-black uppercase tracking-wider text-slate-300">
+        <!-- Fila 2: Las 3 Píldoras "Itinerary toggles" de Amazon Flex (List / Map / Summary) -->
+        <div class="px-3 pb-3">
+          <div class="grid grid-cols-3 gap-2.5 p-1.5 rounded-2xl bg-[#9bb3c0]/90 border-2 border-[#cce7f8]/80 shadow-inner">
+            <!-- Píldora 1: Itinerary list -->
+            <button
+              id="flex-pill-list"
+              type="button"
+              onclick="setFlexItineraryView('list')"
+              class="py-2 px-3 rounded-full flex items-center justify-center gap-1.5 font-extrabold text-xs transition-all bg-white text-slate-800 shadow-sm"
+            >
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+                <circle cx="5" cy="7" r="2" fill="currentColor"></circle>
+                <circle cx="5" cy="17" r="2" fill="currentColor"></circle>
+                <line x1="10" y1="7" x2="20" y2="7"></line>
+                <line x1="10" y1="17" x2="20" y2="17"></line>
+              </svg>
+              <span id="i18n-flex-pill-list">List</span>
+            </button>
+
+            <!-- Píldora 2: Itinerary map / Travel -->
+            <button
+              id="flex-pill-map"
+              type="button"
+              onclick="setFlexItineraryView('map')"
+              class="py-2 px-3 rounded-full flex items-center justify-center gap-1.5 font-extrabold text-xs transition-all bg-[#0f5267] text-white shadow-md"
+            >
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="5" cy="8" r="2.2"></circle>
+                <circle cx="12" cy="5" r="2.2"></circle>
+                <circle cx="19" cy="8" r="2.2"></circle>
+                <path d="M5 10.5v6l7-3 7 3v-6"></path>
+              </svg>
+              <span id="i18n-flex-pill-map">Map</span>
+            </button>
+
+            <!-- Píldora 3: Itinerary summary -->
+            <button
+              id="flex-pill-summary"
+              type="button"
+              onclick="setFlexItineraryView('summary')"
+              class="py-2 px-3 rounded-full flex items-center justify-center gap-1.5 font-extrabold text-xs transition-all bg-white text-slate-800 shadow-sm"
+            >
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M4 17a8 8 0 0 1 16 0"></path>
+                <path d="M8 17a4 4 0 0 1 8 0"></path>
+                <line x1="3" y1="17" x2="21" y2="17"></line>
+              </svg>
+              <span id="i18n-flex-pill-summary">Summary</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 0. ESTACIÓN DE SALIDA (PARADA 1) + FECHA, HORA DE COMIENZO/TERMINAR Y TELEMETRÍA EN VIVO (DESPLEGABLE) -->
+      <div id="departure-station-card" class="glass-card rounded-2xl border border-amber-500/35 p-3 shadow-xl transition-all">
+        <div
+          onclick="toggleDepartureStationPanel()"
+          class="flex items-center justify-between gap-2 cursor-pointer select-none"
+          title="Tap to expand or collapse Departure Station panel"
+        >
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center font-black text-xs shrink-0">
+              P1
+            </div>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span id="i18n-station-title" class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">Departure Station (Pickup)</span>
+                <span id="pickup-time-badge" class="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-bold text-cyan-300">11/08/2026 • 10:00 AM – 12:00 PM</span>
+              </div>
+              <p id="pickup-address-display" class="text-xs font-bold text-white truncate">1125 SE 8th Street, Suite 700, Hialeah, FL</p>
+            </div>
+          </div>
+          <button
+            id="departure-station-toggle-btn"
+            type="button"
+            onclick="event.stopPropagation(); toggleDepartureStationPanel()"
+            class="px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/35 text-[11px] font-black text-amber-300 flex items-center gap-1 shrink-0"
+          >
+            <span id="departure-station-toggle-label">▼ Details</span>
+          </button>
+        </div>
+
+        <!-- CUERPO DESPLEGABLE DE ESTACIÓN DE SALIDA, HORARIO Y LIVE TIME -->
+        <div id="departure-station-collapsible-body" class="hidden pt-3 mt-3 border-t border-slate-800/90 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-[11px] font-semibold text-slate-400" id="i18n-station-actions-label">Station Quick Actions:</span>
+            <div class="flex items-center gap-2">
+              <button id="i18n-btn-copy-p1" onclick="copyTextToClipboard(state.pickupAddress, 'Stop 1 Address')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+                Copy P1
+              </button>
+              <a id="pickup-maps-link" href="#" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold">
+                Go to P1
+              </a>
+            </div>
+          </div>
+
+          <div class="pt-2.5 border-t border-slate-800/90 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span id="i18n-schedule-heading" class="text-xs font-bold text-slate-300">📅 Route Date &amp; Schedule:</span>
+              <div class="flex items-center gap-1.5">
+                <button
+                  id="i18n-btn-now"
+                  type="button"
+                  onclick="setRouteScheduleToNow()"
+                  class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 border border-slate-700"
+                >
+                  Now
+                </button>
+                <button
+                  type="button"
+                  onclick="registerCurrentRoute()"
+                  class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-[11px] font-black shadow flex items-center gap-1"
+                >
+                  <span id="i18n-btn-register-route">💾 Register Route</span>
+                </button>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label id="i18n-lbl-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+                <input
+                  id="route-date-input"
+                  type="date"
+                  oninput="updateRouteScheduleFromInputs(true)"
+                  onchange="updateRouteScheduleFromInputs(false)"
+                  class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+              <div>
+                <label id="i18n-lbl-start" class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Start Time</label>
+                <input
+                  id="route-time-input"
+                  type="time"
+                  oninput="updateRouteScheduleFromInputs(true)"
+                  onchange="updateRouteScheduleFromInputs(false)"
+                  class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+              <div>
+                <label id="i18n-lbl-end" class="block text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">End Time</label>
+                <input
+                  id="route-end-time-input"
+                  type="time"
+                  oninput="updateRouteScheduleFromInputs(true)"
+                  onchange="updateRouteScheduleFromInputs(false)"
+                  class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-emerald-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div id="route-live-duration-panel" class="p-3.5 rounded-xl bg-slate-950/95 border border-cyan-500/35 space-y-2.5 shadow-inner"></div>
+        </div>
+      </div>
+
+      <!-- 1. PANEL DE DESTINO DE CIERRE (DESPLEGABLE Y AUTO-OPTIMIZA AUTOMÁTICAMENTE) -->
+      <div id="closing-dest-card" class="glass-card rounded-2xl border border-slate-800 p-3 transition-all">
+        <div
+          onclick="toggleClosingDestPanel()"
+          class="flex items-center justify-between gap-2 cursor-pointer select-none"
+        >
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-sm">🏁</span>
+            <h3 id="i18n-dest-panel-title" class="text-[11px] font-black uppercase tracking-wider text-slate-200">
               Closing Destination
             </h3>
-            <span id="i18n-dest-auto-badge" class="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
-              ⚡ Auto-Optimizes Route
+            <span id="closing-dest-active-pill" class="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-extrabold text-emerald-300 truncate">
+              Home
             </span>
           </div>
-          <div>
-            <label id="i18n-dest-label" class="block text-xs text-slate-400 font-bold mb-2">Closing Destination After Finishing Route:</label>
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-              <button id="endmode-home" onclick="setEndMode('home')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Home</button>
-              <button id="endmode-return" onclick="setEndMode('return_to_start')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Return to P1</button>
-              <button id="endmode-brickell" onclick="setEndMode('brickell')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Go to Brickell</button>
-              <button id="endmode-custom" onclick="setEndMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Custom Address</button>
-              <button id="endmode-none" onclick="setEndMode('none')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">No Extra Closing</button>
-            </div>
-            <div id="custom-end-wrapper" class="mt-2.5 hidden">
-              <input
-                id="custom-end-input"
-                type="text"
-                placeholder="Ex: 1200 Brickell Ave, Miami, FL"
-                oninput="updateCustomEndAddress(this.value)"
-                class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
-              />
-            </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span id="i18n-dest-auto-badge" class="hidden sm:inline-block text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+              ⚡ Auto-Optimizes Route
+            </span>
+            <button
+              type="button"
+              onclick="event.stopPropagation(); toggleClosingDestPanel()"
+              class="px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-black text-cyan-300"
+            >
+              <span id="closing-dest-toggle-label">▼ Edit</span>
+            </button>
           </div>
         </div>
-
-        <!-- 2. MAPA TÁCTICO REAL DE GOOGLE MAPS (DEBAJO DEL PANEL DE DESTINO) -->
-        <div id="map-card-container" class="glass-card rounded-2xl border border-slate-800 overflow-hidden transition-all">
-          <div class="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h3 id="i18n-map-title" class="text-xs font-black uppercase tracking-wider text-slate-200">
-                Tactical Google Maps
-              </h3>
-              <p id="map-fullscreen-hint" class="text-[10px] text-cyan-400 font-semibold">
-                Tap map to open in fullscreen
-              </p>
-            </div>
-            <div class="flex items-center gap-1">
-              <button id="gmap-mode-streets" onclick="setGoogleMapLayer('streets')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                Map
-              </button>
-              <button id="gmap-mode-hybrid" onclick="setGoogleMapLayer('hybrid')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">
-                Satellite
-              </button>
-              <button id="gmap-traffic-btn" onclick="toggleGoogleTrafficLayer()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                🚦 Traffic
-              </button>
-              <button id="i18n-btn-center-map" onclick="fitGoogleMapToRoute()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800">
-                Center
-              </button>
-              <button id="gmap-fullscreen-btn" onclick="toggleMapFullscreen()" class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-cyan-400 text-slate-950 shadow">
-                ⛶ Expand
-              </button>
-            </div>
+        <div id="closing-dest-collapsible-body" class="hidden pt-3 mt-2.5 border-t border-slate-800/90">
+          <label id="i18n-dest-label" class="block text-xs text-slate-400 font-bold mb-2">Closing Destination After Finishing Route:</label>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+            <button id="endmode-home" onclick="setEndMode('home')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Home</button>
+            <button id="endmode-return" onclick="setEndMode('return_to_start')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Return to P1</button>
+            <button id="endmode-brickell" onclick="setEndMode('brickell')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Go to Brickell</button>
+            <button id="endmode-custom" onclick="setEndMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">Custom Address</button>
+            <button id="endmode-none" onclick="setEndMode('none')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">No Extra Closing</button>
           </div>
-          <div id="map-inner-wrapper" class="p-2 bg-[#050914] relative">
-            <div id="tactical-google-map" class="w-full h-80 rounded-xl border border-slate-800/80 z-10 cursor-pointer"></div>
-            <div id="map-selected-bar" class="mt-2 px-3 py-2 rounded-xl bg-slate-900/95 border border-slate-800 flex items-center justify-between gap-2"></div>
+          <div id="custom-end-wrapper" class="mt-2.5 hidden">
+            <input
+              id="custom-end-input"
+              type="text"
+              placeholder="Ex: 1200 Brickell Ave, Miami, FL"
+              oninput="updateCustomEndAddress(this.value)"
+              class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-400"
+            />
           </div>
         </div>
+      </div>
 
-        <!-- 3. SECUENCIA TÁCTICA ACTIVA -->
-        <div class="glass-card rounded-2xl border border-cyan-500/30 p-4 shadow-xl">
-          <div class="flex items-center justify-between mb-2">
+      <!-- ========================================================================= -->
+      <!-- VISTA A: AMAZON FLEX "TRAVEL / ITINERARY MAP" (ACTIVA POR DEFECTO)        -->
+      <!-- ========================================================================= -->
+      <div id="flex-view-map" class="space-y-3">
+        <div id="map-card-container" class="rounded-2xl border border-slate-700/80 overflow-hidden shadow-2xl bg-[#1e2429] transition-all">
+          <!-- Banner Superior Oscuro de Dirección Actual estilo Amazon Flex ("120 Selwyn Road ^ / Seattle, WA 98121") -->
+          <div
+            id="flex-map-address-banner"
+            onclick="cycleSelectedStopOnBanner()"
+            class="px-4 py-2.5 bg-[#262b30] border-b border-slate-700/80 text-center cursor-pointer select-none hover:bg-[#2e343a] transition-colors"
+            title="Tap to cycle through active stops"
+          >
+            <div class="flex items-center justify-center gap-1.5">
+              <span id="flex-banner-stop-address" class="text-sm font-bold text-white truncate">12372 SW 124TH CT</span>
+              <span class="text-xs text-slate-300 font-black">⌃</span>
+            </div>
+            <div id="flex-banner-stop-city" class="text-xs text-slate-300 font-medium truncate">
+              Miami, FL
+            </div>
+          </div>
+
+          <!-- Cabecera compacta oculta/auxiliar para conservar IDs de traducción existentes -->
+          <div class="hidden">
+            <h3 id="i18n-map-title">Tactical Google Maps</h3>
+            <p id="map-fullscreen-hint">Tap map to open in fullscreen</p>
+          </div>
+
+          <!-- Contenedor del Mapa con Botones Flotantes Laterales estilo Amazon Flex (Brújula, Ajustes ⚙️, Centrar ➤) -->
+          <div id="map-inner-wrapper" class="relative bg-[#050914]">
+            <div id="tactical-google-map" class="w-full h-[50vh] min-h-[340px] sm:h-[430px] z-10 cursor-pointer"></div>
+
+            <!-- Controles flotantes arriba a la derecha (Capas / Tráfico) -->
+            <div class="absolute top-3 right-3 z-20 flex flex-col items-end gap-1.5">
+              <div class="flex items-center gap-1 bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/80 shadow-lg">
+                <button id="gmap-mode-streets" onclick="setGoogleMapLayer('streets')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                  Map
+                </button>
+                <button id="gmap-mode-hybrid" onclick="setGoogleMapLayer('hybrid')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-slate-400 border border-slate-800">
+                  Satellite
+                </button>
+                <button id="gmap-traffic-btn" onclick="toggleGoogleTrafficLayer()" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  🚦 Traffic
+                </button>
+              </div>
+            </div>
+
+            <!-- Botones redondos flotantes abajo a la derecha estilo Amazon Flex (⚙️ Pantalla Completa y ➤ Centrar Ruta) -->
+            <div class="absolute bottom-3 right-3 z-20 flex flex-col gap-2">
+              <button
+                id="gmap-fullscreen-btn"
+                type="button"
+                onclick="toggleMapFullscreen()"
+                title="Expand / Fullscreen Map"
+                class="w-10 h-10 rounded-full bg-[#c9d2d8]/95 hover:bg-white text-slate-900 border border-slate-500 shadow-xl flex items-center justify-center font-black text-sm"
+              >
+                ⛶
+              </button>
+              <button
+                id="i18n-btn-center-map"
+                type="button"
+                onclick="fitGoogleMapToRoute()"
+                title="Center Map on Route"
+                class="w-10 h-10 rounded-full bg-[#c9d2d8]/95 hover:bg-white text-slate-900 border border-slate-500 shadow-xl flex items-center justify-center font-black text-sm"
+              >
+                ➤
+              </button>
+            </div>
+          </div>
+
+          <!-- Tarjeta Inferior de Entrega estilo Amazon Flex ("Deliver 1 package", 🕒 Horario, [📋] [🔑], "Start travel" + [↗]) -->
+          <div id="map-selected-bar" class="bg-[#cfd6dc] text-slate-900 px-4 pt-2.5 pb-3.5 border-t border-slate-400/60"></div>
+        </div>
+
+        <!-- Secuencia Táctica Activa y Lanzador Multiparada debajo del mapa -->
+        <div class="glass-card rounded-2xl border border-cyan-500/30 p-3.5 shadow-xl">
+          <div class="flex items-center justify-between mb-1.5">
             <span id="i18n-seq-title" class="text-xs font-black uppercase tracking-wider text-cyan-400">
               Active Tactical Sequence
             </span>
@@ -528,12 +677,11 @@
               <button id="i18n-btn-reset-seq" onclick="resetAllCompleted()" class="text-[11px] text-cyan-400 hover:underline font-bold">Reset</button>
             </div>
           </div>
-          <div id="sequence-pill-chain" class="flex flex-wrap items-center gap-1.5 my-3"></div>
+          <div id="sequence-pill-chain" class="flex flex-wrap items-center gap-1.5 my-2.5"></div>
           <div id="tactical-notes-box" class="text-xs text-slate-300 leading-relaxed bg-slate-950/90 p-3 rounded-xl border border-slate-800"></div>
         </div>
 
-        <!-- 4. LANZADOR MULTIPARADA CON GOOGLE MAPS -->
-        <div class="glass-card rounded-2xl border border-emerald-500/35 p-4 space-y-3 shadow-lg">
+        <div class="glass-card rounded-2xl border border-emerald-500/35 p-3.5 space-y-2.5 shadow-lg">
           <div class="flex items-center justify-between">
             <h2 id="i18n-multistop-title" class="text-sm font-extrabold text-white">Multi-Stop Google Maps Launcher</h2>
             <span id="i18n-multistop-badge" class="text-[10px] font-extrabold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
@@ -547,26 +695,102 @@
         </div>
       </div>
 
-      <!-- COLUMNA DERECHA (7 Cols): ITINERARIO OPERATIVO PASO A PASO -->
-      <div class="lg:col-span-7 space-y-4">
-        <!-- CABECERA DE PARADAS Y MÉTRICAS RÁPIDAS -->
-        <div class="flex flex-wrap items-center justify-between gap-2 px-1">
-          <div>
-            <h2 id="route-title-heading" class="text-base font-black text-white">Tactical Route Sheet</h2>
-            <p id="route-summary-subtitle" class="text-xs text-slate-400">Tap any stop to focus it on the map or launch single-stop navigation.</p>
+      <!-- ========================================================================= -->
+      <!-- VISTA B: AMAZON FLEX "ITINERARY LIST" (LÍNEA DE TIEMPO VERTICAL + BUSCADOR) -->
+      <!-- ========================================================================= -->
+      <div id="flex-view-list" class="hidden space-y-3">
+        <div class="rounded-2xl overflow-hidden border border-slate-600/70 bg-[#b8c1c8] text-slate-900 shadow-2xl">
+          <!-- Barra de Búsqueda + Refrescar + Escáner idéntica a Amazon Flex Itinerary list -->
+          <div class="px-3 py-2.5 bg-[#aeb8bf] border-b border-slate-400/70 flex items-center gap-2.5">
+            <button
+              type="button"
+              onclick="autoOptimizeRoute(false)"
+              title="Refresh & Optimize Sequence"
+              class="w-8 h-8 rounded-lg hover:bg-black/10 flex items-center justify-center text-slate-900 font-black text-lg shrink-0"
+            >
+              ↻
+            </button>
+            <div class="relative flex-1">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs">🔍</span>
+              <input
+                id="flex-itinerary-search-input"
+                type="text"
+                oninput="filterItineraryList(this.value)"
+                placeholder="Search with address, stop # or gate..."
+                class="w-full pl-8 pr-8 py-1.5 rounded-full bg-[#c4cdd4] border border-slate-500/50 text-xs font-semibold text-slate-900 placeholder-slate-600 focus:outline-none focus:bg-white"
+              />
+              <button
+                id="flex-itinerary-filter-clear"
+                type="button"
+                onclick="clearItinerarySearch()"
+                class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-900 text-xs font-black"
+              >
+                ✕
+              </button>
+            </div>
+            <button
+              type="button"
+              onclick="switchTab('add')"
+              title="Add Stop Manually"
+              class="px-2.5 py-1.5 rounded-lg bg-[#0f5267] text-white text-xs font-black shrink-0"
+            >
+              + Stop
+            </button>
           </div>
-          <div class="flex items-center gap-2">
-            <span id="total-packages-badge" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-bold text-cyan-300">
-              0 packages
-            </span>
-            <span id="urgent-stops-badge" class="px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-xs font-bold text-rose-300">
-              0 urgent
-            </span>
+
+          <!-- Cabecera compacta informativa de la ruta -->
+          <div class="px-4 py-2 bg-[#aab4bc] border-b border-slate-400/60 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 id="route-title-heading" class="text-xs font-black text-slate-900">Tactical Route Sheet</h2>
+              <p id="route-summary-subtitle" class="text-[10px] text-slate-700 font-semibold">Tap any stop to view it on the map or start travel.</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="total-packages-badge" class="px-2 py-0.5 rounded-md bg-slate-900/85 text-[10px] font-bold text-cyan-300">
+                0 packages
+              </span>
+              <span id="urgent-stops-badge" class="px-2 py-0.5 rounded-md bg-rose-700 text-[10px] font-bold text-white">
+                0 urgent
+              </span>
+            </div>
+          </div>
+
+          <!-- Lista Vertical de Paradas con Línea de Tiempo a la Izquierda -->
+          <div id="stops-cards-container" class="divide-y divide-slate-400/60 bg-[#b8c1c8]"></div>
+
+          <!-- Pie de lista estilo Amazon Flex + Botón "Current stop →" -->
+          <div class="p-4 bg-[#b8c1c8] space-y-3">
+            <p id="i18n-flex-list-footer" class="text-xs text-slate-700 font-medium">
+              After you're assigned more stops, you'll see them in your itinerary.
+            </p>
+            <button
+              type="button"
+              onclick="goToCurrentStopView()"
+              class="w-full py-3 px-4 rounded-xl bg-[#0f5267] hover:bg-[#136680] text-white font-bold text-sm flex items-center justify-between shadow-lg transition-all"
+            >
+              <span class="i18n-current-stop-btn-label">Current stop</span>
+              <span class="w-7 h-7 rounded-full bg-white text-[#0f5267] flex items-center justify-center font-black text-base">→</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        <!-- LISTA DE TARJETAS DE PARADAS -->
-        <div id="stops-cards-container" class="space-y-3"></div>
+      <!-- ========================================================================= -->
+      <!-- VISTA C: AMAZON FLEX "ITINERARY SUMMARY" (WORK REMAINING + PROGRESS BARS) -->
+      <!-- ========================================================================= -->
+      <div id="flex-view-summary" class="hidden space-y-3">
+        <div class="rounded-2xl overflow-hidden border border-slate-600/70 bg-[#b8c1c8] text-slate-900 shadow-2xl">
+          <div id="flex-summary-content" class="divide-y divide-slate-400/70"></div>
+          <div class="p-4 bg-[#b8c1c8]">
+            <button
+              type="button"
+              onclick="goToCurrentStopView()"
+              class="w-full py-3 px-4 rounded-xl bg-[#0f5267] hover:bg-[#136680] text-white font-bold text-sm flex items-center justify-between shadow-lg transition-all"
+            >
+              <span class="i18n-current-stop-btn-label">Current stop</span>
+              <span class="w-7 h-7 rounded-full bg-white text-[#0f5267] flex items-center justify-center font-black text-base">→</span>
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -740,7 +964,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 07:02 PM - 11/08/2026 ↻
+        Actualizado: 07:11 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -885,6 +1109,10 @@
       currentLegStartedAt: Date.now(),
       showLiveTrafficLayer: true,
       departureStationExpanded: false,
+      closingDestExpanded: false,
+      flexItineraryView: 'map',
+      itinerarySearchQuery: '',
+      itineraryStatusFilter: 'all',
       stops: [],
       selectedStopId: null,
       activeTab: 'cockpit'
@@ -943,7 +1171,144 @@
       state.departureStationExpanded =
         typeof forceState === 'boolean' ? forceState : !state.departureStationExpanded;
       syncDepartureStationPanelUI();
-      saveState();
+      saveStateToStorage();
+    }
+
+    function syncClosingDestPanelUI() {
+      const body = document.getElementById('closing-dest-collapsible-body');
+      const lbl = document.getElementById('closing-dest-toggle-label');
+      const pill = document.getElementById('closing-dest-active-pill');
+      const isExpanded = Boolean(state.closingDestExpanded);
+      if (body) {
+        body.classList.toggle('hidden', !isExpanded);
+      }
+      if (lbl) {
+        lbl.textContent = isExpanded
+          ? tr('▲ Hide', '▲ Ocultar')
+          : tr('▼ Edit', '▼ Editar');
+      }
+      if (pill) {
+        const modeLabels = {
+          home: 'Home',
+          return_to_start: tr('Return to P1', 'Regresar a P1'),
+          brickell: 'Brickell',
+          custom: state.customEndAddress || tr('Custom', 'Otra'),
+          none: tr('No Extra Closing', 'Sin Cierre')
+        };
+        pill.textContent = modeLabels[state.endMode] || 'Home';
+      }
+    }
+
+    function toggleClosingDestPanel(forceState) {
+      state.closingDestExpanded =
+        typeof forceState === 'boolean' ? forceState : !state.closingDestExpanded;
+      syncClosingDestPanelUI();
+      saveStateToStorage();
+    }
+
+    function syncFlexItineraryViewUI() {
+      const view = state.flexItineraryView || 'map';
+      const listView = document.getElementById('flex-view-list');
+      const mapView = document.getElementById('flex-view-map');
+      const summaryView = document.getElementById('flex-view-summary');
+      const pillList = document.getElementById('flex-pill-list');
+      const pillMap = document.getElementById('flex-pill-map');
+      const pillSummary = document.getElementById('flex-pill-summary');
+      const titleEl = document.getElementById('flex-screen-title');
+
+      if (listView) listView.classList.toggle('hidden', view !== 'list');
+      if (mapView) mapView.classList.toggle('hidden', view !== 'map');
+      if (summaryView) summaryView.classList.toggle('hidden', view !== 'summary');
+
+      const activeCls =
+        'py-2 px-3 rounded-full flex items-center justify-center gap-1.5 font-extrabold text-xs transition-all bg-[#0f5267] text-white shadow-md';
+      const inactiveCls =
+        'py-2 px-3 rounded-full flex items-center justify-center gap-1.5 font-extrabold text-xs transition-all bg-white text-slate-800 hover:bg-slate-100 shadow-sm';
+
+      if (pillList) pillList.className = view === 'list' ? activeCls : inactiveCls;
+      if (pillMap) pillMap.className = view === 'map' ? activeCls : inactiveCls;
+      if (pillSummary) pillSummary.className = view === 'summary' ? activeCls : inactiveCls;
+
+      if (titleEl) {
+        if (view === 'list') {
+          titleEl.textContent = tr('Itinerary list', 'Lista de itinerario');
+        } else if (view === 'summary') {
+          titleEl.textContent = tr('Itinerary summary', 'Resumen de itinerario');
+        } else {
+          titleEl.textContent = tr('Travel', 'Viaje / Mapa');
+        }
+      }
+    }
+
+    function setFlexItineraryView(view) {
+      state.flexItineraryView = ['list', 'map', 'summary'].includes(view) ? view : 'map';
+      syncFlexItineraryViewUI();
+      renderBottomActionBar();
+      if (state.flexItineraryView === 'map') {
+        setTimeout(() => {
+          if (googleMapInstance) {
+            googleMapInstance.invalidateSize();
+          }
+          renderSvgMap();
+        }, 60);
+      } else if (state.flexItineraryView === 'summary') {
+        renderFlexSummaryView();
+      } else if (state.flexItineraryView === 'list') {
+        renderStopCards();
+        updateStopCardsLiveEtaBadges();
+      }
+      saveStateToStorage();
+    }
+
+    function goToCurrentStopView() {
+      const nextStop = state.stops.find((s) => !s.completed) || state.stops[0];
+      if (nextStop) {
+        state.selectedStopId = nextStop.id;
+      }
+      state.itineraryStatusFilter = 'all';
+      setFlexItineraryView('map');
+      setTimeout(() => {
+        if (nextStop && googleMapInstance) {
+          googleMapInstance.panTo([nextStop.lat, nextStop.lng], { animate: true });
+        }
+      }, 90);
+    }
+
+    function cycleSelectedStopOnBanner() {
+      if (!Array.isArray(state.stops) || state.stops.length === 0) return;
+      const curIdx = state.stops.findIndex((s) => s.id === state.selectedStopId);
+      const nextIdx = (curIdx + 1) % state.stops.length;
+      selectStop(state.stops[nextIdx].id);
+    }
+
+    function filterItineraryList(val) {
+      state.itinerarySearchQuery = (val || '').trim();
+      const clearBtn = document.getElementById('flex-itinerary-filter-clear');
+      if (clearBtn) {
+        clearBtn.classList.toggle('hidden', !state.itinerarySearchQuery && state.itineraryStatusFilter === 'all');
+      }
+      renderStopCards();
+      updateStopCardsLiveEtaBadges();
+    }
+
+    function clearItinerarySearch() {
+      state.itinerarySearchQuery = '';
+      state.itineraryStatusFilter = 'all';
+      const inp = document.getElementById('flex-itinerary-search-input');
+      if (inp) inp.value = '';
+      const clearBtn = document.getElementById('flex-itinerary-filter-clear');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      renderStopCards();
+      updateStopCardsLiveEtaBadges();
+    }
+
+    function openItineraryListFiltered(statusFilter) {
+      state.itineraryStatusFilter = statusFilter || 'all';
+      const clearBtn = document.getElementById('flex-itinerary-filter-clear');
+      if (clearBtn) {
+        clearBtn.classList.toggle('hidden', state.itineraryStatusFilter === 'all' && !state.itinerarySearchQuery);
+      }
+      setFlexItineraryView('list');
     }
 
     function setAppLanguage(lang) {
@@ -1019,17 +1384,30 @@
       setTxt('endmode-brickell', 'Go to Brickell', 'Ir a Brickell');
       setTxt('endmode-custom', 'Custom Address', 'Otra Dirección');
       setTxt('endmode-none', 'No Extra Closing', 'Sin Cierre Extra');
+      setTxt('i18n-flex-pill-list', 'List', 'Lista');
+      setTxt('i18n-flex-pill-map', 'Map', 'Mapa');
+      setTxt('i18n-flex-pill-summary', 'Summary', 'Resumen');
+      setTxt('i18n-flex-list-footer', "After you're assigned more stops, you'll see them in your itinerary.", 'Cuando agregues más paradas, aparecerán aquí en tu itinerario.');
+      document.querySelectorAll('.i18n-current-stop-btn-label').forEach((el) => {
+        el.textContent = isEs ? 'Parada actual' : 'Current stop';
+      });
+      const searchInp = document.getElementById('flex-itinerary-search-input');
+      if (searchInp) {
+        searchInp.placeholder = isEs ? 'Buscar por dirección, # o código...' : 'Search with address, stop # or gate...';
+      }
+      syncClosingDestPanelUI();
+      syncFlexItineraryViewUI();
 
       setTxt('i18n-map-title', 'Tactical Google Maps', 'Mapa Táctico Google Maps');
       setTxt('gmap-mode-streets', 'Map', 'Mapa');
       setTxt('gmap-mode-hybrid', 'Satellite', 'Satélite');
       setTxt('gmap-traffic-btn', '🚦 Traffic', '🚦 Tráfico');
-      setTxt('i18n-btn-center-map', 'Center', 'Centrar');
+      setTxt('i18n-btn-center-map', '➤', '➤');
       if (!isMapFullscreen) {
-        setTxt('gmap-fullscreen-btn', '⛶ Expand', '⛶ Ampliar');
+        setTxt('gmap-fullscreen-btn', '⛶', '⛶');
         setTxt('map-fullscreen-hint', 'Tap map to open in fullscreen', 'Toca el mapa para abrirlo a pantalla completa');
       } else {
-        setTxt('gmap-fullscreen-btn', '✕ Close', '✕ Cerrar');
+        setTxt('gmap-fullscreen-btn', '✕', '✕');
       }
 
       setTxt('i18n-seq-title', 'Active Tactical Sequence', 'Secuencia Táctica Activa');
@@ -4013,6 +4391,25 @@
           marker.addTo(googleMarkersLayer);
         });
 
+        // Etiqueta negra flotante con minutos hacia la siguiente parada activa estilo Amazon Flex ("8 min" sobre el trazo)
+        const nextActiveStop = state.stops.find((s) => !s.completed);
+        if (nextActiveStop && waypoints.length >= 2) {
+          const tData = computeRouteTelemetry();
+          const minsNow = Math.max(1, Math.round((tData.initialLegDriveSec || 180) / 60));
+          const originWp = waypoints[0];
+          const midLat = (originWp.lat + nextActiveStop.lat) / 2;
+          const midLng = (originWp.lng + nextActiveStop.lng) / 2;
+          const legMinIcon = L.divIcon({
+            className: '',
+            html: `<div style="padding:2px 7px;border-radius:4px;background:#111827;border:1px solid rgba(255,255,255,0.28);color:#ffffff;font-weight:800;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.65);">${minsNow} min</div>`,
+            iconSize: [48, 20],
+            iconAnchor: [24, 10]
+          });
+          L.marker([midLat, midLng], { icon: legMinIcon, zIndexOffset: 1100, interactive: false }).addTo(
+            googleMarkersLayer
+          );
+        }
+
         if (Array.isArray(closedBarriers)) {
           closedBarriers.forEach((b) => {
             const barrierIcon = L.divIcon({
@@ -4058,21 +4455,237 @@
         }
       }
 
-      const selectedStop = state.stops.find((s) => s.id === state.selectedStopId) || state.stops[0];
+      const activeNextStop = state.stops.find((s) => !s.completed);
+      const selectedStop =
+        state.stops.find((s) => s.id === state.selectedStopId) || activeNextStop || state.stops[0];
+
+      // Actualizar el banner oscuro superior sobre el mapa estilo Amazon Flex ("120 Selwyn Road ^ / Seattle, WA 98121")
+      const bannerAddrEl = document.getElementById('flex-banner-stop-address');
+      const bannerCityEl = document.getElementById('flex-banner-stop-city');
+      if (selectedStop) {
+        if (bannerAddrEl) {
+          bannerAddrEl.textContent = `${selectedStop.address}${selectedStop.unit ? ' • ' + selectedStop.unit : ''}`;
+        }
+        if (bannerCityEl) {
+          bannerCityEl.textContent = `${selectedStop.city} • ${tr('Stop', 'Parada')} #${selectedStop.originalNumber} (${selectedStop.zone || ''})`;
+        }
+      }
+
       if (selectedStop && selectedBar) {
+        const selIdx = Math.max(0, state.stops.findIndex((s) => s.id === selectedStop.id));
+        const colorMeta = getStopColorMeta(selIdx, Math.max(1, state.stops.length));
+        const sched = getActiveRouteSchedule();
+        const start12 = formatTime24To12(sched.time || '09:00');
+        const pkgCount = selectedStop.packages || 1;
+        const pkgWord = pkgCount === 1 ? tr('package', 'paquete') : tr('packages', 'paquetes');
+        const liveEtaStr = selectedStop.liveEtaDate ? formatClock12h(selectedStop.liveEtaDate, false) : selectedStop.deadline;
+        const nextStopInSeq = state.stops[selIdx + 1] || null;
+
         selectedBar.innerHTML = `
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[11px] font-black">${tr('Stop', 'Parada')} ${selectedStop.originalNumber}</span>
-              <span class="text-xs font-bold text-white truncate">${selectedStop.address}${selectedStop.unit ? ' • ' + selectedStop.unit : ''}</span>
+          <div class="w-9 h-1 rounded-full bg-slate-500/50 mx-auto mb-2.5"></div>
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span style="background:${colorMeta.hex};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.9);" class="px-2 py-0.5 rounded-full text-[11px] font-black border border-white/70">
+                  #${selectedStop.originalNumber}
+                </span>
+                <span class="text-base font-extrabold text-slate-900">
+                  ${tr('Deliver', 'Entregar')} ${pkgCount} ${pkgWord}
+                </span>
+                ${
+                  selectedStop.gateCode
+                    ? `<span class="px-2 py-0.5 rounded bg-amber-500/25 border border-amber-700/40 text-[11px] font-black text-slate-900">🔑 ${selectedStop.gateCode}</span>`
+                    : ''
+                }
+              </div>
+              <div class="flex flex-wrap items-center gap-2 mt-1 text-xs font-semibold text-slate-700">
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-4 h-4 rounded-full bg-[#0f5267] text-white inline-flex items-center justify-center text-[9px]">🕒</span>
+                  <span>${start12} - ${selectedStop.deadline}</span>
+                </span>
+                <span class="px-2 py-0.5 rounded bg-[#0f5267]/15 border border-[#0f5267]/30 text-[#0f5267] font-extrabold text-[11px]">
+                  🏁 ${tr('Live ETA:', 'ETA en Vivo:')} ${liveEtaStr}
+                </span>
+              </div>
             </div>
-            <div class="text-[11px] text-slate-400 truncate">${selectedStop.zone} • ${tr('Due:', 'Límite:')} ${selectedStop.deadline}${selectedStop.gateCode ? ' • Gate: ' + selectedStop.gateCode : ''}</div>
+
+            <!-- Botones cuadrados delineados [📋] y [🔑] idénticos a Amazon Flex -->
+            <div class="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onclick="copyTextToClipboard('${cleanAddressForMaps(selectedStop.address, selectedStop.city)}', '${tr('Stop', 'Parada')} ${selectedStop.originalNumber}')"
+                title="${tr('Copy stop address', 'Copiar dirección de parada')}"
+                class="w-10 h-10 rounded-lg border-2 border-[#0f5267] text-[#0f5267] hover:bg-[#0f5267]/10 flex items-center justify-center font-black"
+              >
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="4" width="12" height="16" rx="2"></rect>
+                  <line x1="9" y1="9" x2="15" y2="9"></line>
+                  <line x1="9" y1="13" x2="15" y2="13"></line>
+                  <line x1="9" y1="17" x2="13" y2="17"></line>
+                </svg>
+              </button>
+              <button
+                type="button"
+                onclick="${
+                  selectedStop.gateCode
+                    ? `copyTextToClipboard('${selectedStop.gateCode}', 'Gate ${selectedStop.gateCode}')`
+                    : nextStopInSeq
+                    ? `toggleClosedStreetLeg(${selectedStop.originalNumber}, ${nextStopInSeq.originalNumber}, event)`
+                    : `copyTextToClipboard('${selectedStop.address}', 'Address')`
+                }"
+                title="${selectedStop.gateCode ? 'Gate ' + selectedStop.gateCode : tr('Access / Detour', 'Acceso / Desvío')}"
+                class="w-10 h-10 rounded-lg border-2 border-[#0f5267] text-[#0f5267] hover:bg-[#0f5267]/10 flex items-center justify-center font-black"
+              >
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="7.5" cy="12" r="3.5"></circle>
+                  <path d="M11 12h10l-2 2.5m-2.5-2.5v2.5"></path>
+                </svg>
+              </button>
+            </div>
           </div>
-          <a href="${getSingleStopMapsUrl(selectedStop)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-cyan-400 text-slate-950 text-xs font-black shrink-0">
-            ${tr('Navigate ↗', 'Navegar ↗')}
-          </a>
+
+          <!-- Fila inferior de acción: Botón grande "Start travel" + Botón cuadrado [↗] + Botón "✓ Complete" -->
+          <div class="mt-3 flex items-center gap-2">
+            <a
+              href="${getSingleStopMapsUrl(selectedStop)}"
+              target="_blank"
+              rel="noopener"
+              class="flex-1 py-3 px-4 rounded-lg bg-[#0f5267] hover:bg-[#136882] text-white font-bold text-sm text-center shadow-md transition-all"
+            >
+              ${tr('Start travel', 'Iniciar viaje')}
+            </a>
+            <button
+              type="button"
+              onclick="toggleStopCompleted('${selectedStop.id}')"
+              title="${selectedStop.completed ? tr('Completed', 'Completada') : tr('Mark Delivered', 'Marcar Entregada')}"
+              class="h-11 px-3 rounded-lg font-extrabold text-xs border-2 transition-all ${
+                selectedStop.completed
+                  ? 'bg-emerald-600 text-white border-emerald-700'
+                  : 'bg-white/90 hover:bg-white text-[#0f5267] border-[#0f5267]'
+              }"
+            >
+              ${selectedStop.completed ? '✓ Done' : tr('✓ Complete', '✓ Entregar')}
+            </button>
+            <a
+              href="${getSingleStopMapsUrl(selectedStop)}"
+              target="_blank"
+              rel="noopener"
+              title="${tr('Open in Google Maps', 'Abrir en Google Maps')}"
+              class="w-11 h-11 rounded-lg bg-[#0f5267] hover:bg-[#136882] text-white flex items-center justify-center shadow-md shrink-0"
+            >
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </a>
+          </div>
         `;
       }
+    }
+
+    function renderFlexSummaryView() {
+      const summaryEl = document.getElementById('flex-summary-content');
+      if (!summaryEl) return;
+
+      const totalStops = state.stops.length;
+      const completedStops = state.stops.filter((s) => s.completed);
+      const remainingStops = state.stops.filter((s) => !s.completed);
+      const multiLocStopsCount = remainingStops.filter((s) => (s.locations || 1) > 1).length;
+
+      const totalLocations = state.stops.reduce((acc, s) => acc + (s.locations || 1), 0);
+      const remainingLocations = remainingStops.reduce((acc, s) => acc + (s.locations || 1), 0);
+
+      const totalPackages = state.stops.reduce((acc, s) => acc + (s.packages || 1), 0);
+      const remainingPackages = remainingStops.reduce((acc, s) => acc + (s.packages || 1), 0);
+      const completedPackages = completedStops.reduce((acc, s) => acc + (s.packages || 1), 0);
+
+      const urgentOrDetourCount = state.stops.filter((s, idx) => {
+        const nextS = state.stops[idx + 1];
+        const hasDetour = nextS && isClosedStreetBetweenNumbers(s.originalNumber, nextS.originalNumber);
+        return (!s.completed && s.urgent) || hasDetour;
+      }).length;
+
+      const stopsPct = totalStops > 0 ? Math.round((remainingStops.length / totalStops) * 100) : 0;
+      const locsPct = totalLocations > 0 ? Math.round((remainingLocations / totalLocations) * 100) : 0;
+      const pkgsPct = totalPackages > 0 ? Math.round((remainingPackages / totalPackages) * 100) : 0;
+
+      const tData = computeRouteTelemetry();
+      const finishClock = formatClock12h(tData.finishDate, false);
+      const remTotalStr = formatDurationHrsMins(tData.totalRemainingSec);
+      const initialDriveStr = formatDurationHrsMins(tData.initialLegDriveSec || 0);
+
+      summaryEl.innerHTML = `
+        <!-- Sección 1: Work remaining (idéntica a Amazon Flex Itinerary summary) -->
+        <div class="p-4 space-y-4 bg-[#b8c1c8]">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-extrabold text-slate-900">${tr('Work remaining', 'Trabajo restante')}</h3>
+            <span class="w-6 h-6 rounded-full border-2 border-slate-800 text-slate-800 flex items-center justify-center text-xs font-black">i</span>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="text-sm font-extrabold text-slate-900">${remainingStops.length} ${tr('stops', 'paradas')}</div>
+            <div class="text-xs text-slate-700 font-medium">
+              ${tr(`There are ${multiLocStopsCount} multi-location stops.`, `Hay ${multiLocStopsCount} paradas con múltiples ubicaciones.`)}
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-400/70 overflow-hidden">
+              <div class="h-full bg-[#126881] rounded-full transition-all duration-300" style="width:${stopsPct}%"></div>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 pt-1 border-t border-slate-400/60">
+            <div class="text-sm font-extrabold text-slate-900">${remainingLocations} ${tr('locations', 'ubicaciones')}</div>
+            <div class="w-full h-2 rounded-full bg-slate-400/70 overflow-hidden">
+              <div class="h-full bg-[#126881] rounded-full transition-all duration-300" style="width:${locsPct}%"></div>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 pt-1 border-t border-slate-400/60">
+            <div class="text-sm font-extrabold text-slate-900">${remainingPackages} ${tr('packages', 'paquetes')}</div>
+            <div class="w-full h-2 rounded-full bg-slate-400/70 overflow-hidden">
+              <div class="h-full bg-[#126881] rounded-full transition-all duration-300" style="width:${pkgsPct}%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección 2: Stops Breakdown (To do / Successful / Problems) -->
+        <div class="bg-[#b8c1c8] divide-y divide-slate-400/60">
+          <div class="px-4 py-3 font-extrabold text-base text-slate-900">${tr('Stops', 'Paradas')}</div>
+          <button type="button" onclick="openItineraryListFiltered('todo')" class="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 text-sm font-semibold text-slate-800">
+            <span>${tr('To do', 'Pendientes por entregar')}</span>
+            <span class="font-bold text-slate-900">${remainingStops.length} &nbsp;›</span>
+          </button>
+          <button type="button" onclick="openItineraryListFiltered('done')" class="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 text-sm font-semibold text-slate-800">
+            <span>${tr('Successful', 'Completadas con éxito')}</span>
+            <span class="font-bold text-slate-900">${completedStops.length} &nbsp;›</span>
+          </button>
+          <button type="button" onclick="openItineraryListFiltered('problems')" class="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 text-sm font-semibold text-slate-800">
+            <span>${tr('Problems / Urgent / Detours', 'Problemas / Urgentes / Desvíos')}</span>
+            <span class="font-bold text-slate-900">${urgentOrDetourCount} &nbsp;›</span>
+          </button>
+        </div>
+
+        <!-- Sección 3: Packages & Live Telemetry -->
+        <div class="p-4 bg-[#b8c1c8] space-y-2.5">
+          <div class="font-extrabold text-base text-slate-900">${tr('Packages & Live Telemetry', 'Paquetes y Telemetría en Tiempo Real')}</div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-900/90 text-white">
+              <div class="text-[10px] text-cyan-300 font-bold uppercase">${tr('Drive to Stop', 'Manejo a Parada')} #${tData.nextStopNumber}</div>
+              <div class="text-sm font-black mt-0.5">${initialDriveStr} (${tData.initialLegMiles} mi)</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/90 text-white">
+              <div class="text-[10px] text-emerald-300 font-bold uppercase">${tr('Est. Route Finish', 'Fin Estimado')}</div>
+              <div class="text-sm font-black mt-0.5">${finishClock} (${remTotalStr})</div>
+            </div>
+          </div>
+          <div class="text-xs font-semibold text-slate-800 flex items-center justify-between pt-1">
+            <span>${tr('Delivered packages:', 'Paquetes entregados:')} ${completedPackages} / ${totalPackages}</span>
+            <button type="button" onclick="openItineraryListFiltered('all')" class="text-[#0f5267] font-extrabold underline">
+              ${tr('View full itinerary list →', 'Ver lista completa →')}
+            </button>
+          </div>
+        </div>
+      `;
     }
 
     function renderStopCards() {
@@ -4091,98 +4704,143 @@
       document.getElementById('total-packages-badge').textContent = `${totalPkgs} ${tr('packages', 'paquetes')}`;
       document.getElementById('urgent-stops-badge').textContent = `${urgentCount} ${tr('urgent', 'urgentes')}`;
 
+      const start12 = formatTime24To12(sched.time || '09:00');
+      const activeNextStop = state.stops.find((s) => !s.completed);
+      const q = (state.itinerarySearchQuery || '').toLowerCase();
+      const statusFilter = state.itineraryStatusFilter || 'all';
+
+      const filteredStops = state.stops.filter((stop, idx) => {
+        if (statusFilter === 'todo' && stop.completed) return false;
+        if (statusFilter === 'done' && !stop.completed) return false;
+        if (statusFilter === 'problems') {
+          const nextS = state.stops[idx + 1];
+          const hasDetour = nextS && isClosedStreetBetweenNumbers(stop.originalNumber, nextS.originalNumber);
+          if (!stop.urgent && !hasDetour) return false;
+        }
+        if (!q) return true;
+        const hay = `${stop.originalNumber} ${stop.address} ${stop.unit || ''} ${stop.city || ''} ${stop.zone || ''} ${stop.gateCode || ''}`.toLowerCase();
+        return hay.includes(q);
+      });
+
       const container = document.getElementById('stops-cards-container');
-      container.innerHTML = state.stops
-        .map((stop, idx) => {
+      const stationRowHtml =
+        !q && statusFilter === 'all'
+          ? `
+            <div onclick="toggleDepartureStationPanel(true)" class="px-4 py-3 bg-[#b2bcc3] hover:bg-[#a9b4bc] transition-colors cursor-pointer flex items-start gap-3">
+              <div class="flex flex-col items-center shrink-0 pt-0.5">
+                <div class="w-7 h-7 rounded-full bg-[#333a40] text-white font-black text-xs flex items-center justify-center border-2 border-white shadow">
+                  1
+                </div>
+                <div class="w-0.5 h-8 bg-slate-500/70 mt-1"></div>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-[11px] font-extrabold text-slate-700 uppercase">${tr('Picked up at Station (Stop 1)', 'Recogido en Estación (Parada 1)')}</div>
+                <div class="text-sm font-black text-slate-900 uppercase tracking-tight">${state.pickupAddress}</div>
+                <div class="text-xs font-semibold text-slate-700">${schedLabel}</div>
+              </div>
+            </div>
+          `
+          : '';
+
+      const stopsRowsHtml = filteredStops
+        .map((stop) => {
+          const idx = state.stops.findIndex((s) => s.id === stop.id);
           const isSelected = stop.id === state.selectedStopId;
+          const isCurrentStop = activeNextStop && activeNextStop.id === stop.id;
           const colorMeta = getStopColorMeta(idx, state.stops.length);
           const nextStopInSeq = state.stops[idx + 1] || null;
           const hasClosedToNext =
             nextStopInSeq && isClosedStreetBetweenNumbers(stop.originalNumber, nextStopInSeq.originalNumber);
-          const cardBorder = stop.completed
-            ? 'border-emerald-500/30 opacity-65'
-            : isSelected
-            ? 'border-cyan-400 ring-1 ring-cyan-400/50'
-            : stop.urgent
-            ? 'border-rose-500/40'
-            : 'border-slate-800';
-          const badgeStyle = stop.completed
-            ? ''
-            : `style="background:${colorMeta.hex};border-color:rgba(255,255,255,0.8);color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,0.92),0 0 2px rgba(0,0,0,0.92);"`;
+          const pinBg = stop.completed ? '#16a34a' : colorMeta.hex;
+          const rowBg = isSelected
+            ? 'bg-[#c5cfd6] ring-2 ring-inset ring-[#0f5267]'
+            : stop.completed
+            ? 'bg-[#b0bac1] opacity-70'
+            : 'bg-[#b8c1c8] hover:bg-[#c0c9d0]';
 
           return `
-            <div onclick="selectStop('${stop.id}')" class="glass-card rounded-2xl border ${cardBorder} p-4 transition-all cursor-pointer hover:border-slate-700">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                  <div ${badgeStyle} class="w-10 h-10 rounded-xl ${
-                    stop.completed
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'border'
-                  } flex flex-col items-center justify-center shrink-0">
-                    <span class="text-[9px] font-bold uppercase opacity-75">#${idx + 1}</span>
-                    <span class="text-sm font-black leading-none">${stop.originalNumber}</span>
+            <div onclick="selectStop('${stop.id}'); setFlexItineraryView('map');" class="px-4 py-3.5 transition-all cursor-pointer ${rowBg}">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <!-- Columna izquierda: Pin estilo gota/círculo con el color del degradado + línea vertical -->
+                  <div class="flex flex-col items-center shrink-0 pt-0.5">
+                    <div
+                      style="background:${pinBg};color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,0.92),0 0 2px rgba(0,0,0,0.92);"
+                      class="w-7 h-7 rounded-full border-2 border-white font-black text-xs flex items-center justify-center shadow-md"
+                    >
+                      ${stop.completed ? '✓' : stop.originalNumber}
+                    </div>
+                    <div class="w-0.5 h-12 bg-slate-500/65 mt-1"></div>
                   </div>
-                  <div>
-                    <div class="flex flex-wrap items-center gap-1.5">
-                      <span class="text-sm font-black text-white ${stop.completed ? 'line-through' : ''}">
+
+                  <!-- Columna central: Formato idéntico a Amazon Flex Itinerary list -->
+                  <div class="min-w-0">
+                    ${
+                      isCurrentStop
+                        ? `<div class="text-xs font-extrabold text-[#157a2c] mb-0.5">${tr('Current stop:', 'Parada actual:')}</div>`
+                        : ''
+                    }
+                    <div class="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-800">
+                      <span class="inline-flex items-center gap-1">
+                        <span class="w-3.5 h-3.5 rounded-full bg-[#0f5267] text-white inline-flex items-center justify-center text-[8px]">🕒</span>
+                        <span>${tr('Scheduled', 'Programada')} ${start12} - ${stop.deadline}</span>
+                      </span>
+                      <span id="stop-eta-badge-${stop.id}" class="px-1.5 py-0.5 rounded bg-slate-900/90 text-cyan-300 font-extrabold text-[10px]">
+                        🏁 ${tr('Calculating...', 'Calculando...')}
+                      </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span class="text-sm font-extrabold text-slate-900 uppercase tracking-tight ${stop.completed ? 'line-through' : ''}">
                         ${stop.address}
                       </span>
                       ${
                         stop.unit
-                          ? `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 text-[11px] font-extrabold border border-slate-700">${stop.unit}</span>`
+                          ? `<span class="px-1.5 py-0.5 rounded bg-slate-900 text-cyan-300 text-[10px] font-black uppercase">${stop.unit}</span>`
                           : ''
                       }
                       ${
                         stop.gateCode
-                          ? `<button onclick="copyTextToClipboard('${stop.gateCode}', 'Gate ${stop.gateCode}')" class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[11px] font-black border border-amber-500/40">Gate ${stop.gateCode}</button>`
+                          ? `<button onclick="event.stopPropagation(); copyTextToClipboard('${stop.gateCode}', 'Gate ${stop.gateCode}')" class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-black border border-amber-600">🔑 Gate ${stop.gateCode}</button>`
                           : ''
                       }
                     </div>
-                    <div class="text-xs text-slate-400 mt-0.5">
-                      ${stop.city} • <span class="text-slate-300 font-semibold">${stop.zone}</span>
+
+                    <div class="text-xs font-bold text-slate-700 uppercase mt-0.5">
+                      ${stop.city} • <span class="font-semibold text-slate-800">${stop.zone}</span> • 📦 ${stop.packages} ${tr('pkg', 'paq')}
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px]">
-                      <span id="stop-eta-badge-${stop.id}" class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 font-extrabold">
-                        🏁 ${tr('Calculating...', 'Calculando...')}
-                      </span>
-                      <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">
-                        ⏰ ${tr('Due:', 'Límite:')} ${stop.deadline}
-                      </span>
-                      <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">
-                        📦 ${stop.packages} ${tr('pkg', 'paq')} (${stop.locations || 1} ${tr('loc.', 'ubic.')})
-                      </span>
-                      ${
-                        nextStopInSeq
-                          ? `<button onclick="toggleClosedStreetLeg(${stop.originalNumber}, ${nextStopInSeq.originalNumber}, event)" class="px-2 py-0.5 rounded border font-bold transition-all ${
+
+                    ${
+                      nextStopInSeq
+                        ? `<div class="mt-1.5">
+                            <button onclick="toggleClosedStreetLeg(${stop.originalNumber}, ${nextStopInSeq.originalNumber}, event)" class="px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${
                               hasClosedToNext
-                                ? 'bg-rose-500/25 border-rose-500/50 text-rose-200'
-                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-rose-300'
+                                ? 'bg-rose-700 text-white border-rose-900'
+                                : 'bg-slate-800/15 border-slate-600/50 text-slate-800 hover:bg-rose-700 hover:text-white'
                             }">
                               ${hasClosedToNext ? tr(`⛔ Detour active (${stop.originalNumber}→${nextStopInSeq.originalNumber})`, `⛔ Desvío activo (${stop.originalNumber}→${nextStopInSeq.originalNumber})`) : tr(`🚧 Closed street to #${nextStopInSeq.originalNumber}`, `🚧 Calle cerrada a #${nextStopInSeq.originalNumber}`)}
-                            </button>`
-                          : ''
-                      }
-                    </div>
+                            </button>
+                          </div>`
+                        : ''
+                    }
                   </div>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <button onclick="moveStopInSequence(${idx}, -1, event)" title="${tr('Move up in sequence', 'Subir en secuencia')}" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
+                <!-- Acciones rápidas a la derecha -->
+                <div class="flex flex-wrap items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+                  <button onclick="moveStopInSequence(${idx}, -1, event)" title="${tr('Move up', 'Subir')}" class="w-7 h-7 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-black">
                     ↑
                   </button>
-                  <button onclick="moveStopInSequence(${idx}, 1, event)" title="${tr('Move down in sequence', 'Bajar en secuencia')}" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-xs">
+                  <button onclick="moveStopInSequence(${idx}, 1, event)" title="${tr('Move down', 'Bajar')}" class="w-7 h-7 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-black">
                     ↓
                   </button>
-                  <button onclick="copyTextToClipboard('${cleanAddressForMaps(stop.address, stop.city)}', '${tr('Stop', 'Parada')} ${stop.originalNumber}')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold">
-                    ${tr('Copy', 'Copiar')}
-                  </button>
-                  <a href="${getSingleStopMapsUrl(stop)}" onclick="event.stopPropagation()" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-extrabold">
+                  <a href="${getSingleStopMapsUrl(stop)}" target="_blank" rel="noopener" class="px-2.5 py-1.5 rounded-lg bg-[#0f5267] hover:bg-[#136882] text-white text-[11px] font-extrabold">
                     Maps ↗
                   </a>
-                  <button onclick="toggleStopCompleted('${stop.id}', event)" class="px-3 py-1.5 rounded-xl text-xs font-black border transition-all ${
+                  <button onclick="toggleStopCompleted('${stop.id}', event)" class="px-2.5 py-1.5 rounded-lg text-[11px] font-black border transition-all ${
                     stop.completed
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-400'
-                      : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                      ? 'bg-emerald-600 text-white border-emerald-700'
+                      : 'bg-white/85 hover:bg-white text-slate-900 border-slate-500'
                   }">
                     ${stop.completed ? tr('✓ Done', '✓ Lista') : tr('Mark', 'Marcar')}
                   </button>
@@ -4192,6 +4850,9 @@
           `;
         })
         .join('');
+
+      container.innerHTML = stationRowHtml + stopsRowsHtml;
+      renderFlexSummaryView();
     }
 
     function renderBottomActionBar() {
@@ -4217,13 +4878,32 @@
         return;
       }
 
+      // Cuando el usuario está en "Itinerary list" o "Itinerary summary", mostrar el botón "Current stop →" de Amazon Flex
+      if (state.flexItineraryView === 'list' || state.flexItineraryView === 'summary') {
+        infoEl.innerHTML = `
+          <button
+            type="button"
+            onclick="goToCurrentStopView()"
+            class="w-full py-2.5 px-4 rounded-xl bg-[#0f5267] hover:bg-[#136882] text-white font-bold text-sm flex items-center justify-between gap-4 shadow-lg transition-all"
+          >
+            <span>${tr('Current stop', 'Parada actual')} (#${nextStop.originalNumber} • ${nextStop.address})</span>
+            <span class="w-6 h-6 rounded-full bg-white text-[#0f5267] flex items-center justify-center font-black text-sm shrink-0">→</span>
+          </button>
+        `;
+        btnsEl.innerHTML = '';
+        return;
+      }
+
+      const nextIdx = Math.max(0, state.stops.findIndex((s) => s.id === nextStop.id));
+      const nextColor = getStopColorMeta(nextIdx, Math.max(1, state.stops.length));
+
       infoEl.innerHTML = `
-        <div class="w-9 h-9 rounded-xl bg-cyan-400 text-slate-950 flex items-center justify-center font-black text-sm shrink-0">
+        <div style="background:${nextColor.hex};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.9);" class="w-9 h-9 rounded-xl border border-white/80 flex items-center justify-center font-black text-sm shrink-0">
           ${nextStop.originalNumber}
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">${tr('Next Stop', 'Siguiente Parada')}</span>
+            <span class="text-[10px] font-black uppercase tracking-wider text-cyan-400">${tr('Current Stop', 'Parada Actual')}</span>
             <span class="text-[11px] font-bold text-slate-400">⏰ ${nextStop.deadline}</span>
           </div>
           <div class="text-xs sm:text-sm font-black text-white truncate">
@@ -4236,8 +4916,8 @@
         <button onclick="toggleStopCompleted('${nextStop.id}')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
           ✓ ${tr('Delivered', 'Entregada')}
         </button>
-        <a href="${getSingleStopMapsUrl(nextStop)}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow-lg">
-          ${tr('Navigate Stop', 'Navegar Parada')} ${nextStop.originalNumber} ↗
+        <a href="${getSingleStopMapsUrl(nextStop)}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-[#0f5267] hover:bg-[#136882] text-white text-xs font-black shadow-lg">
+          ${tr('Start travel', 'Iniciar viaje')} #${nextStop.originalNumber} ↗
         </a>
       `;
     }
@@ -4284,7 +4964,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '07:02 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '07:11 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
