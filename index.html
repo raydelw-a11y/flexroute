@@ -523,7 +523,7 @@
           </div>
 
           <!-- Contenedor del Mapa con Navegación Turn-by-Turn In-App y Botones Flotantes -->
-          <div id="map-inner-wrapper" class="relative bg-[#050914]">
+          <div id="map-inner-wrapper" class="relative overflow-hidden bg-[#050914]">
             <!-- HUD DE NAVEGACIÓN INTERNA TURN-BY-TURN DENTRO DE LA APP (SE ACTIVA CON "START TRAVEL") -->
             <div
               id="in-app-nav-hud"
@@ -1052,7 +1052,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 08:03 PM - 11/08/2026 ↻
+        Actualizado: 08:17 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1492,13 +1492,48 @@
     }
 
     // =========================================================================
-    // NAVEGACIÓN TURN-BY-TURN DENTRO DE LA APP (SIN SALIRSE A GOOGLE MAPS)
+    // NAVEGACIÓN TURN-BY-TURN DENTRO DE LA APP (HEADING-UP + ZOOMED-IN ESTILO GOOGLE MAPS)
     // =========================================================================
+    function computeBearingDeg(lat1, lng1, lat2, lng2) {
+      const toRad = (d) => (d * Math.PI) / 180;
+      const toDeg = (r) => (r * 180) / Math.PI;
+      const dLng = toRad(lng2 - lng1);
+      const p1 = toRad(lat1);
+      const p2 = toRad(lat2);
+      const y = Math.sin(dLng) * Math.cos(p2);
+      const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dLng);
+      return (toDeg(Math.atan2(y, x)) + 360) % 360;
+    }
+
+    function getCompassDirectionLabel(deg) {
+      const dirsEn = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const dirsEs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+      const idx = Math.round((((Number(deg) || 0) % 360) + 360) % 360 / 45) % 8;
+      return state.lang === 'es' ? dirsEs[idx] : dirsEn[idx];
+    }
+
     function getManeuverVisual(step) {
       if (!step || !step.maneuver) return { icon: '⬆️', titleEn: 'Continue on route', titleEs: 'Continúa en la ruta' };
       const type = (step.maneuver.type || '').toLowerCase();
       const mod = (step.maneuver.modifier || '').toLowerCase();
       const road = step.name || step.ref || tr('current street', 'la vía actual');
+
+      if (step.customInstruction) {
+        let icon = '⬆️';
+        if (type === 'arrive') icon = '🏁';
+        else if (type === 'depart') icon = '🧭';
+        else if (type === 'roundabout' || type === 'rotary') icon = '🔄';
+        else if (mod.includes('uturn')) icon = '↩️';
+        else if (mod === 'sharp left' || mod === 'left') icon = '↰';
+        else if (mod === 'slight left') icon = '↖️';
+        else if (mod === 'sharp right' || mod === 'right') icon = '↱';
+        else if (mod === 'slight right') icon = '↗️';
+        return {
+          icon,
+          titleEn: step.customInstruction,
+          titleEs: step.customInstruction
+        };
+      }
 
       if (type === 'arrive') {
         return { icon: '🏁', titleEn: `Arrive at ${road}`, titleEs: `Llegada a ${road}` };
@@ -1563,23 +1598,136 @@
         if (collectedSteps.length > 0) return collectedSteps;
       }
 
-      // Respaldo instantáneo mientras OSRM descarga los giros detallados
+      // Respaldo instantáneo mientras el motor descarga los giros detallados
       const originPt = getStartOriginCoordinates(state.stops.filter((s) => s.completed));
       const distMeters = haversineMiles(originPt.lat, originPt.lng, targetStop.lat, targetStop.lng) * 1609.34 * 1.28;
+      const initBearing = computeBearingDeg(originPt.lat, originPt.lng, targetStop.lat, targetStop.lng);
       return [
         {
           name: targetStop.address,
           distance: Math.round(distMeters * 0.75),
           duration: Math.round(distMeters / 11),
-          maneuver: { type: 'depart', modifier: 'straight', location: [originPt.lng, originPt.lat] }
+          maneuver: { type: 'depart', modifier: 'straight', location: [originPt.lng, originPt.lat], bearing_after: initBearing }
         },
         {
           name: `${targetStop.address} (${targetStop.city || 'Miami, FL'})`,
           distance: Math.round(distMeters * 0.25),
           duration: Math.round(distMeters / 18),
-          maneuver: { type: 'arrive', modifier: 'straight', location: [targetStop.lng, targetStop.lat] }
+          maneuver: { type: 'arrive', modifier: 'straight', location: [targetStop.lng, targetStop.lat], bearing_after: initBearing }
         }
       ];
+    }
+
+    function getInAppNavPose(targetStop) {
+      const stop =
+        targetStop ||
+        state.stops.find((s) => s.id === state.inAppNavStopId) ||
+        state.stops.find((s) => s.id === state.selectedStopId) ||
+        state.stops.find((s) => !s.completed) ||
+        state.stops[0];
+      const originPt = getStartOriginCoordinates(state.stops.filter((s) => s.completed));
+      if (!stop) {
+        return {
+          driverLat: originPt.lat,
+          driverLng: originPt.lng,
+          lookAheadLat: originPt.lat,
+          lookAheadLng: originPt.lng,
+          headingDeg: 0
+        };
+      }
+
+      const steps = getActiveInAppNavSteps(stop);
+      const stepIdx = Math.max(0, Math.min(steps.length - 1, state.inAppNavStepIdx || 0));
+      const curStep = steps[stepIdx] || steps[0] || null;
+      const nextStep = steps[stepIdx + 1] || null;
+
+      let driverLat = originPt.lat;
+      let driverLng = originPt.lng;
+
+      if (stepIdx > 0 && curStep && curStep.maneuver && Array.isArray(curStep.maneuver.location)) {
+        driverLng = curStep.maneuver.location[0];
+        driverLat = curStep.maneuver.location[1];
+      }
+
+      let headingDeg = null;
+      // 1) Si estamos en el paso inicial y el GPS real lleva rumbo de movimiento válido, usarlo
+      if (stepIdx === 0 && Number.isFinite(liveGpsState.headingDeg)) {
+        headingDeg = liveGpsState.headingDeg;
+      }
+      // 2) Usar el bearing_after oficial del paso actual (Valhalla u OSRM)
+      if (!Number.isFinite(headingDeg) && curStep && curStep.maneuver && Number.isFinite(curStep.maneuver.bearing_after)) {
+        headingDeg = curStep.maneuver.bearing_after;
+      }
+      // 3) Calcular el rumbo exacto sobre los primeros puntos de la geometría de la calle actual
+      if (!Number.isFinite(headingDeg) && curStep && curStep.geometry && Array.isArray(curStep.geometry.coordinates) && curStep.geometry.coordinates.length >= 2) {
+        const [lng1, lat1] = curStep.geometry.coordinates[0];
+        const [lng2, lat2] = curStep.geometry.coordinates[Math.min(3, curStep.geometry.coordinates.length - 1)];
+        if (Math.abs(lat2 - lat1) > 1e-6 || Math.abs(lng2 - lng1) > 1e-6) {
+          headingDeg = computeBearingDeg(lat1, lng1, lat2, lng2);
+        }
+      }
+      // 4) Si hay siguiente paso con ubicación, apuntar hacia el siguiente giro
+      if (!Number.isFinite(headingDeg) && nextStep && nextStep.maneuver && Array.isArray(nextStep.maneuver.location)) {
+        headingDeg = computeBearingDeg(driverLat, driverLng, nextStep.maneuver.location[1], nextStep.maneuver.location[0]);
+      }
+      // 5) Respaldo hacia las coordenadas de la parada destino
+      if (!Number.isFinite(headingDeg)) {
+        headingDeg = computeBearingDeg(driverLat, driverLng, stop.lat, stop.lng);
+      }
+
+      headingDeg = ((headingDeg % 360) + 360) % 360;
+
+      // Adelantar ligeramente el centro de cámara ~95 metros en la dirección de avance (como Google Maps)
+      // para que la flecha del conductor quede en la parte media-baja apuntando hacia arriba y se vea más camino por delante
+      const rad = (headingDeg * Math.PI) / 180;
+      const offsetDeg = 0.00085;
+      const cosLat = Math.max(0.4, Math.cos((driverLat * Math.PI) / 180));
+      const lookAheadLat = driverLat + Math.cos(rad) * offsetDeg;
+      const lookAheadLng = driverLng + (Math.sin(rad) * offsetDeg) / cosLat;
+
+      return {
+        driverLat,
+        driverLng,
+        lookAheadLat,
+        lookAheadLng,
+        headingDeg
+      };
+    }
+
+    function applyInAppNavCamera(animate = true) {
+      const mapEl = document.getElementById('tactical-google-map');
+      const map = initGoogleMapIfNeeded();
+      if (!map || !mapEl) return;
+
+      if (!state.inAppNavActive) {
+        mapEl.style.transition = 'transform 0.35s ease-out';
+        mapEl.style.transform = 'none';
+        mapEl.style.transformOrigin = '50% 50%';
+        setTimeout(() => {
+          try {
+            map.invalidateSize();
+          } catch (e) {}
+        }, 60);
+        return;
+      }
+
+      const stop =
+        state.stops.find((s) => s.id === state.inAppNavStopId) ||
+        state.stops.find((s) => s.id === state.selectedStopId) ||
+        state.stops.find((s) => !s.completed);
+      if (!stop) return;
+
+      const pose = getInAppNavPose(stop);
+      state.inAppNavHeadingDeg = pose.headingDeg;
+
+      // Acercar el mapa (zoom 17 estilo Google Maps) centrado ligeramente adelante del conductor
+      map.setView([pose.lookAheadLat, pose.lookAheadLng], 17, { animate });
+
+      // Rotar el lienzo del mapa en sentido inverso al rumbo (-headingDeg) para que la dirección de avance siempre apunte HACIA ARRIBA (0° forward)
+      // y escalar 1.42x para cubrir las esquinas al rotar dentro de #map-inner-wrapper (overflow-hidden)
+      mapEl.style.transition = animate ? 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)' : 'none';
+      mapEl.style.transformOrigin = '50% 56%';
+      mapEl.style.transform = `scale(1.42) rotate(${(-pose.headingDeg).toFixed(1)}deg)`;
     }
 
     function speakInAppNavInstruction(text) {
@@ -1614,9 +1762,9 @@
       fetchOsrmRouteForActiveStops();
       renderAll();
 
-      // Enfocar el mapa entre la ubicación actual y la parada destino
+      // Orientar hacia adelante (Heading-Up) y hacer zoom cercano (zoom 17) como Google Maps
       setTimeout(() => {
-        recenterInAppNav();
+        applyInAppNavCamera(true);
         const steps = getActiveInAppNavSteps(targetStop);
         if (steps[0]) {
           const vis = getManeuverVisual(steps[0]);
@@ -1625,7 +1773,7 @@
             `${tr(`Starting in-app navigation to Stop ${targetStop.originalNumber}.`, `Iniciando navegación en la app hacia la Parada ${targetStop.originalNumber}.`)} ${spoken}`
           );
         }
-      }, 100);
+      }, 90);
     }
 
     function stopInAppNavigation(ev) {
@@ -1637,6 +1785,7 @@
       try {
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       } catch (e) {}
+      applyInAppNavCamera(false);
       renderAll();
       fitGoogleMapToRoute();
     }
@@ -1651,11 +1800,9 @@
       if (curStep) {
         const vis = getManeuverVisual(curStep);
         speakInAppNavInstruction(state.lang === 'es' ? vis.titleEs : vis.titleEn);
-        if (curStep.maneuver && Array.isArray(curStep.maneuver.location) && googleMapInstance) {
-          const [lng, lat] = curStep.maneuver.location;
-          googleMapInstance.setView([lat, lng], 16, { animate: true });
-        }
       }
+      renderSvgMap();
+      applyInAppNavCamera(true);
       renderInAppNavHud();
     }
 
@@ -1678,22 +1825,8 @@
 
     function recenterInAppNav(ev) {
       if (ev) ev.stopPropagation();
-      const map = initGoogleMapIfNeeded();
-      if (!map) return;
-      const stop =
-        state.stops.find((s) => s.id === state.inAppNavStopId) ||
-        state.stops.find((s) => s.id === state.selectedStopId) ||
-        state.stops.find((s) => !s.completed);
-      const originPt = getStartOriginCoordinates(state.stops.filter((s) => s.completed));
-      if (stop && originPt && Number.isFinite(originPt.lat) && Number.isFinite(originPt.lng)) {
-        map.fitBounds(
-          [
-            [originPt.lat, originPt.lng],
-            [stop.lat, stop.lng]
-          ],
-          { padding: [65, 45], maxZoom: 16 }
-        );
-      }
+      renderSvgMap();
+      applyInAppNavCamera(true);
     }
 
     function renderInAppNavHud() {
@@ -1732,6 +1865,8 @@
       const tData = computeRouteTelemetry();
       const etaStr = targetStop.liveEtaDate ? formatClock12h(targetStop.liveEtaDate, false) : formatClock12h(new Date(), false);
       const legMin = targetStop.liveLegMin || Math.max(1, Math.round((tData.initialLegDriveSec || 180) / 60));
+      const pose = getInAppNavPose(targetStop);
+      const compassLabel = getCompassDirectionLabel(pose.headingDeg);
 
       const stepsListHtml = state.inAppNavStepsExpanded
         ? `<div class="max-h-36 overflow-y-auto divide-y divide-slate-800 bg-slate-950/95 border-t border-slate-800 px-3 py-1.5 text-[11px]">
@@ -1739,7 +1874,7 @@
               .map((st, idx) => {
                 const v = getManeuverVisual(st);
                 const activeRow = idx === stepIdx ? 'text-emerald-300 font-black' : 'text-slate-300 font-semibold';
-                return `<div onclick="state.inAppNavStepIdx=${idx}; renderInAppNavHud();" class="py-1.5 flex items-center justify-between gap-2 cursor-pointer ${activeRow}">
+                return `<div onclick="state.inAppNavStepIdx=${idx}; renderSvgMap(); applyInAppNavCamera(true); renderInAppNavHud();" class="py-1.5 flex items-center justify-between gap-2 cursor-pointer ${activeRow}">
                   <span class="truncate">${idx + 1}. ${v.icon} ${state.lang === 'es' ? v.titleEs : v.titleEn}</span>
                   <span class="font-mono text-[10px] text-cyan-300 shrink-0">${formatStepDistance(st.distance)}</span>
                 </div>`;
@@ -1749,17 +1884,20 @@
         : '';
 
       hud.innerHTML = `
-        <!-- Fila principal Turn-by-Turn estilo Navegador In-App -->
+        <!-- Fila principal Turn-by-Turn estilo Google Maps (Orientado hacia adelante + Zoomed-In) -->
         <div class="px-3.5 py-2.5 bg-gradient-to-r from-emerald-950/95 via-slate-950/95 to-cyan-950/95 flex items-center justify-between gap-2.5">
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-400 text-slate-950 font-black text-xl flex flex-col items-center justify-center shrink-0 shadow-lg">
               <span>${vis.icon}</span>
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
+              <div class="flex flex-wrap items-center gap-1.5">
                 <span class="text-sm sm:text-base font-black text-emerald-300 font-mono">${stepDistStr}</span>
                 <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/40 text-[10px] font-black text-cyan-300">
                   ${tr('Stop', 'Parada')} #${targetStop.originalNumber}
+                </span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-emerald-400/40 text-[9px] font-black text-emerald-300" title="${tr('Forward Heading-Up Orientation', 'Orientación hacia adelante')}">
+                  ▲ ${compassLabel} (${Math.round(pose.headingDeg)}°)
                 </span>
                 ${state.avoidHighways ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-[9px] font-black text-amber-300">🛣️ No Hwy</span>` : ''}
                 ${state.avoidTolls ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-[9px] font-black text-amber-300">💲 No Tolls</span>` : ''}
@@ -1788,7 +1926,7 @@
             <button
               type="button"
               onclick="recenterInAppNav(event)"
-              title="${tr('Recenter Navigation', 'Recentrar Navegación')}"
+              title="${tr('Recenter Forward View (Zoom 17)', 'Recentrar Vista Hacia Adelante (Zoom 17)')}"
               class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 text-xs flex items-center justify-center font-black"
             >
               🎯
@@ -2528,8 +2666,21 @@
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
       const wasActive = liveGpsState.active;
+      const prevLat = liveGpsState.lat;
+      const prevLng = liveGpsState.lng;
       const prevOptLat = liveGpsState.lastOptOriginLat;
       const prevOptLng = liveGpsState.lastOptOriginLng;
+
+      // Calcular el rumbo real de desplazamiento (headingDeg) cuando el vehículo se mueve o si el sensor GPS lo reporta
+      if (Number.isFinite(pos.coords.heading) && pos.coords.heading >= 0) {
+        liveGpsState.headingDeg = pos.coords.heading;
+      } else if (
+        Number.isFinite(prevLat) &&
+        Number.isFinite(prevLng) &&
+        haversineMiles(prevLat, prevLng, lat, lng) > 0.004
+      ) {
+        liveGpsState.headingDeg = computeBearingDeg(prevLat, prevLng, lat, lng);
+      }
 
       liveGpsState.lat = lat;
       liveGpsState.lng = lng;
@@ -2587,6 +2738,10 @@
         state.currentLegStartedAt = Date.now();
         fetchOsrmRouteForActiveStops();
         renderSvgMap();
+      } else if (state.inAppNavActive) {
+        renderSvgMap();
+        applyInAppNavCamera(true);
+        renderInAppNavHud();
       }
       updateLiveTelemetryTick();
     }
@@ -2825,6 +2980,156 @@
       return penalty;
     }
 
+    function decodeValhallaPolyline6(str) {
+      let index = 0;
+      let lat = 0;
+      let lng = 0;
+      const coordinates = [];
+      const factor = 1e6;
+      if (!str || typeof str !== 'string') return coordinates;
+      while (index < str.length) {
+        let shift = 0;
+        let result = 0;
+        let byte = null;
+        do {
+          byte = str.charCodeAt(index++) - 63;
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20);
+        const latitudeChange = result & 1 ? ~(result >> 1) : result >> 1;
+        shift = 0;
+        result = 0;
+        do {
+          byte = str.charCodeAt(index++) - 63;
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20);
+        const longitudeChange = result & 1 ? ~(result >> 1) : result >> 1;
+        lat += latitudeChange;
+        lng += longitudeChange;
+        coordinates.push([lat / factor, lng / factor]);
+      }
+      return coordinates;
+    }
+
+    function mapValhallaManeuverToStep(man, legPts) {
+      const beginIdx = Math.max(0, Number(man.begin_shape_index) || 0);
+      const endIdx = Math.min(legPts.length - 1, Math.max(beginIdx, Number(man.end_shape_index) || beginIdx));
+      const startPt = legPts[beginIdx] || [25.7617, -80.1918];
+      const sliceCoords = legPts.slice(beginIdx, endIdx + 1).map(([lat, lng]) => [lng, lat]);
+      const t = Number(man.type) || 0;
+      let type = 'turn';
+      let modifier = 'straight';
+      if (t === 1 || t === 2 || t === 3) {
+        type = 'depart';
+      } else if (t === 4 || t === 5 || t === 6) {
+        type = 'arrive';
+      } else if (t === 9 || t === 18 || t === 23) {
+        modifier = 'slight right';
+      } else if (t === 10 || t === 19) {
+        modifier = 'right';
+      } else if (t === 11) {
+        modifier = 'sharp right';
+      } else if (t === 12 || t === 13) {
+        modifier = 'uturn';
+      } else if (t === 14) {
+        modifier = 'sharp left';
+      } else if (t === 15 || t === 20) {
+        modifier = 'left';
+      } else if (t === 16 || t === 21 || t === 24) {
+        modifier = 'slight left';
+      } else if (t === 26 || t === 27) {
+        type = 'roundabout';
+      }
+      const streetName =
+        Array.isArray(man.street_names) && man.street_names.length > 0
+          ? man.street_names.join(' / ')
+          : man.instruction || '';
+      return {
+        name: streetName,
+        customInstruction: man.instruction || '',
+        distance: Math.round((Number(man.length) || 0) * 1609.34),
+        duration: Math.round(Number(man.time) || 0),
+        geometry: {
+          coordinates: sliceCoords.length >= 2 ? sliceCoords : [[startPt[1], startPt[0]]]
+        },
+        maneuver: {
+          type,
+          modifier,
+          bearing_before: Number(man.bearing_before) || 0,
+          bearing_after: Number(man.bearing_after) || 0,
+          location: [startPt[1], startPt[0]]
+        }
+      };
+    }
+
+    async function fetchValhallaRouteForAvoidOptions(waypoints) {
+      const payload = {
+        locations: waypoints.map((wp, idx) => ({
+          lat: wp.lat,
+          lon: wp.lng,
+          type: idx === 0 || idx === waypoints.length - 1 || !wp.isDetourBypass ? 'break' : 'through'
+        })),
+        costing: 'auto',
+        costing_options: {
+          auto: {
+            use_highways: state.avoidHighways ? 0.0 : 1.0,
+            use_tolls: state.avoidTolls ? 0.0 : 1.0,
+            top_speed: 115
+          }
+        },
+        directions_options: {
+          units: 'miles',
+          language: state.lang === 'es' ? 'es-ES' : 'en-US'
+        }
+      };
+      const url = `https://valhalla1.openstreetmap.de/route?json=${encodeURIComponent(JSON.stringify(payload))}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data || !data.trip || !Array.isArray(data.trip.legs) || data.trip.legs.length === 0) return null;
+
+      const legGeometries = [];
+      const legs = [];
+      const fullGeometry = [];
+      let totalDistanceMeters = 0;
+      let totalBaseDurationSec = 0;
+
+      data.trip.legs.forEach((vLeg) => {
+        const pts = decodeValhallaPolyline6(vLeg.shape || '');
+        legGeometries.push(pts);
+        pts.forEach((pt) => {
+          if (
+            fullGeometry.length === 0 ||
+            fullGeometry[fullGeometry.length - 1][0] !== pt[0] ||
+            fullGeometry[fullGeometry.length - 1][1] !== pt[1]
+          ) {
+            fullGeometry.push(pt);
+          }
+        });
+        const distM = Math.round((Number(vLeg.summary && vLeg.summary.length) || 0) * 1609.34);
+        const durS = Math.round(Number(vLeg.summary && vLeg.summary.time) || 0);
+        totalDistanceMeters += distM;
+        totalBaseDurationSec += durS;
+        const steps = Array.isArray(vLeg.maneuvers)
+          ? vLeg.maneuvers.map((m) => mapValhallaManeuverToStep(m, pts))
+          : [];
+        legs.push({
+          distance: distM,
+          duration: durS,
+          steps
+        });
+      });
+
+      return {
+        legs,
+        legGeometries,
+        totalDistanceMeters,
+        totalBaseDurationSec,
+        geometry: fullGeometry
+      };
+    }
+
     async function fetchOsrmRouteForActiveStops() {
       // El trazado y telemetría de la ruta cubre desde el origen actual hasta la última parada a entregar
       const { waypoints } = getActiveWaypointsList(false);
@@ -2837,29 +3142,31 @@
 
       osrmFetchInFlightKey = key;
       try {
-        const coordsQuery = waypoints.map((p) => `${p.lng},${p.lat}`).join(';');
-        const excludes = [];
-        if (state.avoidHighways) excludes.push('motorway');
-        if (state.avoidTolls) excludes.push('toll');
-
-        let data = null;
-        if (excludes.length > 0) {
+        // 1) Si Avoid Highways o Avoid Tolls está activo, usar el motor vial Valhalla que soporta nativamente
+        //    use_highways: 0.0 y use_tolls: 0.0 con trazado real por calles secundarias (OSRM público devuelve HTTP 400 con exclude=)
+        if (state.avoidHighways || state.avoidTolls) {
           try {
-            const urlEx = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson&steps=true&alternatives=true&exclude=${excludes.join(',')}`;
-            const resEx = await fetch(urlEx);
-            if (resEx.ok) {
-              data = await resEx.json();
+            const valhallaResult = await fetchValhallaRouteForAvoidOptions(waypoints);
+            if (valhallaResult && Array.isArray(valhallaResult.legGeometries) && valhallaResult.legGeometries.length > 0) {
+              osrmRouteCache[key] = valhallaResult;
+              updateLiveTelemetryTick();
+              renderSvgMap();
+              if (state.inAppNavActive) {
+                applyInAppNavCamera(true);
+              }
+              renderInAppNavHud();
+              return;
             }
           } catch (e) {}
         }
 
-        if (!data || !Array.isArray(data.routes) || data.routes.length === 0) {
-          const hwyParam = state.avoidHighways ? '&exclude=motorway' : '';
-          const urlFallback = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson&steps=true&alternatives=true${hwyParam}`;
-          const resFallback = await fetch(urlFallback);
-          if (resFallback.ok) {
-            data = await resFallback.json();
-          }
+        // 2) Motor OSRM estándar (o respaldo con alternativas sin enviar &exclude= para evitar HTTP 400)
+        const coordsQuery = waypoints.map((p) => `${p.lng},${p.lat}`).join(';');
+        const urlStandard = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson&steps=true&alternatives=true`;
+        const resStandard = await fetch(urlStandard);
+        let data = null;
+        if (resStandard.ok) {
+          data = await resStandard.json();
         }
 
         if (data && Array.isArray(data.routes) && data.routes.length > 0) {
@@ -2897,6 +3204,9 @@
           };
           updateLiveTelemetryTick();
           renderSvgMap();
+          if (state.inAppNavActive) {
+            applyInAppNavCamera(true);
+          }
           renderInAppNavHud();
         }
       } catch (e) {
@@ -5002,6 +5312,16 @@
     function fitGoogleMapToRoute() {
       const map = initGoogleMapIfNeeded();
       if (!map || state.stops.length === 0) return;
+      if (state.inAppNavActive) {
+        applyInAppNavCamera(true);
+        return;
+      }
+      const mapEl = document.getElementById('tactical-google-map');
+      if (mapEl) {
+        mapEl.style.transition = 'transform 0.35s ease-out';
+        mapEl.style.transform = 'none';
+        mapEl.style.transformOrigin = '50% 50%';
+      }
       const boundsPoints = state.stops.map((s) => [s.lat, s.lng]);
       const originPt = getStartOriginCoordinates(state.stops.filter((s) => s.completed));
       if (originPt && !originPt.pendingGpsFix && Number.isFinite(originPt.lat) && Number.isFinite(originPt.lng)) {
@@ -5200,13 +5520,21 @@
 
         drawRouteGradientPolylines(map, waypoints, cachedOsrm);
 
+        const navTargetStop =
+          state.stops.find((s) => s.id === state.inAppNavStopId) ||
+          state.stops.find((s) => s.id === state.selectedStopId) ||
+          state.stops.find((s) => !s.completed) ||
+          state.stops[0];
+        const navPose = state.inAppNavActive ? getInAppNavPose(navTargetStop) : null;
+        const counterRotStyle = navPose ? `transform:rotate(${navPose.headingDeg.toFixed(1)}deg);` : '';
+
         // Solo mostrar el pin de la estación P1 si el usuario eligió explícitamente salir desde Station P1 o regresar a P1
         if (state.startMode === 'station' || state.endMode === 'return_to_start') {
           const station = getStationCoordinates();
           const p1Coords = [station.lat, station.lng];
           const p1Icon = L.divIcon({
             className: '',
-            html: `<div style="width:28px;height:28px;border-radius:9999px;background:#dc2626;border:2.5px solid #ffffff;color:#ffffff;font-weight:900;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.45);">P1</div>`,
+            html: `<div style="${counterRotStyle}width:28px;height:28px;border-radius:9999px;background:#dc2626;border:2.5px solid #ffffff;color:#ffffff;font-weight:900;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.45);">P1</div>`,
             iconSize: [28, 28],
             iconAnchor: [14, 14]
           });
@@ -5215,8 +5543,28 @@
             .addTo(googleMarkersLayer);
         }
 
-        // Mostrar SIEMPRE la Ubicación Inicial en Tiempo Real (GPS) del usuario cuando está activa
-        if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
+        // Si la Navegación Interna (Start travel) está activa, mostrar la Flecha 3D de Navegación estilo Google Maps apuntando SIEMPRE hacia adelante (arriba)
+        if (state.inAppNavActive && navPose) {
+          const navArrowIcon = L.divIcon({
+            className: '',
+            html: `<div style="position:relative;width:46px;height:46px;transform:rotate(${navPose.headingDeg.toFixed(1)}deg);">
+              <!-- Cono luminoso frontal hacia adelante -->
+              <div style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);width:40px;height:34px;background:linear-gradient(to top, rgba(34,211,238,0.45), rgba(16,185,129,0.0));clip-path:polygon(50% 100%, 0% 0%, 100% 0%);pointer-events:none;"></div>
+              <!-- Círculo de navegación con flecha frontal estilo Google Maps -->
+              <div style="width:46px;height:46px;border-radius:9999px;background:rgba(4,8,18,0.92);border:3px solid #22d3ee;box-shadow:0 0 0 6px rgba(34,211,238,0.28),0 4px 14px rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;">
+                <svg width="26" height="26" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">
+                  <path d="M12 2L20 20L12 16L4 20L12 2Z" fill="#22d3ee" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>`,
+            iconSize: [46, 46],
+            iconAnchor: [23, 23]
+          });
+          L.marker([navPose.driverLat, navPose.driverLng], { icon: navArrowIcon, zIndexOffset: 2000, interactive: false }).addTo(
+            googleMarkersLayer
+          );
+        } else if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
+          // Mostrar SIEMPRE la Ubicación Inicial en Tiempo Real (GPS) del usuario cuando está activa
           const gpsIcon = L.divIcon({
             className: '',
             html: `<div style="position:relative;width:24px;height:24px;">
@@ -5233,7 +5581,7 @@
           const originPt = getStartOriginCoordinates([]);
           const startPinIcon = L.divIcon({
             className: '',
-            html: `<div style="padding:2px 7px;border-radius:8px;background:#f59e0b;border:2px solid #ffffff;color:#040812;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.5);">📍 ${state.startMode === 'home' ? 'Home' : tr('Start', 'Inicio')}</div>`,
+            html: `<div style="${counterRotStyle}padding:2px 7px;border-radius:8px;background:#f59e0b;border:2px solid #ffffff;color:#040812;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.5);">📍 ${state.startMode === 'home' ? 'Home' : tr('Start', 'Inicio')}</div>`,
             iconSize: [56, 22],
             iconAnchor: [28, 11]
           });
@@ -5264,7 +5612,7 @@
 
           const pinIcon = L.divIcon({
             className: '',
-            html: `<div style="position:relative;width:${size}px;height:${size}px;">
+            html: `<div style="position:relative;width:${size}px;height:${size}px;${counterRotStyle}">
               <div id="map-pin-eta-${stop.id}" style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;padding:1px 4px;border-radius:5px;background:rgba(4,8,18,0.92);border:1px solid ${bg};color:#f8fafc;font-weight:800;font-size:9px;line-height:1.15;white-space:nowrap;box-shadow:0 2px 5px rgba(0,0,0,0.65);pointer-events:none;">${pinEtaText}</div>
               <div style="width:${size}px;height:${size}px;border-radius:9999px;background:${bg};opacity:${opacity};border:2.5px solid ${border};color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,0.92),0 0 2px rgba(0,0,0,0.92);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:${ring};transition:all 0.15s;">${stop.completed ? '✓' : stop.originalNumber}</div>
             </div>`,
@@ -5306,7 +5654,7 @@
           const midLng = (originWp.lng + nextActiveStop.lng) / 2;
           const legMinIcon = L.divIcon({
             className: '',
-            html: `<div style="padding:2px 7px;border-radius:5px;background:#040812;border:1px solid #22d3ee;color:#ffffff;font-weight:800;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.65);">${minsNow} min</div>`,
+            html: `<div style="${counterRotStyle}padding:2px 7px;border-radius:5px;background:#040812;border:1px solid #22d3ee;color:#ffffff;font-weight:800;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.65);">${minsNow} min</div>`,
             iconSize: [48, 20],
             iconAnchor: [24, 10]
           });
@@ -5319,7 +5667,7 @@
           closedBarriers.forEach((b) => {
             const barrierIcon = L.divIcon({
               className: '',
-              html: `<div title="${tr(`Closed Street between Stop ${b.fromNum} & ${b.toNum} (Active Detour)`, `Calle Clausurada entre Parada ${b.fromNum} y ${b.toNum} (Desvío Activo)`)}" style="padding:2px 6px;border-radius:9999px;background:#e11d48;border:2px solid #ffffff;color:#ffffff;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.6);">⛔ ${b.fromNum}↔${b.toNum}</div>`,
+              html: `<div title="${tr(`Closed Street between Stop ${b.fromNum} & ${b.toNum} (Active Detour)`, `Calle Clausurada entre Parada ${b.fromNum} y ${b.toNum} (Desvío Activo)`)}" style="${counterRotStyle}padding:2px 6px;border-radius:9999px;background:#e11d48;border:2px solid #ffffff;color:#ffffff;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.6);">⛔ ${b.fromNum}↔${b.toNum}</div>`,
               iconSize: [52, 20],
               iconAnchor: [26, 10]
             });
@@ -5335,7 +5683,7 @@
           const brickellCoords = [25.7617, -80.1918];
           const brkIcon = L.divIcon({
             className: '',
-            html: `<div style="padding:2px 6px;border-radius:8px;background:#06b6d4;border:2px solid #ffffff;color:#040812;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.45);">Brickell</div>`,
+            html: `<div style="${counterRotStyle}padding:2px 6px;border-radius:8px;background:#06b6d4;border:2px solid #ffffff;color:#040812;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.45);">Brickell</div>`,
             iconSize: [54, 22],
             iconAnchor: [27, 11]
           });
@@ -5344,7 +5692,7 @@
           const homeCoords = [HOME_CLOSING_COORDS.lat, HOME_CLOSING_COORDS.lng];
           const homeIcon = L.divIcon({
             className: '',
-            html: `<div style="padding:2px 7px;border-radius:8px;background:#10b981;border:2px solid #ffffff;color:#040812;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.45);">Home</div>`,
+            html: `<div style="${counterRotStyle}padding:2px 7px;border-radius:8px;background:#10b981;border:2px solid #ffffff;color:#040812;font-weight:900;font-size:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.45);">Home</div>`,
             iconSize: [48, 22],
             iconAnchor: [24, 11]
           });
@@ -5353,10 +5701,14 @@
             .addTo(googleMarkersLayer);
         }
 
-        const routeSignature = `${state.activePresetId}-${state.stops.length}-${state.startMode || 'gps'}-${state.endMode}-${liveGpsState.active ? 'gps1' : 'gps0'}`;
-        if (lastFittedPreset !== routeSignature) {
-          lastFittedPreset = routeSignature;
-          fitGoogleMapToRoute();
+        if (state.inAppNavActive) {
+          applyInAppNavCamera(false);
+        } else {
+          const routeSignature = `${state.activePresetId}-${state.stops.length}-${state.startMode || 'gps'}-${state.endMode}-${liveGpsState.active ? 'gps1' : 'gps0'}`;
+          if (lastFittedPreset !== routeSignature) {
+            lastFittedPreset = routeSignature;
+            fitGoogleMapToRoute();
+          }
         }
       }
 
@@ -5942,7 +6294,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '08:03 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '08:17 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
