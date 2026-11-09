@@ -347,89 +347,108 @@
     <main class="max-w-7xl mx-auto px-4 pt-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
       <!-- COLUMNA IZQUIERDA (5 Cols) -->
       <div class="lg:col-span-5 space-y-4">
-        <!-- 0. ESTACIÓN DE SALIDA (PARADA 1) + FECHA, HORA DE COMIENZO/TERMINAR Y TELEMETRÍA EN VIVO -->
-        <div class="glass-card rounded-2xl border border-amber-500/35 p-4 space-y-3 shadow-xl">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center font-black text-sm shrink-0">
+        <!-- 0. ESTACIÓN DE SALIDA (PARADA 1) + FECHA, HORA DE COMIENZO/TERMINAR Y TELEMETRÍA EN VIVO (DESPLEGABLE) -->
+        <div id="departure-station-card" class="glass-card rounded-2xl border border-amber-500/35 p-3.5 shadow-xl transition-all">
+          <div
+            onclick="toggleDepartureStationPanel()"
+            class="flex items-center justify-between gap-2 cursor-pointer select-none"
+            title="Tap to expand or collapse Departure Station panel"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center font-black text-xs shrink-0">
                 P1
               </div>
-              <div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <span id="i18n-station-title" class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Departure Station (Pickup)</span>
-                  <span id="pickup-time-badge" class="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[11px] font-bold text-cyan-300">11/08/2026 • 10:00 AM – 12:00 PM</span>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span id="i18n-station-title" class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">Departure Station (Pickup)</span>
+                  <span id="pickup-time-badge" class="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-bold text-cyan-300">11/08/2026 • 10:00 AM – 12:00 PM</span>
                 </div>
-                <p id="pickup-address-display" class="text-sm font-bold text-white">1125 SE 8th Street, Suite 700, Hialeah, FL</p>
+                <p id="pickup-address-display" class="text-xs font-bold text-white truncate">1125 SE 8th Street, Suite 700, Hialeah, FL</p>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <button id="i18n-btn-copy-p1" onclick="copyTextToClipboard(state.pickupAddress, 'Stop 1 Address')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
-                Copy P1
-              </button>
-              <a id="pickup-maps-link" href="#" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold">
-                Go to P1
-              </a>
-            </div>
+            <button
+              id="departure-station-toggle-btn"
+              type="button"
+              onclick="event.stopPropagation(); toggleDepartureStationPanel()"
+              class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/35 text-[11px] font-black text-amber-300 flex items-center gap-1 shrink-0"
+            >
+              <span id="departure-station-toggle-label">▼ Details</span>
+            </button>
           </div>
 
-          <!-- SELECTOR DE FECHA, HORA DE COMIENZO, HORA DE TERMINAR Y BOTÓN REGISTRAR RUTA ARRIBA -->
-          <div class="pt-2.5 border-t border-slate-800/90 space-y-2">
+          <!-- CUERPO DESPLEGABLE DE ESTACIÓN DE SALIDA, HORARIO Y LIVE TIME -->
+          <div id="departure-station-collapsible-body" class="hidden pt-3 mt-3 border-t border-slate-800/90 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span id="i18n-schedule-heading" class="text-xs font-bold text-slate-300">📅 Route Date &amp; Schedule:</span>
-              <div class="flex items-center gap-1.5">
-                <button
-                  id="i18n-btn-now"
-                  type="button"
-                  onclick="setRouteScheduleToNow()"
-                  class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 border border-slate-700"
-                >
-                  Now
+              <span class="text-[11px] font-semibold text-slate-400" id="i18n-station-actions-label">Station Quick Actions:</span>
+              <div class="flex items-center gap-2">
+                <button id="i18n-btn-copy-p1" onclick="copyTextToClipboard(state.pickupAddress, 'Stop 1 Address')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+                  Copy P1
                 </button>
-                <button
-                  type="button"
-                  onclick="registerCurrentRoute()"
-                  class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-[11px] font-black shadow flex items-center gap-1"
-                >
-                  <span id="i18n-btn-register-route">💾 Register Route</span>
-                </button>
+                <a id="pickup-maps-link" href="#" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold">
+                  Go to P1
+                </a>
               </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div>
-                <label id="i18n-lbl-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
-                <input
-                  id="route-date-input"
-                  type="date"
-                  oninput="updateRouteScheduleFromInputs(true)"
-                  onchange="updateRouteScheduleFromInputs(false)"
-                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
-                />
-              </div>
-              <div>
-                <label id="i18n-lbl-start" class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Start Time</label>
-                <input
-                  id="route-time-input"
-                  type="time"
-                  oninput="updateRouteScheduleFromInputs(true)"
-                  onchange="updateRouteScheduleFromInputs(false)"
-                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
-                />
-              </div>
-              <div>
-                <label id="i18n-lbl-end" class="block text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">End Time</label>
-                <input
-                  id="route-end-time-input"
-                  type="time"
-                  oninput="updateRouteScheduleFromInputs(true)"
-                  onchange="updateRouteScheduleFromInputs(false)"
-                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-emerald-400"
-                />
-              </div>
-            </div>
-          </div>
 
-          <!-- TELEMETRÍA DE DURACIÓN, DÍA DE LA SEMANA Y TRÁFICO EN TIEMPO REAL -->
-          <div id="route-live-duration-panel" class="p-3.5 rounded-xl bg-slate-950/95 border border-cyan-500/35 space-y-2.5 shadow-inner"></div>
+            <!-- SELECTOR DE FECHA, HORA DE COMIENZO, HORA DE TERMINAR Y BOTÓN REGISTRAR RUTA ARRIBA -->
+            <div class="pt-2.5 border-t border-slate-800/90 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span id="i18n-schedule-heading" class="text-xs font-bold text-slate-300">📅 Route Date &amp; Schedule:</span>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    id="i18n-btn-now"
+                    type="button"
+                    onclick="setRouteScheduleToNow()"
+                    class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-cyan-300 border border-slate-700"
+                  >
+                    Now
+                  </button>
+                  <button
+                    type="button"
+                    onclick="registerCurrentRoute()"
+                    class="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-[11px] font-black shadow flex items-center gap-1"
+                  >
+                    <span id="i18n-btn-register-route">💾 Register Route</span>
+                  </button>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label id="i18n-lbl-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+                  <input
+                    id="route-date-input"
+                    type="date"
+                    oninput="updateRouteScheduleFromInputs(true)"
+                    onchange="updateRouteScheduleFromInputs(false)"
+                    class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+                <div>
+                  <label id="i18n-lbl-start" class="block text-[10px] font-bold uppercase tracking-wider text-cyan-400 mb-1">Start Time</label>
+                  <input
+                    id="route-time-input"
+                    type="time"
+                    oninput="updateRouteScheduleFromInputs(true)"
+                    onchange="updateRouteScheduleFromInputs(false)"
+                    class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+                <div>
+                  <label id="i18n-lbl-end" class="block text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-1">End Time</label>
+                  <input
+                    id="route-end-time-input"
+                    type="time"
+                    oninput="updateRouteScheduleFromInputs(true)"
+                    onchange="updateRouteScheduleFromInputs(false)"
+                    class="w-full px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- TELEMETRÍA DE DURACIÓN, DÍA DE LA SEMANA Y TRÁFICO EN TIEMPO REAL -->
+            <div id="route-live-duration-panel" class="p-3.5 rounded-xl bg-slate-950/95 border border-cyan-500/35 space-y-2.5 shadow-inner"></div>
+          </div>
         </div>
 
         <!-- 1. PANEL DE DESTINO DE CIERRE (OPTIMIZA AUTOMÁTICAMENTE AL SELECCIONAR O EDITAR) -->
@@ -721,7 +740,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 06:52 PM - 11/08/2026 ↻
+        Actualizado: 06:58 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -865,6 +884,7 @@
       scheduleAnchoredAt: Date.now(),
       currentLegStartedAt: Date.now(),
       showLiveTrafficLayer: true,
+      departureStationExpanded: false,
       stops: [],
       selectedStopId: null,
       activeTab: 'cockpit'
@@ -897,6 +917,33 @@
         drawer.classList.add('hidden');
         backdrop.classList.add('hidden');
       }
+    }
+
+    function syncDepartureStationPanelUI() {
+      const body = document.getElementById('departure-station-collapsible-body');
+      const lbl = document.getElementById('departure-station-toggle-label');
+      const addrEl = document.getElementById('pickup-address-display');
+      const isExpanded = Boolean(state.departureStationExpanded);
+      if (body) {
+        body.classList.toggle('hidden', !isExpanded);
+      }
+      if (lbl) {
+        lbl.textContent = isExpanded
+          ? tr('▲ Hide', '▲ Ocultar')
+          : tr('▼ Details', '▼ Detalles');
+      }
+      if (addrEl) {
+        addrEl.className = isExpanded
+          ? 'text-xs font-bold text-white'
+          : 'text-xs font-bold text-white truncate';
+      }
+    }
+
+    function toggleDepartureStationPanel(forceState) {
+      state.departureStationExpanded =
+        typeof forceState === 'boolean' ? forceState : !state.departureStationExpanded;
+      syncDepartureStationPanelUI();
+      saveState();
     }
 
     function setAppLanguage(lang) {
@@ -953,6 +1000,7 @@
 
       // Cockpit Left Column
       setTxt('i18n-station-title', 'Departure Station (Pickup)', 'Estación de Salida (Recogida)');
+      setTxt('i18n-station-actions-label', 'Station Quick Actions:', 'Acciones Rápidas de Estación:');
       setTxt('i18n-btn-copy-p1', 'Copy P1', 'Copiar P1');
       setTxt('pickup-maps-link', 'Go to P1', 'Ir a P1');
       setTxt('i18n-schedule-heading', '📅 Route Date & Schedule:', '📅 Fecha y Horario de la Ruta:');
@@ -961,6 +1009,7 @@
       setTxt('i18n-lbl-date', 'Date', 'Fecha');
       setTxt('i18n-lbl-start', 'Start Time', 'Hora Comienzo');
       setTxt('i18n-lbl-end', 'End Time', 'Hora Terminar');
+      syncDepartureStationPanelUI();
 
       setTxt('i18n-dest-panel-title', 'Closing Destination', 'Destino de Cierre');
       setTxt('i18n-dest-auto-badge', '⚡ Auto-Optimizes Route', '⚡ Auto-Optimiza la Ruta');
@@ -3451,6 +3500,7 @@
       document.getElementById('pickup-time-badge').textContent = formattedBadge;
       document.getElementById('pickup-address-display').textContent = state.pickupAddress;
       document.getElementById('pickup-maps-link').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(state.pickupAddress)}&travelmode=driving`;
+      syncDepartureStationPanelUI();
     }
 
     function renderSequencePills() {
@@ -4227,7 +4277,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '06:52 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '06:58 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
