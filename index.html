@@ -68,13 +68,17 @@
     }
     .map-fullscreen-active {
       position: fixed !important;
-      inset: 0 !important;
-      z-index: 60 !important;
+      top: var(--top-cockpit-header-h, 148px) !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 45 !important;
       border-radius: 0 !important;
+      margin: 0 !important;
       display: flex !important;
       flex-direction: column !important;
       background: #040812 !important;
-      padding-top: env(safe-area-inset-top, 0px);
+      padding-top: 0 !important;
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .map-fullscreen-active #map-inner-wrapper {
@@ -91,7 +95,7 @@
 <body class="min-h-screen pb-40 selection:bg-cyan-400 selection:text-slate-950">
 
   <!-- TOP COCKPIT HEADER + PANEL TRAVEL FIJO E INAMOVIBLE -->
-  <header class="sticky top-0 z-40 glass-card border-b border-cyan-500/35 px-3 sm:px-4 pb-2.5 safe-top-header select-none">
+  <header id="top-cockpit-header" class="sticky top-0 z-50 glass-card border-b border-cyan-500/35 px-3 sm:px-4 pb-2.5 safe-top-header select-none">
     <div class="max-w-3xl mx-auto space-y-2">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex flex-col gap-1.5">
@@ -259,8 +263,8 @@
   </header>
 
   <!-- MENÚ DESPLEGABLE LATERAL IZQUIERDO (ACCESO RÁPIDO A OPCIONES PRINCIPALES, LISTA DE RUTAS Y CALENDARIO) -->
-  <div id="main-menu-backdrop" onclick="toggleMainMenuDrawer(false)" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm"></div>
-  <aside id="main-menu-drawer" class="hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[85vw] bg-slate-950 border-r border-cyan-500/35 p-4 flex flex-col justify-between shadow-2xl overflow-y-auto">
+  <div id="main-menu-backdrop" onclick="toggleMainMenuDrawer(false)" class="hidden fixed inset-0 z-[75] bg-slate-950/75 backdrop-blur-sm"></div>
+  <aside id="main-menu-drawer" class="hidden fixed top-0 left-0 bottom-0 z-[75] w-72 max-w-[85vw] bg-slate-950 border-r border-cyan-500/35 p-4 flex flex-col justify-between shadow-2xl overflow-y-auto">
     <div class="space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-800">
         <div class="flex items-center gap-2.5">
@@ -363,7 +367,7 @@
   </aside>
 
   <!-- MODAL DE CALENDARIO DE RUTAS POR DÍA -->
-  <div id="calendar-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+  <div id="calendar-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
     <div class="w-full max-w-lg glass-card rounded-2xl border border-cyan-500/40 p-4 sm:p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between pb-2 border-b border-slate-800">
         <div>
@@ -1052,7 +1056,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 08:17 PM - 11/08/2026 ↻
+        Actualizado: 08:30 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1340,6 +1344,9 @@
 
     function setFlexItineraryView(view) {
       state.flexItineraryView = ['list', 'map', 'summary'].includes(view) ? view : 'map';
+      if (state.flexItineraryView !== 'map' && isMapFullscreen) {
+        toggleMapFullscreen(false);
+      }
       syncFlexItineraryViewUI();
       renderBottomActionBar();
       if (state.flexItineraryView === 'map') {
@@ -1759,11 +1766,19 @@
       state.inAppNavStepsExpanded = false;
       setFlexItineraryView('map');
 
+      // Cambiar los tiles de Google Maps al modo sin texto invertido (para renderizar todas las calles al derecho)
+      setGoogleMapLayer(currentGoogleLayerMode);
+
+      // Poner el mapa en pantalla completa pero dejando visibles arriba el panel superior y el panel Travel (List / Map / Summary)
+      toggleMapFullscreen(true);
+
       fetchOsrmRouteForActiveStops();
       renderAll();
 
       // Orientar hacia adelante (Heading-Up) y hacer zoom cercano (zoom 17) como Google Maps
       setTimeout(() => {
+        if (googleMapInstance) googleMapInstance.invalidateSize();
+        renderSvgMap();
         applyInAppNavCamera(true);
         const steps = getActiveInAppNavSteps(targetStop);
         if (steps[0]) {
@@ -1773,7 +1788,7 @@
             `${tr(`Starting in-app navigation to Stop ${targetStop.originalNumber}.`, `Iniciando navegación en la app hacia la Parada ${targetStop.originalNumber}.`)} ${spoken}`
           );
         }
-      }, 90);
+      }, 110);
     }
 
     function stopInAppNavigation(ev) {
@@ -1785,6 +1800,10 @@
       try {
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       } catch (e) {}
+      setGoogleMapLayer(currentGoogleLayerMode);
+      if (isMapFullscreen) {
+        toggleMapFullscreen(false);
+      }
       applyInAppNavCamera(false);
       renderAll();
       fitGoogleMapToRoute();
@@ -5204,6 +5223,18 @@
     let currentGoogleLayerMode = 'streets';
     let lastFittedPreset = null;
     let isMapFullscreen = false;
+    const nearbyNavStreetsCache = {};
+    let nearbyNavStreetsInFlightKey = null;
+
+    function updateFullscreenMapTopOffset() {
+      const hdr = document.getElementById('top-cockpit-header');
+      if (hdr) {
+        const rect = hdr.getBoundingClientRect();
+        const h = Math.max(96, Math.round(rect.bottom > 0 ? rect.bottom : hdr.offsetHeight || 148));
+        document.documentElement.style.setProperty('--top-cockpit-header-h', `${h}px`);
+      }
+    }
+    window.addEventListener('resize', updateFullscreenMapTopOffset);
 
     function toggleMapFullscreen(forceState) {
       const card = document.getElementById('map-card-container');
@@ -5211,6 +5242,7 @@
       const hint = document.getElementById('map-fullscreen-hint');
       if (!card) return;
 
+      updateFullscreenMapTopOffset();
       isMapFullscreen = typeof forceState === 'boolean' ? forceState : !isMapFullscreen;
 
       if (isMapFullscreen) {
@@ -5235,8 +5267,13 @@
 
       if (googleMapInstance) {
         setTimeout(() => {
+          updateFullscreenMapTopOffset();
           googleMapInstance.invalidateSize();
-          fitGoogleMapToRoute();
+          if (state.inAppNavActive) {
+            applyInAppNavCamera(false);
+          } else {
+            fitGoogleMapToRoute();
+          }
         }, 120);
       }
     }
@@ -5244,7 +5281,185 @@
     function getGoogleTileUrl() {
       const baseLyrs = currentGoogleLayerMode === 'hybrid' ? 'y' : 'm';
       const trafficSuffix = state.showLiveTrafficLayer !== false ? ',traffic' : '';
-      return `https://mt1.google.com/vt/lyrs=${baseLyrs}${trafficSuffix}&x={x}&y={y}&z={z}`;
+      // En In-App Navigation (cuando el mapa se rota hacia adelante), desactivar el texto pre-renderizado del tile
+      // para que ningún nombre de calle salga al revés y mostrar nuestras etiquetas de calles derechas (0° horizontal)
+      const noUpsideDownText = state.inAppNavActive ? '&apistyle=s.e:l.t%7Cp.v:off' : '';
+      return `https://mt1.google.com/vt/lyrs=${baseLyrs}${trafficSuffix}${noUpsideDownText}&x={x}&y={y}&z={z}`;
+    }
+
+    function extractCleanStreetName(rawText) {
+      if (!rawText || typeof rawText !== 'string') return '';
+      let s = rawText
+        .replace(/^\s*\d+[A-Za-z-]?\s+/, '') // quitar número de casa inicial (ej. "12372 SW 124TH CT" -> "SW 124TH CT")
+        .replace(/\bSouthwest\b/gi, 'SW')
+        .replace(/\bNorthwest\b/gi, 'NW')
+        .replace(/\bSoutheast\b/gi, 'SE')
+        .replace(/\bNortheast\b/gi, 'NE')
+        .replace(/\bStreet\b/gi, 'St')
+        .replace(/\bAvenue\b/gi, 'Ave')
+        .replace(/\bCourt\b/gi, 'Ct')
+        .replace(/\bTerrace\b/gi, 'Ter')
+        .replace(/\bBoulevard\b/gi, 'Blvd')
+        .replace(/\bRoad\b/gi, 'Rd')
+        .replace(/\bDrive\b/gi, 'Dr')
+        .replace(/\bCircle\b/gi, 'Cir')
+        .replace(/\bLane\b/gi, 'Ln')
+        .replace(/\bParkway\b/gi, 'Pkwy')
+        .replace(/\bHighway\b/gi, 'Hwy')
+        .replace(/\bExpressway\b/gi, 'Expy')
+        .trim();
+      if (s.length < 3 || /^(turn|head|continue|arrive|depart|keep|take)\b/i.test(s)) return '';
+      return s;
+    }
+
+    async function fetchNearbyStreetsForInAppNav(lat, lng) {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      const gridKey = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+      if (nearbyNavStreetsCache[gridKey] || nearbyNavStreetsInFlightKey === gridKey) return;
+      nearbyNavStreetsInFlightKey = gridKey;
+      try {
+        const d = 0.0018;
+        const locations = [
+          { lat, lon: lng },
+          { lat: lat + d, lon: lng },
+          { lat: lat - d, lon: lng },
+          { lat, lon: lng + d },
+          { lat, lon: lng - d },
+          { lat: lat + d, lon: lng + d },
+          { lat: lat + d, lon: lng - d },
+          { lat: lat - d, lon: lng + d },
+          { lat: lat - d, lon: lng - d }
+        ];
+        const payload = { locations, costing: 'auto', verbose: true };
+        const res = await fetch(`https://valhalla1.openstreetmap.de/locate?json=${encodeURIComponent(JSON.stringify(payload))}`);
+        if (!res.ok) return;
+        const arr = await res.json();
+        if (!Array.isArray(arr)) return;
+        const found = [];
+        arr.forEach((item) => {
+          const edges = Array.isArray(item && item.edges) ? item.edges : [];
+          for (let i = 0; i < edges.length; i++) {
+            const e = edges[i];
+            const names = e && e.edge_info && Array.isArray(e.edge_info.names) ? e.edge_info.names : [];
+            if (names.length > 0 && Number.isFinite(e.correlated_lat) && Number.isFinite(e.correlated_lon)) {
+              const clean = extractCleanStreetName(names[0]) || names[0];
+              found.push({ name: clean, lat: e.correlated_lat, lng: e.correlated_lon });
+              break;
+            }
+          }
+        });
+        nearbyNavStreetsCache[gridKey] = found;
+        if (state.inAppNavActive) {
+          renderSvgMap();
+        }
+      } catch (e) {
+      } finally {
+        if (nearbyNavStreetsInFlightKey === gridKey) nearbyNavStreetsInFlightKey = null;
+      }
+    }
+
+    function renderUprightInAppNavStreetLabels(cachedOsrm, navPose, navTargetStop) {
+      if (!state.inAppNavActive || !navPose || !googleMarkersLayer) return;
+      const counterRot = `transform:rotate(${navPose.headingDeg.toFixed(1)}deg);`;
+      const candidates = [];
+
+      // 1) Calles del paso actual y siguiente giro de navegación activa (prioridad máxima)
+      const activeSteps = getActiveInAppNavSteps(navTargetStop);
+      const stepIdx = Math.max(0, Math.min(activeSteps.length - 1, state.inAppNavStepIdx || 0));
+      activeSteps.forEach((st, idx) => {
+        const rawName = st.name || st.ref || '';
+        const clean = extractCleanStreetName(rawName);
+        if (!clean) return;
+        const isCurrentOrNext = idx === stepIdx || idx === stepIdx + 1;
+        if (st.geometry && Array.isArray(st.geometry.coordinates) && st.geometry.coordinates.length >= 2) {
+          const coords = st.geometry.coordinates;
+          const mid = coords[Math.floor(coords.length / 2)];
+          if (Array.isArray(mid)) {
+            candidates.push({ name: clean, lat: mid[1], lng: mid[0], highlight: isCurrentOrNext });
+          }
+          if (coords.length >= 8) {
+            const q1 = coords[Math.floor(coords.length * 0.25)];
+            const q3 = coords[Math.floor(coords.length * 0.75)];
+            if (Array.isArray(q1)) candidates.push({ name: clean, lat: q1[1], lng: q1[0], highlight: isCurrentOrNext });
+            if (Array.isArray(q3)) candidates.push({ name: clean, lat: q3[1], lng: q3[0], highlight: isCurrentOrNext });
+          }
+        } else if (st.maneuver && Array.isArray(st.maneuver.location)) {
+          candidates.push({
+            name: clean,
+            lat: st.maneuver.location[1],
+            lng: st.maneuver.location[0],
+            highlight: isCurrentOrNext
+          });
+        }
+      });
+
+      // 2) Todas las calles a lo largo de la ruta activa (cachedOsrm.legs)
+      if (cachedOsrm && Array.isArray(cachedOsrm.legs)) {
+        cachedOsrm.legs.forEach((leg) => {
+          (leg.steps || []).forEach((st) => {
+            const clean = extractCleanStreetName(st.name || st.ref || '');
+            if (!clean) return;
+            if (st.geometry && Array.isArray(st.geometry.coordinates) && st.geometry.coordinates.length >= 2) {
+              const coords = st.geometry.coordinates;
+              const mid = coords[Math.floor(coords.length / 2)];
+              if (Array.isArray(mid)) {
+                candidates.push({ name: clean, lat: mid[1], lng: mid[0], highlight: false });
+              }
+            }
+          });
+        });
+      }
+
+      // 3) Nombres de las calles de cada parada en la ruta
+      state.stops.forEach((s) => {
+        const clean = extractCleanStreetName(s.address || '');
+        if (clean && Number.isFinite(s.lat) && Number.isFinite(s.lng)) {
+          candidates.push({ name: clean, lat: s.lat - 0.00038, lng: s.lng, highlight: s.id === (navTargetStop && navTargetStop.id) });
+        }
+      });
+
+      // 4) Calles transversales y cercanas alrededor de la cámara en vivo
+      const gridKey = `${navPose.lookAheadLat.toFixed(3)},${navPose.lookAheadLng.toFixed(3)}`;
+      const nearbyList = nearbyNavStreetsCache[gridKey];
+      if (Array.isArray(nearbyList)) {
+        nearbyList.forEach((nb) => {
+          if (nb && nb.name) candidates.push({ name: nb.name, lat: nb.lat, lng: nb.lng, highlight: false });
+        });
+      } else {
+        fetchNearbyStreetsForInAppNav(navPose.lookAheadLat, navPose.lookAheadLng);
+      }
+
+      // Deduplicar etiquetas cercanas para que se vean limpias y siempre derechas (0° horizontal)
+      const placed = [];
+      candidates.forEach((c) => {
+        if (!c.name || !Number.isFinite(c.lat) || !Number.isFinite(c.lng)) return;
+        const tooClose = placed.some((p) => {
+          const dLat = Math.abs(p.lat - c.lat);
+          const dLng = Math.abs(p.lng - c.lng);
+          if (p.name.toUpperCase() === c.name.toUpperCase()) {
+            return dLat < 0.0018 && dLng < 0.0018;
+          }
+          return dLat < 0.00055 && dLng < 0.00055;
+        });
+        if (tooClose) return;
+        placed.push(c);
+
+        const borderCol = c.highlight ? '#22d3ee' : 'rgba(148,163,184,0.65)';
+        const textCol = c.highlight ? '#67e8f9' : '#f8fafc';
+        const bgCol = c.highlight ? 'rgba(4,8,18,0.94)' : 'rgba(15,23,42,0.88)';
+
+        const streetIcon = L.divIcon({
+          className: '',
+          html: `<div style="${counterRot}display:inline-flex;align-items:center;justify-content:center;padding:1.5px 6px;border-radius:6px;background:${bgCol};border:1px solid ${borderCol};color:${textCol};font-weight:800;font-size:10px;line-height:1.15;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.75);pointer-events:none;transform-origin:center center;">${c.name}</div>`,
+          iconSize: [96, 18],
+          iconAnchor: [48, 9]
+        });
+        L.marker([c.lat, c.lng], {
+          icon: streetIcon,
+          zIndexOffset: c.highlight ? 850 : 400,
+          interactive: false
+        }).addTo(googleMarkersLayer);
+      });
     }
 
     function initGoogleMapIfNeeded() {
@@ -5527,6 +5742,11 @@
           state.stops[0];
         const navPose = state.inAppNavActive ? getInAppNavPose(navTargetStop) : null;
         const counterRotStyle = navPose ? `transform:rotate(${navPose.headingDeg.toFixed(1)}deg);` : '';
+
+        // En navegación interna (Heading-Up), renderizar todos los nombres de calles derechos (0° horizontal)
+        if (state.inAppNavActive && navPose) {
+          renderUprightInAppNavStreetLabels(cachedOsrm, navPose, navTargetStop);
+        }
 
         // Solo mostrar el pin de la estación P1 si el usuario eligió explícitamente salir desde Station P1 o regresar a P1
         if (state.startMode === 'station' || state.endMode === 'return_to_start') {
@@ -6268,6 +6488,7 @@
       saveStateToStorage();
       applyLanguageUI();
       renderHeaderControls();
+      updateFullscreenMapTopOffset();
       renderLiveDurationPanel();
       renderSequencePills();
       renderMultiStopLinks();
@@ -6294,7 +6515,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '08:17 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '08:30 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
