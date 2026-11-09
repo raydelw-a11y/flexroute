@@ -1056,7 +1056,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 08:30 PM - 11/08/2026 ↻
+        Actualizado: 08:35 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1701,7 +1701,7 @@
       };
     }
 
-    function applyInAppNavCamera(animate = true) {
+    function applyInAppNavCamera(animate = true, forceCenter = false) {
       const mapEl = document.getElementById('tactical-google-map');
       const map = initGoogleMapIfNeeded();
       if (!map || !mapEl) return;
@@ -1727,8 +1727,15 @@
       const pose = getInAppNavPose(stop);
       state.inAppNavHeadingDeg = pose.headingDeg;
 
+      if (forceCenter) {
+        state.inAppNavUserPanned = false;
+      }
+
       // Acercar el mapa (zoom 17 estilo Google Maps) centrado ligeramente adelante del conductor
-      map.setView([pose.lookAheadLat, pose.lookAheadLng], 17, { animate });
+      // Si el usuario movió el mapa con el dedo, respetar la posición donde lo dejó hasta que pulse 🎯 Recentrar
+      if (!state.inAppNavUserPanned) {
+        map.setView([pose.lookAheadLat, pose.lookAheadLng], 17, { animate });
+      }
 
       // Rotar el lienzo del mapa en sentido inverso al rumbo (-headingDeg) para que la dirección de avance siempre apunte HACIA ARRIBA (0° forward)
       // y escalar 1.42x para cubrir las esquinas al rotar dentro de #map-inner-wrapper (overflow-hidden)
@@ -1764,6 +1771,7 @@
       state.inAppNavStopId = targetStop.id;
       state.inAppNavStepIdx = 0;
       state.inAppNavStepsExpanded = false;
+      state.inAppNavUserPanned = false;
       setFlexItineraryView('map');
 
       // Cambiar los tiles de Google Maps al modo sin texto invertido (para renderizar todas las calles al derecho)
@@ -1779,7 +1787,7 @@
       setTimeout(() => {
         if (googleMapInstance) googleMapInstance.invalidateSize();
         renderSvgMap();
-        applyInAppNavCamera(true);
+        applyInAppNavCamera(true, true);
         const steps = getActiveInAppNavSteps(targetStop);
         if (steps[0]) {
           const vis = getManeuverVisual(steps[0]);
@@ -1797,6 +1805,7 @@
       state.inAppNavStopId = null;
       state.inAppNavStepIdx = 0;
       state.inAppNavStepsExpanded = false;
+      state.inAppNavUserPanned = false;
       try {
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       } catch (e) {}
@@ -1815,13 +1824,14 @@
       const steps = getActiveInAppNavSteps(stop);
       if (steps.length === 0) return;
       state.inAppNavStepIdx = Math.max(0, Math.min(steps.length - 1, (state.inAppNavStepIdx || 0) + delta));
+      state.inAppNavUserPanned = false;
       const curStep = steps[state.inAppNavStepIdx];
       if (curStep) {
         const vis = getManeuverVisual(curStep);
         speakInAppNavInstruction(state.lang === 'es' ? vis.titleEs : vis.titleEn);
       }
       renderSvgMap();
-      applyInAppNavCamera(true);
+      applyInAppNavCamera(true, true);
       renderInAppNavHud();
     }
 
@@ -1844,8 +1854,9 @@
 
     function recenterInAppNav(ev) {
       if (ev) ev.stopPropagation();
+      state.inAppNavUserPanned = false;
       renderSvgMap();
-      applyInAppNavCamera(true);
+      applyInAppNavCamera(true, true);
     }
 
     function renderInAppNavHud() {
@@ -5472,6 +5483,38 @@
         attributionControl: false
       }).setView([25.795, -80.155], 12);
 
+      // Corregir el arrastre táctil y con ratón cuando el mapa está rotado en In-App Navigation (-headingDeg)
+      // para que el mapa se mueva exactamente en la dirección del dedo (sin quedar invertido ni desviado)
+      if (googleMapInstance.dragging && googleMapInstance.dragging._draggable) {
+        const drg = googleMapInstance.dragging._draggable;
+        drg.on('dragstart', () => {
+          if (state.inAppNavActive) {
+            state.inAppNavUserPanned = true;
+          }
+        });
+        drg.on('predrag', () => {
+          if (!state.inAppNavActive || !drg._startPoint || !drg._startPos || !drg._lastEvent) return;
+          const ev = drg._lastEvent;
+          const pt = ev.touches && ev.touches.length ? ev.touches[0] : ev;
+          if (!pt || !Number.isFinite(pt.clientX) || !Number.isFinite(pt.clientY)) return;
+          const dxScreen = pt.clientX - drg._startPoint.x;
+          const dyScreen = pt.clientY - drg._startPoint.y;
+          const thetaDeg = Number(state.inAppNavHeadingDeg) || 0;
+          const rad = (thetaDeg * Math.PI) / 180;
+          const scale = 1.42;
+          const dxMap = (dxScreen * Math.cos(rad) - dyScreen * Math.sin(rad)) / scale;
+          const dyMap = (dxScreen * Math.sin(rad) + dyScreen * Math.cos(rad)) / scale;
+          drg._newPos = drg._startPos.add(L.point(dxMap, dyMap));
+        });
+      }
+
+      googleMapInstance.on('dragend', () => {
+        if (state.inAppNavActive && googleMapInstance) {
+          const c = googleMapInstance.getCenter();
+          if (c) fetchNearbyStreetsForInAppNav(c.lat, c.lng);
+        }
+      });
+
       // Tocar el mapa cuando está en vista compacta lo abre a pantalla completa
       googleMapInstance.on('click', () => {
         if (!isMapFullscreen) {
@@ -5528,7 +5571,8 @@
       const map = initGoogleMapIfNeeded();
       if (!map || state.stops.length === 0) return;
       if (state.inAppNavActive) {
-        applyInAppNavCamera(true);
+        state.inAppNavUserPanned = false;
+        applyInAppNavCamera(true, true);
         return;
       }
       const mapEl = document.getElementById('tactical-google-map');
@@ -6515,7 +6559,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '08:30 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '08:35 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
