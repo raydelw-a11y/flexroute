@@ -90,76 +90,169 @@
 </head>
 <body class="min-h-screen pb-40 selection:bg-cyan-400 selection:text-slate-950">
 
-  <!-- TOP COCKPIT HEADER -->
-  <header class="sticky top-0 z-30 glass-card border-b border-slate-800/90 px-4 pb-3 safe-top-header">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex flex-col gap-1.5">
-        <!-- FILA 1: ICONO DE LA APP + TÍTULO FLEXROUTE -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-500 flex items-center justify-center neon-cyan-shadow shrink-0">
-            <svg class="w-5 h-5 text-slate-950 fill-slate-950" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-            </svg>
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-base sm:text-lg font-black tracking-tight text-white">
-                FlexRoute
-              </h1>
-              <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                Google Maps Direct
-              </span>
+  <!-- TOP COCKPIT HEADER + PANEL TRAVEL FIJO E INAMOVIBLE -->
+  <header class="sticky top-0 z-40 glass-card border-b border-cyan-500/35 px-3 sm:px-4 pb-2.5 safe-top-header select-none">
+    <div class="max-w-3xl mx-auto space-y-2">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-col gap-1.5">
+          <!-- FILA 1: ICONO DE LA APP + TÍTULO FLEXROUTE -->
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-500 flex items-center justify-center neon-cyan-shadow shrink-0">
+              <svg class="w-4 h-4 text-slate-950 fill-slate-950" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+              </svg>
             </div>
-            <p id="i18n-header-subtitle" class="text-[11px] text-slate-400 hidden sm:block">
-              Real-time tactical route optimizer • Auto-capture from Amazon Flex
-            </p>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-base sm:text-lg font-black tracking-tight text-white">
+                  FlexRoute
+                </h1>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  In-App Nav + Maps
+                </span>
+              </div>
+              <p id="i18n-header-subtitle" class="text-[11px] text-slate-400 hidden sm:block">
+                Real-time tactical route optimizer • Auto-capture from Amazon Flex
+              </p>
+            </div>
+          </div>
+
+          <!-- FILA 2 (JUSTO DEBAJO DEL ICONO DE LA APP): BOTÓN MENÚ (☰) + A SU DERECHA TIEMPO EN VIVO (GPS MÓVIL) + GOING TO STOP # -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              id="hamburger-menu-btn"
+              type="button"
+              onclick="toggleMainMenuDrawer()"
+              title="Menu"
+              aria-label="Open Menu"
+              class="w-10 h-7 rounded-xl bg-slate-900/95 hover:bg-slate-800 border border-cyan-400/50 flex flex-col items-center justify-center gap-1 shadow-md transition-all shrink-0"
+            >
+              <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
+              <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
+              <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
+            </button>
+
+            <div
+              id="header-live-gps-bar"
+              onclick="requestImmediateGpsRefresh()"
+              title="Live GPS time to complete route • Tap to refresh mobile GPS"
+              class="px-2.5 py-1 rounded-xl bg-slate-950/95 border border-cyan-400/50 flex items-center gap-2 shadow-md cursor-pointer"
+            >
+              <span id="header-gps-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+              <span id="header-live-time-badge" class="text-xs font-black text-white font-mono tracking-tight">⏱️ --m</span>
+              <span class="text-slate-600 font-bold text-xs">•</span>
+              <span id="header-going-to-stop-text" class="text-xs font-black text-cyan-300">Going to stop #--</span>
+            </div>
           </div>
         </div>
 
-        <!-- FILA 2 (JUSTO DEBAJO DEL ICONO DE LA APP): BOTÓN MENÚ (☰) + A SU DERECHA TIEMPO EN VIVO (GPS MÓVIL) + GOING TO STOP # -->
         <div class="flex flex-wrap items-center gap-2">
-          <button
-            id="hamburger-menu-btn"
-            type="button"
-            onclick="toggleMainMenuDrawer()"
-            title="Menu"
-            aria-label="Open Menu"
-            class="w-10 h-7 rounded-xl bg-slate-900/95 hover:bg-slate-800 border border-cyan-400/50 flex flex-col items-center justify-center gap-1 shadow-md transition-all shrink-0"
-          >
-            <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
-            <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
-            <span class="w-4 h-0.5 bg-cyan-300 rounded-full"></span>
+          <!-- BOTÓN DE ESCANEO DE VIDEO O CAPTURAS DE AMAZON FLEX (SOLO APARECE AL CREAR UNA RUTA NUEVA DESDE EL MENÚ PRINCIPAL) -->
+          <button id="header-flex-video-btn" onclick="openScreenshotPicker()" class="hidden px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
+            <span>🎬📸</span>
+            <span id="i18n-btn-video-flex">Flex Video / Screenshots</span>
           </button>
 
-          <div
-            id="header-live-gps-bar"
-            onclick="requestImmediateGpsRefresh()"
-            title="Live GPS time to complete route • Tap to refresh mobile GPS"
-            class="px-2.5 py-1 rounded-xl bg-slate-950/95 border border-cyan-400/50 flex items-center gap-2 shadow-md cursor-pointer"
-          >
-            <span id="header-gps-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-            <span id="header-live-time-badge" class="text-xs font-black text-white font-mono tracking-tight">⏱️ --m</span>
-            <span class="text-slate-600 font-bold text-xs">•</span>
-            <span id="header-going-to-stop-text" class="text-xs font-black text-cyan-300">Going to stop #--</span>
+          <!-- SELECTOR DE IDIOMA (ENGLISH DEFAULT / ESPAÑOL) -->
+          <div class="flex items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+            <button id="lang-btn-en" onclick="setAppLanguage('en')" class="px-2 py-1 rounded-lg text-[11px] font-black bg-cyan-400 text-slate-950">
+              EN
+            </button>
+            <button id="lang-btn-es" onclick="setAppLanguage('es')" class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white">
+              ES
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- BOTÓN DE ESCANEO DE VIDEO O CAPTURAS DE AMAZON FLEX (SOLO APARECE AL CREAR UNA RUTA NUEVA DESDE EL MENÚ PRINCIPAL) -->
-        <button id="header-flex-video-btn" onclick="openScreenshotPicker()" class="hidden px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5">
-          <span>🎬📸</span>
-          <span id="i18n-btn-video-flex">Flex Video / Screenshots</span>
-        </button>
+      <!-- PANEL TRAVEL / LIST / SUMMARY FIJO E INAMOVIBLE EN LA CABECERA SUPERIOR -->
+      <div id="flex-app-header-banner" style="touch-action: none;" class="rounded-2xl overflow-hidden bg-slate-950/95 border border-cyan-500/40 shadow-xl">
+        <!-- Fila 1: Título de vista actual ("Travel", "Itinerary list", "Itinerary summary") + Iconos rápidos -->
+        <div class="px-3.5 pt-2 pb-1.5 flex items-center justify-between gap-2 text-white">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+            <h2 id="flex-screen-title" class="text-sm sm:text-base font-black tracking-tight text-white truncate">
+              Travel
+            </h2>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onclick="if(state.activeTab!=='cockpit') switchTab('cockpit'); setFlexItineraryView('summary'); toggleDepartureStationPanel(true);"
+              title="Open Initial Location & Schedule in Summary"
+              class="w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/40 flex items-center justify-center text-amber-300 font-black text-xs transition-all"
+            >
+              📍
+            </button>
+            <button
+              type="button"
+              onclick="if(state.activeTab!=='cockpit') switchTab('cockpit'); setFlexItineraryView('summary'); toggleClosingDestPanel(true);"
+              title="Open Closing Destination in Summary"
+              class="w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-black text-xs transition-all"
+            >
+              🏁
+            </button>
+            <button
+              type="button"
+              onclick="openCalendarModal()"
+              title="Open Route Calendar"
+              class="w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-black text-xs transition-all"
+            >
+              📅
+            </button>
+          </div>
+        </div>
 
-        <!-- SELECTOR DE IDIOMA (ENGLISH DEFAULT / ESPAÑOL) -->
-        <div class="flex items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800">
-          <button id="lang-btn-en" onclick="setAppLanguage('en')" class="px-2 py-1 rounded-lg text-[11px] font-black bg-cyan-400 text-slate-950">
-            EN
-          </button>
-          <button id="lang-btn-es" onclick="setAppLanguage('es')" class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-400 hover:text-white">
-            ES
-          </button>
+        <!-- Fila 2: Las 3 Píldoras "Itinerary toggles" (List / Map / Summary) con nuestra paleta -->
+        <div class="px-2.5 pb-2">
+          <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-900/95 border border-slate-800 shadow-inner">
+            <!-- Píldora 1: Itinerary list -->
+            <button
+              id="flex-pill-list"
+              type="button"
+              onclick="if(state.activeTab!=='cockpit') switchTab('cockpit'); setFlexItineraryView('list')"
+              class="py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 font-bold text-xs transition-all bg-slate-900/90 text-slate-300 border border-slate-800 hover:text-white"
+            >
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+                <circle cx="5" cy="7" r="2" fill="currentColor"></circle>
+                <circle cx="5" cy="17" r="2" fill="currentColor"></circle>
+                <line x1="10" y1="7" x2="20" y2="7"></line>
+                <line x1="10" y1="17" x2="20" y2="17"></line>
+              </svg>
+              <span id="i18n-flex-pill-list">List</span>
+            </button>
+
+            <!-- Píldora 2: Itinerary map / Travel -->
+            <button
+              id="flex-pill-map"
+              type="button"
+              onclick="if(state.activeTab!=='cockpit') switchTab('cockpit'); setFlexItineraryView('map')"
+              class="py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 font-black text-xs transition-all bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-lg"
+            >
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="5" cy="8" r="2.2"></circle>
+                <circle cx="12" cy="5" r="2.2"></circle>
+                <circle cx="19" cy="8" r="2.2"></circle>
+                <path d="M5 10.5v6l7-3 7 3v-6"></path>
+              </svg>
+              <span id="i18n-flex-pill-map">Map</span>
+            </button>
+
+            <!-- Píldora 3: Itinerary summary -->
+            <button
+              id="flex-pill-summary"
+              type="button"
+              onclick="if(state.activeTab!=='cockpit') switchTab('cockpit'); setFlexItineraryView('summary')"
+              class="py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 font-bold text-xs transition-all bg-slate-900/90 text-slate-300 border border-slate-800 hover:text-white"
+            >
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M4 17a8 8 0 0 1 16 0"></path>
+                <path d="M8 17a4 4 0 0 1 8 0"></path>
+                <line x1="3" y1="17" x2="21" y2="17"></line>
+              </svg>
+              <span id="i18n-flex-pill-summary">Summary</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -329,100 +422,79 @@
     onchange="handleScreenshotsSelected(event)"
   />
 
-  <!-- PANEL 1: INTERFAZ ESTILO AMAZON FLEX APP CON NUESTRA PALETA TÁCTICA OSCURA (LIST / MAP & TRAVEL / SUMMARY) -->
-  <div id="tab-panel-cockpit">
-    <main class="max-w-3xl mx-auto px-3 sm:px-4 pt-3 pb-6 space-y-3">
-      <!-- CABECERA SUPERIOR DE VISTA ACTIVA: TÍTULO DINÁMICO + 3 PÍLDORAS (LIST / MAP / SUMMARY) -->
-      <div id="flex-app-header-banner" class="glass-card rounded-2xl overflow-hidden border border-cyan-500/35 shadow-xl">
-        <!-- Fila 1: Título de vista actual ("Travel", "Itinerary list", "Itinerary summary") + Iconos rápidos -->
-        <div class="px-3.5 pt-2.5 pb-2 flex items-center justify-between gap-2 text-white">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
-            <h2 id="flex-screen-title" class="text-base sm:text-lg font-black tracking-tight text-white truncate">
-              Travel
-            </h2>
+  <!-- MODAL RÁPIDO DEL BOTÓN DE LA LLAVECITA (🔑 ACCESS / GATE CODE & STREET DETOUR) -->
+  <div id="gate-access-modal" class="hidden fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div class="w-full max-w-md glass-card rounded-2xl border border-emerald-500/45 p-4 sm:p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2.5 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 flex items-center justify-center font-black text-base">
+            🔑
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onclick="setFlexItineraryView('summary'); toggleDepartureStationPanel(true);"
-              title="Open Initial Location & Schedule in Summary"
-              class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 border border-amber-500/40 flex items-center justify-center text-amber-300 font-black text-xs transition-all"
-            >
-              📍
-            </button>
-            <button
-              type="button"
-              onclick="setFlexItineraryView('summary'); toggleClosingDestPanel(true);"
-              title="Open Closing Destination in Summary"
-              class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-black text-xs transition-all"
-            >
-              🏁
-            </button>
-            <button
-              type="button"
-              onclick="openCalendarModal()"
-              title="Open Route Calendar"
-              class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-black text-xs transition-all"
-            >
-              📅
-            </button>
+          <div>
+            <h3 id="gate-modal-title" class="text-sm sm:text-base font-black text-white">Access &amp; Gate Code</h3>
+            <p id="gate-modal-subtitle" class="text-[11px] text-cyan-300 font-semibold truncate">Stop #--</p>
           </div>
         </div>
-
-        <!-- Fila 2: Las 3 Píldoras "Itinerary toggles" (List / Map / Summary) con nuestra paleta -->
-        <div class="px-3 pb-3">
-          <div class="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-inner">
-            <!-- Píldora 1: Itinerary list -->
-            <button
-              id="flex-pill-list"
-              type="button"
-              onclick="setFlexItineraryView('list')"
-              class="py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-all bg-slate-900/90 text-slate-300 border border-slate-800 hover:text-white"
-            >
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
-                <circle cx="5" cy="7" r="2" fill="currentColor"></circle>
-                <circle cx="5" cy="17" r="2" fill="currentColor"></circle>
-                <line x1="10" y1="7" x2="20" y2="7"></line>
-                <line x1="10" y1="17" x2="20" y2="17"></line>
-              </svg>
-              <span id="i18n-flex-pill-list">List</span>
-            </button>
-
-            <!-- Píldora 2: Itinerary map / Travel -->
-            <button
-              id="flex-pill-map"
-              type="button"
-              onclick="setFlexItineraryView('map')"
-              class="py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-black text-xs transition-all bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-lg"
-            >
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="5" cy="8" r="2.2"></circle>
-                <circle cx="12" cy="5" r="2.2"></circle>
-                <circle cx="19" cy="8" r="2.2"></circle>
-                <path d="M5 10.5v6l7-3 7 3v-6"></path>
-              </svg>
-              <span id="i18n-flex-pill-map">Map</span>
-            </button>
-
-            <!-- Píldora 3: Itinerary summary -->
-            <button
-              id="flex-pill-summary"
-              type="button"
-              onclick="setFlexItineraryView('summary')"
-              class="py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-all bg-slate-900/90 text-slate-300 border border-slate-800 hover:text-white"
-            >
-              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                <path d="M4 17a8 8 0 0 1 16 0"></path>
-                <path d="M8 17a4 4 0 0 1 8 0"></path>
-                <line x1="3" y1="17" x2="21" y2="17"></line>
-              </svg>
-              <span id="i18n-flex-pill-summary">Summary</span>
-            </button>
-          </div>
-        </div>
+        <button type="button" onclick="closeGateAccessModal()" class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-black border border-slate-800">
+          ✕
+        </button>
       </div>
 
+      <div class="space-y-3">
+        <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2">
+          <label id="gate-modal-input-label" class="block text-xs font-extrabold text-amber-300 uppercase tracking-wider">
+            🔑 Gate / Access Code (#) or Guard Note:
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              id="gate-modal-code-input"
+              type="text"
+              placeholder="Ex: #3234, Call Box 104, Guard Gate..."
+              class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-white focus:outline-none focus:border-emerald-400"
+            />
+            <button
+              type="button"
+              onclick="saveGateCodeFromModal()"
+              class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-black shrink-0 shadow"
+            >
+              💾 Save
+            </button>
+          </div>
+          <div id="gate-modal-copy-row" class="hidden pt-1 flex items-center justify-between text-xs">
+            <span id="gate-modal-current-badge" class="font-mono font-black text-amber-300">🔑 --</span>
+            <button
+              type="button"
+              onclick="copyCurrentModalGateCode()"
+              class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-black"
+            >
+              📋 Copy Gate Code
+            </button>
+          </div>
+        </div>
+
+        <div id="gate-modal-detour-box" class="p-3 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2">
+          <div class="text-xs font-extrabold text-rose-300 uppercase tracking-wider">
+            🚧 Locked Gate / Closed Street Detour
+          </div>
+          <p id="gate-modal-detour-desc" class="text-[11px] text-slate-300">
+            Is the resident gate or street blocked heading to the next stop? Toggle an automatic road detour.
+          </p>
+          <button
+            id="gate-modal-detour-btn"
+            type="button"
+            onclick="toggleDetourFromGateModal()"
+            class="w-full py-2 px-3 rounded-xl text-xs font-black border transition-all bg-slate-900 border-rose-500/40 text-rose-300 hover:bg-rose-500/20"
+          >
+            ⛔ Toggle Closed Street Detour
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL 1: INTERFAZ ESTILO AMAZON FLEX APP CON NUESTRA PALETA TÁCTICA OSCURA (LIST / MAP & TRAVEL / SUMMARY) -->
+  <div id="tab-panel-cockpit">
+    <main class="max-w-3xl mx-auto px-3 sm:px-4 pt-2.5 pb-6 space-y-3">
       <!-- ========================================================================= -->
       <!-- VISTA A: "TRAVEL / ITINERARY MAP" (ACTIVA POR DEFECTO)                    -->
       <!-- ========================================================================= -->
@@ -450,12 +522,18 @@
             <p id="map-fullscreen-hint">Tap map to open in fullscreen</p>
           </div>
 
-          <!-- Contenedor del Mapa con Botones Flotantes Laterales -->
+          <!-- Contenedor del Mapa con Navegación Turn-by-Turn In-App y Botones Flotantes -->
           <div id="map-inner-wrapper" class="relative bg-[#050914]">
+            <!-- HUD DE NAVEGACIÓN INTERNA TURN-BY-TURN DENTRO DE LA APP (SE ACTIVA CON "START TRAVEL") -->
+            <div
+              id="in-app-nav-hud"
+              class="hidden absolute top-2.5 left-2.5 right-2.5 z-30 rounded-2xl bg-slate-950/95 backdrop-blur-md border-2 border-emerald-400/70 shadow-2xl overflow-hidden text-white"
+            ></div>
+
             <div id="tactical-google-map" class="w-full h-[50vh] min-h-[340px] sm:h-[430px] z-10 cursor-pointer"></div>
 
             <!-- Controles flotantes arriba a la derecha (Capas / Tráfico) -->
-            <div class="absolute top-3 right-3 z-20 flex flex-col items-end gap-1.5">
+            <div id="map-layer-controls-floating" class="absolute top-3 right-3 z-20 flex flex-col items-end gap-1.5">
               <div class="flex items-center gap-1 bg-slate-950/90 backdrop-blur-md p-1 rounded-xl border border-slate-700/80 shadow-lg">
                 <button id="gmap-mode-streets" onclick="setGoogleMapLayer('streets')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                   Map
@@ -492,7 +570,7 @@
             </div>
           </div>
 
-          <!-- Tarjeta Inferior de Entrega ("Deliver 1 package", 🕒 Horario, [📋] [🔑], "Start travel" + [↗]) con nuestra paleta -->
+          <!-- Tarjeta Inferior de Entrega ("Deliver 1 package", 🕒 Horario, [📋] [🔑], Avoid Highways/Tolls, "Start travel" In-App + [↗] Google Maps) -->
           <div id="map-selected-bar" class="bg-slate-950/95 text-white px-4 pt-2.5 pb-3.5 border-t border-slate-800"></div>
         </div>
 
@@ -974,7 +1052,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 07:43 PM - 11/08/2026 ↻
+        Actualizado: 08:03 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1125,6 +1203,14 @@
       flexItineraryView: 'map',
       itinerarySearchQuery: '',
       itineraryStatusFilter: 'all',
+      avoidHighways: false,
+      avoidTolls: false,
+      inAppNavActive: false,
+      inAppNavStopId: null,
+      inAppNavStepIdx: 0,
+      inAppNavVoice: true,
+      inAppNavStepsExpanded: false,
+      gateModalStopId: null,
       stops: [],
       selectedStopId: null,
       activeTab: 'cockpit'
@@ -1233,9 +1319,9 @@
       if (summaryView) summaryView.classList.toggle('hidden', view !== 'summary');
 
       const activeCls =
-        'py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-black text-xs transition-all bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-lg';
+        'py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 font-black text-xs transition-all bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-lg';
       const inactiveCls =
-        'py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-all bg-slate-900/90 text-slate-300 border border-slate-800 hover:text-white hover:border-slate-700';
+        'py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 font-bold text-xs transition-all bg-slate-900/90 text-slate-300 border border-slate-800 hover:text-white hover:border-slate-700';
 
       if (pillList) pillList.className = view === 'list' ? activeCls : inactiveCls;
       if (pillMap) pillMap.className = view === 'map' ? activeCls : inactiveCls;
@@ -1291,6 +1377,450 @@
       const curIdx = state.stops.findIndex((s) => s.id === state.selectedStopId);
       const nextIdx = (curIdx + 1) % state.stops.length;
       selectStop(state.stops[nextIdx].id);
+    }
+
+    // =========================================================================
+    // BOTÓN DE LA LLAVECITA (🔑): CÓDIGO DE ACCESO / GATE CODE Y DESVÍO DE CALLE
+    // =========================================================================
+    function openGateAccessModal(stopId, ev) {
+      if (ev) ev.stopPropagation();
+      const stop = state.stops.find((s) => s.id === stopId) || state.stops.find((s) => !s.completed) || state.stops[0];
+      if (!stop) return;
+      state.gateModalStopId = stop.id;
+
+      const modal = document.getElementById('gate-access-modal');
+      const titleEl = document.getElementById('gate-modal-title');
+      const subEl = document.getElementById('gate-modal-subtitle');
+      const lblEl = document.getElementById('gate-modal-input-label');
+      const inpEl = document.getElementById('gate-modal-code-input');
+      const copyRow = document.getElementById('gate-modal-copy-row');
+      const curBadge = document.getElementById('gate-modal-current-badge');
+      const detourBox = document.getElementById('gate-modal-detour-box');
+      const detourDesc = document.getElementById('gate-modal-detour-desc');
+      const detourBtn = document.getElementById('gate-modal-detour-btn');
+
+      if (titleEl) titleEl.textContent = tr('🔑 Access & Gate Code', '🔑 Llave de Acceso / Gate Code');
+      if (subEl) subEl.textContent = `${tr('Stop', 'Parada')} #${stop.originalNumber} • ${stop.address}`;
+      if (lblEl) lblEl.textContent = tr('🔑 Gate / Access Code (#) or Guard Note:', '🔑 Código de Entrada (#) o Nota de Garita:');
+      if (inpEl) inpEl.value = stop.gateCode || '';
+
+      if (stop.gateCode) {
+        if (copyRow) copyRow.classList.remove('hidden');
+        if (curBadge) curBadge.textContent = `🔑 ${stop.gateCode}`;
+      } else if (copyRow) {
+        copyRow.classList.add('hidden');
+      }
+
+      const idx = state.stops.findIndex((s) => s.id === stop.id);
+      const nextStop = idx >= 0 && idx + 1 < state.stops.length ? state.stops[idx + 1] : null;
+      if (nextStop && detourBox && detourBtn && detourDesc) {
+        detourBox.classList.remove('hidden');
+        const hasClosed = isClosedStreetBetweenNumbers(stop.originalNumber, nextStop.originalNumber);
+        detourDesc.textContent = tr(
+          `Locked resident gate or closed street between Stop #${stop.originalNumber} and #${nextStop.originalNumber}?`,
+          `¿Reja cerrada o calle bloqueada entre Parada #${stop.originalNumber} y #${nextStop.originalNumber}?`
+        );
+        detourBtn.className = hasClosed
+          ? 'w-full py-2 px-3 rounded-xl text-xs font-black border transition-all bg-rose-500/25 border-rose-400 text-rose-200'
+          : 'w-full py-2 px-3 rounded-xl text-xs font-black border transition-all bg-slate-900 border-rose-500/40 text-rose-300 hover:bg-rose-500/20';
+        detourBtn.textContent = hasClosed
+          ? tr(`⛔ Active Detour (#${stop.originalNumber} → #${nextStop.originalNumber}) • Tap to Reopen`, `⛔ Desvío Activo (#${stop.originalNumber} → #${nextStop.originalNumber}) • Toca para Reabrir`)
+          : tr(`🚧 Mark Closed Gate / Street to Stop #${nextStop.originalNumber}`, `🚧 Marcar Calle/Reja Cerrada hacia Parada #${nextStop.originalNumber}`);
+      } else if (detourBox) {
+        detourBox.classList.add('hidden');
+      }
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeGateAccessModal() {
+      const modal = document.getElementById('gate-access-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function saveGateCodeFromModal() {
+      const stop = state.stops.find((s) => s.id === state.gateModalStopId);
+      const inpEl = document.getElementById('gate-modal-code-input');
+      if (!stop || !inpEl) return;
+      stop.gateCode = inpEl.value.trim();
+      closeGateAccessModal();
+      renderAll();
+      showToast(
+        stop.gateCode
+          ? tr(`🔑 Gate Code saved for Stop #${stop.originalNumber}: ${stop.gateCode}`, `🔑 Código guardado en Parada #${stop.originalNumber}: ${stop.gateCode}`)
+          : tr(`🔑 Gate Code cleared for Stop #${stop.originalNumber}`, `🔑 Código eliminado en Parada #${stop.originalNumber}`)
+      );
+    }
+
+    function copyCurrentModalGateCode() {
+      const stop = state.stops.find((s) => s.id === state.gateModalStopId);
+      if (!stop || !stop.gateCode) return;
+      copyTextToClipboard(stop.gateCode, `Gate ${stop.gateCode}`);
+    }
+
+    function toggleDetourFromGateModal() {
+      const stop = state.stops.find((s) => s.id === state.gateModalStopId);
+      if (!stop) return;
+      const idx = state.stops.findIndex((s) => s.id === stop.id);
+      const nextStop = idx >= 0 && idx + 1 < state.stops.length ? state.stops[idx + 1] : null;
+      if (!nextStop) return;
+      toggleClosedStreetLeg(stop.originalNumber, nextStop.originalNumber);
+      openGateAccessModal(stop.id);
+    }
+
+    // =========================================================================
+    // OPCIONES SELECCIONABLES: EVITAR HIGHWAYS Y EVITAR TOLLS (DESELECCIONADAS POR DEFECTO)
+    // =========================================================================
+    function toggleRouteAvoidOption(optionKey, ev) {
+      if (ev) ev.stopPropagation();
+      if (optionKey === 'highways') {
+        state.avoidHighways = !state.avoidHighways;
+      } else if (optionKey === 'tolls') {
+        state.avoidTolls = !state.avoidTolls;
+      }
+      Object.keys(osrmRouteCache).forEach((k) => delete osrmRouteCache[k]);
+      osrmFetchInFlightKey = null;
+      renderAll();
+      const activeFlags = [];
+      if (state.avoidHighways) activeFlags.push(tr('Avoid Highways ✓', 'Evitar Highways ✓'));
+      if (state.avoidTolls) activeFlags.push(tr('Avoid Tolls ✓', 'Evitar Tolls ✓'));
+      showToast(
+        activeFlags.length > 0
+          ? `🛣️ ${activeFlags.join(' • ')}`
+          : tr('🛣️ Standard fastest route (Highways & Tolls allowed)', '🛣️ Ruta rápida estándar (Highways y Tolls permitidos)')
+      );
+    }
+
+    // =========================================================================
+    // NAVEGACIÓN TURN-BY-TURN DENTRO DE LA APP (SIN SALIRSE A GOOGLE MAPS)
+    // =========================================================================
+    function getManeuverVisual(step) {
+      if (!step || !step.maneuver) return { icon: '⬆️', titleEn: 'Continue on route', titleEs: 'Continúa en la ruta' };
+      const type = (step.maneuver.type || '').toLowerCase();
+      const mod = (step.maneuver.modifier || '').toLowerCase();
+      const road = step.name || step.ref || tr('current street', 'la vía actual');
+
+      if (type === 'arrive') {
+        return { icon: '🏁', titleEn: `Arrive at ${road}`, titleEs: `Llegada a ${road}` };
+      }
+      if (type === 'depart') {
+        return { icon: '🧭', titleEn: `Head out on ${road}`, titleEs: `Inicia marcha por ${road}` };
+      }
+      if (type === 'roundabout' || type === 'rotary') {
+        return { icon: '🔄', titleEn: `Take roundabout onto ${road}`, titleEs: `Toma la rotonda hacia ${road}` };
+      }
+      if (mod.includes('uturn')) {
+        return { icon: '↩️', titleEn: `Make a U-turn onto ${road}`, titleEs: `Retorno en U hacia ${road}` };
+      }
+      if (mod === 'sharp left' || mod === 'left') {
+        return { icon: '↰', titleEn: `Turn left onto ${road}`, titleEs: `Gira a la izquierda en ${road}` };
+      }
+      if (mod === 'slight left') {
+        return { icon: '↖️', titleEn: `Keep left onto ${road}`, titleEs: `Mantente a la izquierda hacia ${road}` };
+      }
+      if (mod === 'sharp right' || mod === 'right') {
+        return { icon: '↱', titleEn: `Turn right onto ${road}`, titleEs: `Gira a la derecha en ${road}` };
+      }
+      if (mod === 'slight right') {
+        return { icon: '↗️', titleEn: `Keep right onto ${road}`, titleEs: `Mantente a la derecha hacia ${road}` };
+      }
+      return { icon: '⬆️', titleEn: `Continue on ${road}`, titleEs: `Continúa por ${road}` };
+    }
+
+    function formatStepDistance(meters) {
+      const m = Number(meters) || 0;
+      const miles = m / 1609.34;
+      if (miles < 0.16) {
+        const feet = Math.max(20, Math.round((m * 3.28084) / 10) * 10);
+        return `${feet} ft`;
+      }
+      return `${miles.toFixed(1)} mi`;
+    }
+
+    function getActiveInAppNavSteps(targetStop) {
+      if (!targetStop) return [];
+      const { waypoints } = getActiveWaypointsList(false);
+      const cacheKey = getWaypointsCacheKey(waypoints);
+      const cached = osrmRouteCache[cacheKey];
+
+      // Encontrar el índice del waypoint que corresponde a targetStop
+      const wpIdx = waypoints.findIndex((wp) => wp.stop && wp.stop.id === targetStop.id);
+      if (cached && Array.isArray(cached.legs) && cached.legs.length > 0) {
+        const collectedSteps = [];
+        const endLegIdx = wpIdx > 0 ? Math.min(cached.legs.length - 1, wpIdx - 1) : 0;
+        // Recoger los pasos del tramo hacia la parada seleccionada
+        const startLegIdx = Math.max(0, endLegIdx - (waypoints[endLegIdx] && waypoints[endLegIdx].isDetourBypass ? 1 : 0));
+        for (let l = startLegIdx; l <= endLegIdx; l++) {
+          const leg = cached.legs[l];
+          if (leg && Array.isArray(leg.steps)) {
+            leg.steps.forEach((st) => {
+              if ((st.distance || 0) > 4 || (st.maneuver && st.maneuver.type === 'arrive')) {
+                collectedSteps.push(st);
+              }
+            });
+          }
+        }
+        if (collectedSteps.length > 0) return collectedSteps;
+      }
+
+      // Respaldo instantáneo mientras OSRM descarga los giros detallados
+      const originPt = getStartOriginCoordinates(state.stops.filter((s) => s.completed));
+      const distMeters = haversineMiles(originPt.lat, originPt.lng, targetStop.lat, targetStop.lng) * 1609.34 * 1.28;
+      return [
+        {
+          name: targetStop.address,
+          distance: Math.round(distMeters * 0.75),
+          duration: Math.round(distMeters / 11),
+          maneuver: { type: 'depart', modifier: 'straight', location: [originPt.lng, originPt.lat] }
+        },
+        {
+          name: `${targetStop.address} (${targetStop.city || 'Miami, FL'})`,
+          distance: Math.round(distMeters * 0.25),
+          duration: Math.round(distMeters / 18),
+          maneuver: { type: 'arrive', modifier: 'straight', location: [targetStop.lng, targetStop.lat] }
+        }
+      ];
+    }
+
+    function speakInAppNavInstruction(text) {
+      if (!state.inAppNavVoice || !('speechSynthesis' in window) || !text) return;
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = state.lang === 'es' ? 'es-US' : 'en-US';
+        utter.rate = 1.03;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
+    }
+
+    function startInAppNavigation(stopId, ev) {
+      if (ev) ev.stopPropagation();
+      const targetStop =
+        state.stops.find((s) => s.id === stopId) ||
+        state.stops.find((s) => !s.completed) ||
+        state.stops[0];
+      if (!targetStop) return;
+
+      if (state.activeTab !== 'cockpit') {
+        switchTab('cockpit');
+      }
+      state.selectedStopId = targetStop.id;
+      state.inAppNavActive = true;
+      state.inAppNavStopId = targetStop.id;
+      state.inAppNavStepIdx = 0;
+      state.inAppNavStepsExpanded = false;
+      setFlexItineraryView('map');
+
+      fetchOsrmRouteForActiveStops();
+      renderAll();
+
+      // Enfocar el mapa entre la ubicación actual y la parada destino
+      setTimeout(() => {
+        recenterInAppNav();
+        const steps = getActiveInAppNavSteps(targetStop);
+        if (steps[0]) {
+          const vis = getManeuverVisual(steps[0]);
+          const spoken = state.lang === 'es' ? vis.titleEs : vis.titleEn;
+          speakInAppNavInstruction(
+            `${tr(`Starting in-app navigation to Stop ${targetStop.originalNumber}.`, `Iniciando navegación en la app hacia la Parada ${targetStop.originalNumber}.`)} ${spoken}`
+          );
+        }
+      }, 100);
+    }
+
+    function stopInAppNavigation(ev) {
+      if (ev) ev.stopPropagation();
+      state.inAppNavActive = false;
+      state.inAppNavStopId = null;
+      state.inAppNavStepIdx = 0;
+      state.inAppNavStepsExpanded = false;
+      try {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      } catch (e) {}
+      renderAll();
+      fitGoogleMapToRoute();
+    }
+
+    function stepInAppNav(delta, ev) {
+      if (ev) ev.stopPropagation();
+      const stop = state.stops.find((s) => s.id === state.inAppNavStopId) || state.stops.find((s) => s.id === state.selectedStopId);
+      const steps = getActiveInAppNavSteps(stop);
+      if (steps.length === 0) return;
+      state.inAppNavStepIdx = Math.max(0, Math.min(steps.length - 1, (state.inAppNavStepIdx || 0) + delta));
+      const curStep = steps[state.inAppNavStepIdx];
+      if (curStep) {
+        const vis = getManeuverVisual(curStep);
+        speakInAppNavInstruction(state.lang === 'es' ? vis.titleEs : vis.titleEn);
+        if (curStep.maneuver && Array.isArray(curStep.maneuver.location) && googleMapInstance) {
+          const [lng, lat] = curStep.maneuver.location;
+          googleMapInstance.setView([lat, lng], 16, { animate: true });
+        }
+      }
+      renderInAppNavHud();
+    }
+
+    function toggleInAppNavVoice(ev) {
+      if (ev) ev.stopPropagation();
+      state.inAppNavVoice = !state.inAppNavVoice;
+      if (!state.inAppNavVoice && 'speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {}
+      }
+      renderInAppNavHud();
+    }
+
+    function toggleInAppNavStepsList(ev) {
+      if (ev) ev.stopPropagation();
+      state.inAppNavStepsExpanded = !state.inAppNavStepsExpanded;
+      renderInAppNavHud();
+    }
+
+    function recenterInAppNav(ev) {
+      if (ev) ev.stopPropagation();
+      const map = initGoogleMapIfNeeded();
+      if (!map) return;
+      const stop =
+        state.stops.find((s) => s.id === state.inAppNavStopId) ||
+        state.stops.find((s) => s.id === state.selectedStopId) ||
+        state.stops.find((s) => !s.completed);
+      const originPt = getStartOriginCoordinates(state.stops.filter((s) => s.completed));
+      if (stop && originPt && Number.isFinite(originPt.lat) && Number.isFinite(originPt.lng)) {
+        map.fitBounds(
+          [
+            [originPt.lat, originPt.lng],
+            [stop.lat, stop.lng]
+          ],
+          { padding: [65, 45], maxZoom: 16 }
+        );
+      }
+    }
+
+    function renderInAppNavHud() {
+      const hud = document.getElementById('in-app-nav-hud');
+      const layerCtrls = document.getElementById('map-layer-controls-floating');
+      if (!hud) return;
+
+      if (!state.inAppNavActive) {
+        hud.classList.add('hidden');
+        if (layerCtrls) layerCtrls.classList.remove('hidden');
+        return;
+      }
+
+      const targetStop =
+        state.stops.find((s) => s.id === state.inAppNavStopId) ||
+        state.stops.find((s) => s.id === state.selectedStopId) ||
+        state.stops.find((s) => !s.completed);
+
+      if (!targetStop) {
+        state.inAppNavActive = false;
+        hud.classList.add('hidden');
+        if (layerCtrls) layerCtrls.classList.remove('hidden');
+        return;
+      }
+
+      if (layerCtrls) layerCtrls.classList.add('hidden');
+      hud.classList.remove('hidden');
+
+      const steps = getActiveInAppNavSteps(targetStop);
+      const stepIdx = Math.max(0, Math.min(steps.length - 1, state.inAppNavStepIdx || 0));
+      const curStep = steps[stepIdx] || steps[0];
+      const nextStep = steps[stepIdx + 1] || null;
+      const vis = getManeuverVisual(curStep);
+      const titleText = state.lang === 'es' ? vis.titleEs : vis.titleEn;
+      const stepDistStr = formatStepDistance(curStep ? curStep.distance : 150);
+      const tData = computeRouteTelemetry();
+      const etaStr = targetStop.liveEtaDate ? formatClock12h(targetStop.liveEtaDate, false) : formatClock12h(new Date(), false);
+      const legMin = targetStop.liveLegMin || Math.max(1, Math.round((tData.initialLegDriveSec || 180) / 60));
+
+      const stepsListHtml = state.inAppNavStepsExpanded
+        ? `<div class="max-h-36 overflow-y-auto divide-y divide-slate-800 bg-slate-950/95 border-t border-slate-800 px-3 py-1.5 text-[11px]">
+            ${steps
+              .map((st, idx) => {
+                const v = getManeuverVisual(st);
+                const activeRow = idx === stepIdx ? 'text-emerald-300 font-black' : 'text-slate-300 font-semibold';
+                return `<div onclick="state.inAppNavStepIdx=${idx}; renderInAppNavHud();" class="py-1.5 flex items-center justify-between gap-2 cursor-pointer ${activeRow}">
+                  <span class="truncate">${idx + 1}. ${v.icon} ${state.lang === 'es' ? v.titleEs : v.titleEn}</span>
+                  <span class="font-mono text-[10px] text-cyan-300 shrink-0">${formatStepDistance(st.distance)}</span>
+                </div>`;
+              })
+              .join('')}
+          </div>`
+        : '';
+
+      hud.innerHTML = `
+        <!-- Fila principal Turn-by-Turn estilo Navegador In-App -->
+        <div class="px-3.5 py-2.5 bg-gradient-to-r from-emerald-950/95 via-slate-950/95 to-cyan-950/95 flex items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-400 text-slate-950 font-black text-xl flex flex-col items-center justify-center shrink-0 shadow-lg">
+              <span>${vis.icon}</span>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm sm:text-base font-black text-emerald-300 font-mono">${stepDistStr}</span>
+                <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/40 text-[10px] font-black text-cyan-300">
+                  ${tr('Stop', 'Parada')} #${targetStop.originalNumber}
+                </span>
+                ${state.avoidHighways ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-[9px] font-black text-amber-300">🛣️ No Hwy</span>` : ''}
+                ${state.avoidTolls ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-[9px] font-black text-amber-300">💲 No Tolls</span>` : ''}
+              </div>
+              <div class="text-xs sm:text-sm font-black text-white truncate">${titleText}</div>
+              <div class="text-[10px] text-slate-300 font-semibold truncate">
+                ${
+                  nextStep
+                    ? `${tr('Then:', 'Luego:')} ${getManeuverVisual(nextStep).icon} ${state.lang === 'es' ? getManeuverVisual(nextStep).titleEs : getManeuverVisual(nextStep).titleEn}`
+                    : `🏁 ${targetStop.address}${targetStop.unit ? ' (' + targetStop.unit + ')' : ''}`
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de control de navegación interna -->
+          <div class="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onclick="toggleInAppNavVoice(event)"
+              title="${tr('Toggle Voice Guidance', 'Activar/Silenciar Voz')}"
+              class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs flex items-center justify-center"
+            >
+              ${state.inAppNavVoice ? '🔊' : '🔇'}
+            </button>
+            <button
+              type="button"
+              onclick="recenterInAppNav(event)"
+              title="${tr('Recenter Navigation', 'Recentrar Navegación')}"
+              class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 text-xs flex items-center justify-center font-black"
+            >
+              🎯
+            </button>
+            <button
+              type="button"
+              onclick="stopInAppNavigation(event)"
+              title="${tr('Exit In-App Navigation', 'Salir de Navegación')}"
+              class="w-8 h-8 rounded-xl bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/50 text-rose-300 text-xs flex items-center justify-center font-black"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra inferior del HUD con pasos, ETA en tiempo real y controles de avance -->
+        <div class="px-3 py-1.5 bg-slate-950/95 border-t border-slate-800/90 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div class="flex items-center gap-2 font-bold text-slate-200">
+            <span class="text-emerald-300 font-black">⏱️ ${legMin} min</span>
+            <span class="text-slate-600">•</span>
+            <span class="text-cyan-300 font-black">🏁 ETA ${etaStr}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button type="button" onclick="stepInAppNav(-1, event)" class="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-black">◀</button>
+            <button type="button" onclick="toggleInAppNavStepsList(event)" class="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-cyan-500/35 text-cyan-300 font-bold">
+              ${tr('Step', 'Paso')} ${stepIdx + 1}/${steps.length} ${state.inAppNavStepsExpanded ? '▲' : '▼'}
+            </button>
+            <button type="button" onclick="stepInAppNav(1, event)" class="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-black">▶</button>
+          </div>
+        </div>
+        ${stepsListHtml}
+      `;
     }
 
     function filterItineraryList(val) {
@@ -2274,11 +2804,29 @@
     }
 
     function getWaypointsCacheKey(waypoints) {
-      return waypoints.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';');
+      const avoidTag = `h${state.avoidHighways ? 1 : 0}_t${state.avoidTolls ? 1 : 0}`;
+      return `${avoidTag}|` + waypoints.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';');
+    }
+
+    function scoreRouteAgainstAvoidOptions(routeObj) {
+      if (!routeObj || !Array.isArray(routeObj.legs)) return 0;
+      let penalty = 0;
+      routeObj.legs.forEach((leg) => {
+        (leg.steps || []).forEach((st) => {
+          const text = `${st.name || ''} ${st.ref || ''} ${(st.classes || []).join(' ')}`.toUpperCase();
+          if (state.avoidTolls && /TOLL|TURNPIKE|EXPRESS|836|874|878|112|924|GRATIGNY|SNAPPER CREEK|DON SHULA/i.test(text)) {
+            penalty += (st.distance || 500) * 10;
+          }
+          if (state.avoidHighways && /MOTORWAY|I-95|I-75|I-195|I-395|PALMETTO|826|836|874|TURNPIKE|HIGHWAY|EXPY/i.test(text)) {
+            penalty += (st.distance || 500) * 10;
+          }
+        });
+      });
+      return penalty;
     }
 
     async function fetchOsrmRouteForActiveStops() {
-      // El trazado y telemetría de la ruta cubre desde la Estación (P1) hasta la última parada a entregar
+      // El trazado y telemetría de la ruta cubre desde el origen actual hasta la última parada a entregar
       const { waypoints } = getActiveWaypointsList(false);
       if (waypoints.length < 2) return;
       const key = getWaypointsCacheKey(waypoints);
@@ -2290,39 +2838,66 @@
       osrmFetchInFlightKey = key;
       try {
         const coordsQuery = waypoints.map((p) => `${p.lng},${p.lat}`).join(';');
-        const url = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson&steps=true`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.routes && data.routes[0]) {
-            const r = data.routes[0];
-            const latLngGeometry =
-              r.geometry && Array.isArray(r.geometry.coordinates)
-                ? r.geometry.coordinates.map(([lng, lat]) => [lat, lng])
-                : null;
-            const legGeometries = (r.legs || []).map((leg) => {
-              const pts = [];
-              (leg.steps || []).forEach((st) => {
-                if (st.geometry && Array.isArray(st.geometry.coordinates)) {
-                  st.geometry.coordinates.forEach(([lng, lat]) => {
-                    if (pts.length === 0 || pts[pts.length - 1][0] !== lat || pts[pts.length - 1][1] !== lng) {
-                      pts.push([lat, lng]);
-                    }
-                  });
-                }
-              });
-              return pts;
-            });
-            osrmRouteCache[key] = {
-              legs: r.legs || [],
-              legGeometries,
-              totalDistanceMeters: r.distance || 0,
-              totalBaseDurationSec: r.duration || 0,
-              geometry: latLngGeometry
-            };
-            updateLiveTelemetryTick();
-            renderSvgMap();
+        const excludes = [];
+        if (state.avoidHighways) excludes.push('motorway');
+        if (state.avoidTolls) excludes.push('toll');
+
+        let data = null;
+        if (excludes.length > 0) {
+          try {
+            const urlEx = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson&steps=true&alternatives=true&exclude=${excludes.join(',')}`;
+            const resEx = await fetch(urlEx);
+            if (resEx.ok) {
+              data = await resEx.json();
+            }
+          } catch (e) {}
+        }
+
+        if (!data || !Array.isArray(data.routes) || data.routes.length === 0) {
+          const hwyParam = state.avoidHighways ? '&exclude=motorway' : '';
+          const urlFallback = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson&steps=true&alternatives=true${hwyParam}`;
+          const resFallback = await fetch(urlFallback);
+          if (resFallback.ok) {
+            data = await resFallback.json();
           }
+        }
+
+        if (data && Array.isArray(data.routes) && data.routes.length > 0) {
+          // Elegir la alternativa que mejor cumpla Avoid Highways / Avoid Tolls
+          let bestRoute = data.routes[0];
+          if ((state.avoidHighways || state.avoidTolls) && data.routes.length > 1) {
+            bestRoute = data.routes
+              .slice()
+              .sort((a, b) => scoreRouteAgainstAvoidOptions(a) - scoreRouteAgainstAvoidOptions(b))[0];
+          }
+          const r = bestRoute;
+          const latLngGeometry =
+            r.geometry && Array.isArray(r.geometry.coordinates)
+              ? r.geometry.coordinates.map(([lng, lat]) => [lat, lng])
+              : null;
+          const legGeometries = (r.legs || []).map((leg) => {
+            const pts = [];
+            (leg.steps || []).forEach((st) => {
+              if (st.geometry && Array.isArray(st.geometry.coordinates)) {
+                st.geometry.coordinates.forEach(([lng, lat]) => {
+                  if (pts.length === 0 || pts[pts.length - 1][0] !== lat || pts[pts.length - 1][1] !== lng) {
+                    pts.push([lat, lng]);
+                  }
+                });
+              }
+            });
+            return pts;
+          });
+          osrmRouteCache[key] = {
+            legs: r.legs || [],
+            legGeometries,
+            totalDistanceMeters: r.distance || 0,
+            totalBaseDurationSec: r.duration || 0,
+            geometry: latLngGeometry
+          };
+          updateLiveTelemetryTick();
+          renderSvgMap();
+          renderInAppNavHud();
         }
       } catch (e) {
       } finally {
@@ -2343,19 +2918,27 @@
 
     function computeRouteTelemetry() {
       const sched = getActiveRouteSchedule();
-      const baseStartDate = parseScheduleDateObj(sched, 'time');
-      const scheduledEndDate = parseScheduleDateObj(sched, 'endTime');
-      if (scheduledEndDate.getTime() <= baseStartDate.getTime()) {
-        scheduledEndDate.setDate(scheduledEndDate.getDate() + 1);
+      // La hora de comienzo de las entregas para todos los cálculos de cada parada (stop.liveEtaDate)
+      // y el Live Time es SIEMPRE en tiempo real (new Date()), sin cambiar el horario en el nombre de la ruta.
+      const liveStartDate = new Date();
+      const schedStartObj = parseScheduleDateObj(sched, 'time');
+      const schedEndObj = parseScheduleDateObj(sched, 'endTime');
+      let blockDurationMs = schedEndObj.getTime() - schedStartObj.getTime();
+      if (blockDurationMs <= 0) {
+        blockDurationMs += 24 * 3600 * 1000;
       }
+      // Si la hora programada de cierre aún está en el futuro respecto a ahora, comparar contra ese cierre;
+      // de lo contrario mantener la duración del bloque medida desde el inicio en tiempo real.
+      const scheduledEndDate =
+        schedEndObj.getTime() > liveStartDate.getTime()
+          ? schedEndObj
+          : new Date(liveStartDate.getTime() + blockDurationMs);
 
-      // El tiempo de completar la ruta se calcula EXCLUSIVAMENTE por la distancia/ruta real desde la ubicación GPS actual del móvil
-      // (o última parada completada / Estación P1) hasta la última parada a entregar, SIN descontar segundos artificialmente si no hay movimiento
       const { waypoints, activeStops, completedStops, originPt } = getActiveWaypointsList(false);
       const cacheKey = getWaypointsCacheKey(waypoints);
       const osrmData = osrmRouteCache[cacheKey];
 
-      let runningClock = new Date(baseStartDate.getTime());
+      let runningClock = new Date(liveStartDate.getTime());
       let totalBaseDrivingSec = 0;
       let totalTrafficDrivingSec = 0;
       let totalServiceSec = 0;
@@ -2363,6 +2946,9 @@
       let initialLegDriveSec = 0;
       let initialLegMiles = 0;
       let firstStopReached = false;
+
+      // Factor adicional realista cuando el conductor evita autopistas o peajes (más semáforos locales)
+      const avoidMultiplier = (state.avoidHighways ? 1.08 : 1.0) * (state.avoidTolls ? 1.05 : 1.0);
 
       const headlineTraffic = getLiveTrafficProfile(
         runningClock,
@@ -2379,12 +2965,12 @@
 
         if (osrmData && osrmData.legs && osrmData.legs[i]) {
           legMiles = (osrmData.legs[i].distance || 0) / 1609.34;
-          legBaseSec = Math.round((osrmData.legs[i].duration || 60) * 1.12);
+          legBaseSec = Math.round((osrmData.legs[i].duration || 60) * 1.12 * avoidMultiplier);
         } else {
           const straightMiles = haversineMiles(fromPt.lat, fromPt.lng, toPt.lat, toPt.lng);
-          legMiles = straightMiles * 1.34;
-          const baseMph = legMiles > 3.5 ? 27 : legMiles > 1.2 ? 19 : 14;
-          legBaseSec = Math.round((legMiles / baseMph) * 3600) + 28;
+          legMiles = straightMiles * (state.avoidHighways ? 1.42 : 1.34);
+          const baseMph = legMiles > 3.5 ? (state.avoidHighways ? 22 : 27) : legMiles > 1.2 ? 19 : 14;
+          legBaseSec = Math.round(((legMiles / baseMph) * 3600 + 28) * avoidMultiplier);
         }
 
         const legTraffic = getLiveTrafficProfile(runningClock, fromPt, toPt);
@@ -2429,8 +3015,9 @@
         trafficDotColor: headlineTraffic.dotColor,
         trafficBadgeCls: headlineTraffic.badgeCls,
         trafficSurgePct: headlineTraffic.surgePct,
-        activeRouteClock: baseStartDate,
+        activeRouteClock: liveStartDate,
         estimatedFinishDate: runningClock,
+        finishDate: runningClock,
         scheduledEndDate,
         bufferVsEndSec,
         totalRemainingSec,
@@ -2538,6 +3125,9 @@
                 )}
               </span>
               ${gpsOriginTag}
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-cyan-500/30 text-[10px] font-bold text-cyan-300">
+                🕒 ${tr('Start Now:', 'Inicio Real:')} ${activeClockStr}
+              </span>
             </div>
             <div class="flex flex-wrap items-baseline gap-2 mt-0.5">
               <span class="text-lg sm:text-xl font-black text-white font-mono tracking-tight">
@@ -2580,6 +3170,23 @@
     }
 
     function updateStopCardsLiveEtaBadges() {
+      const liveNowStr = formatClock12h(new Date(), false);
+      const selectedStartEl = document.getElementById('selected-bar-live-start');
+      if (selectedStartEl) {
+        selectedStartEl.textContent = liveNowStr;
+      }
+
+      const activeNextStop = state.stops.find((s) => !s.completed);
+      const selectedStop =
+        state.stops.find((s) => s.id === state.selectedStopId) || activeNextStop || state.stops[0];
+      const selectedEtaEl = document.getElementById('selected-bar-live-eta');
+      if (selectedEtaEl && selectedStop) {
+        const etaStr = selectedStop.liveEtaDate
+          ? formatClock12h(selectedStop.liveEtaDate, false)
+          : selectedStop.deadline;
+        selectedEtaEl.textContent = `🏁 ${tr('Live ETA:', 'ETA en Vivo:')} ${etaStr}`;
+      }
+
       state.stops.forEach((stop) => {
         const mapEtaEl = document.getElementById(`map-pin-eta-${stop.id}`);
         if (mapEtaEl) {
@@ -2608,6 +3215,10 @@
           badge.textContent = `🏁 ${tr('ETA:', 'Llegada:')} ${etaStr} (~${stop.liveLegMin || 1}m)${isLate ? ' ⚠️' : ''}`;
         }
       });
+
+      if (state.inAppNavActive) {
+        renderInAppNavHud();
+      }
     }
 
     function updateLiveTelemetryTick() {
@@ -2821,10 +3432,15 @@
       return `${street}, ${city || 'Miami, FL'}`;
     }
 
+    function getGoogleMapsAvoidParam() {
+      const flags = `${state.avoidHighways ? 'h' : ''}${state.avoidTolls ? 't' : ''}`;
+      return flags ? `&dirflg=${flags}` : '';
+    }
+
     function getSingleStopMapsUrl(stop) {
       if (!stop) return 'https://www.google.com/maps';
       const dest = encodeURIComponent(cleanAddressForMaps(stop.address, stop.city));
-      return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
+      return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving${getGoogleMapsAvoidParam()}`;
     }
 
     function getFinalDestinationAddress() {
@@ -2890,9 +3506,10 @@
         .slice(wpStartIdx, waypointEntries.length - 1)
         .map((a) => encodeURIComponent(a))
         .join('|');
+      const avoidParam = getGoogleMapsAvoidParam();
       const url = waypoints
-        ? `https://www.google.com/maps/dir/?api=1${originParam}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`
-        : `https://www.google.com/maps/dir/?api=1${originParam}&destination=${destination}&travelmode=driving`;
+        ? `https://www.google.com/maps/dir/?api=1${originParam}&destination=${destination}&waypoints=${waypoints}&travelmode=driving${avoidParam}`
+        : `https://www.google.com/maps/dir/?api=1${originParam}&destination=${destination}&travelmode=driving${avoidParam}`;
 
       return [
         {
@@ -3054,6 +3671,19 @@
         stop.completed = !stop.completed;
         stop.completedAt = stop.completed ? Date.now() : null;
         state.currentLegStartedAt = Date.now();
+        if (stop.completed) {
+          const nextRemaining = state.stops.find((s) => !s.completed);
+          if (nextRemaining) {
+            state.selectedStopId = nextRemaining.id;
+            if (state.inAppNavActive) {
+              state.inAppNavStopId = nextRemaining.id;
+              state.inAppNavStepIdx = 0;
+            }
+          } else if (state.inAppNavActive) {
+            state.inAppNavActive = false;
+            state.inAppNavStopId = null;
+          }
+        }
         renderAll();
       }
     }
@@ -3070,6 +3700,10 @@
 
     function selectStop(stopId) {
       state.selectedStopId = stopId;
+      if (state.inAppNavActive) {
+        state.inAppNavStopId = stopId;
+        state.inAppNavStepIdx = 0;
+      }
       renderAll();
       const stop = state.stops.find((s) => s.id === stopId);
       if (stop && googleMapInstance) {
@@ -4745,12 +5379,11 @@
       if (selectedStop && selectedBar) {
         const selIdx = Math.max(0, state.stops.findIndex((s) => s.id === selectedStop.id));
         const colorMeta = getStopColorMeta(selIdx, Math.max(1, state.stops.length));
-        const sched = getActiveRouteSchedule();
-        const start12 = format24hTo12hStr(sched.time || '09:00');
+        const liveStartStr = formatClock12h(new Date(), false);
         const pkgCount = selectedStop.packages || 1;
         const pkgWord = pkgCount === 1 ? tr('package', 'paquete') : tr('packages', 'paquetes');
         const liveEtaStr = selectedStop.liveEtaDate ? formatClock12h(selectedStop.liveEtaDate, false) : selectedStop.deadline;
-        const nextStopInSeq = state.stops[selIdx + 1] || null;
+        const isNavigatingHere = Boolean(state.inAppNavActive && state.inAppNavStopId === selectedStop.id);
 
         selectedBar.innerHTML = `
           <div class="w-9 h-1 rounded-full bg-slate-700 mx-auto mb-2.5"></div>
@@ -4765,22 +5398,22 @@
                 </span>
                 ${
                   selectedStop.gateCode
-                    ? `<span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-[11px] font-black text-amber-300">🔑 ${selectedStop.gateCode}</span>`
+                    ? `<button type="button" onclick="openGateAccessModal('${selectedStop.id}', event)" class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-[11px] font-black text-amber-300">🔑 ${selectedStop.gateCode}</button>`
                     : ''
                 }
               </div>
               <div class="flex flex-wrap items-center gap-2 mt-1 text-xs font-semibold text-slate-300">
-                <span class="inline-flex items-center gap-1">
+                <span class="inline-flex items-center gap-1" title="${tr('Real-time start clock → Stop deadline', 'Hora real de inicio → Hora límite de parada')}">
                   <span class="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 inline-flex items-center justify-center text-[9px]">🕒</span>
-                  <span>${start12} - ${selectedStop.deadline}</span>
+                  <span><strong id="selected-bar-live-start" class="text-white">${liveStartStr}</strong> - ${selectedStop.deadline}</span>
                 </span>
-                <span class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 font-extrabold text-[11px]">
+                <span id="selected-bar-live-eta" class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/35 text-cyan-300 font-extrabold text-[11px]">
                   🏁 ${tr('Live ETA:', 'ETA en Vivo:')} ${liveEtaStr}
                 </span>
               </div>
             </div>
 
-            <!-- Botones cuadrados delineados [📋] y [🔑] con nuestra paleta -->
+            <!-- Botones cuadrados delineados [📋 Copiar] y [🔑 Llavecita: Gate Code / Acceso] -->
             <div class="flex items-center gap-2 shrink-0">
               <button
                 type="button"
@@ -4797,37 +5430,79 @@
               </button>
               <button
                 type="button"
-                onclick="${
-                  selectedStop.gateCode
-                    ? `copyTextToClipboard('${selectedStop.gateCode}', 'Gate ${selectedStop.gateCode}')`
-                    : nextStopInSeq
-                    ? `toggleClosedStreetLeg(${selectedStop.originalNumber}, ${nextStopInSeq.originalNumber}, event)`
-                    : `copyTextToClipboard('${selectedStop.address}', 'Address')`
-                }"
-                title="${selectedStop.gateCode ? 'Gate ' + selectedStop.gateCode : tr('Access / Detour', 'Acceso / Desvío')}"
-                class="w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300 flex items-center justify-center font-black transition-all"
+                onclick="openGateAccessModal('${selectedStop.id}', event)"
+                title="${selectedStop.gateCode ? '🔑 Gate: ' + selectedStop.gateCode : tr('🔑 Access / Gate Code (#) & Street Detour', '🔑 Código de Acceso (Gate #) y Desvío')}"
+                class="relative w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 border ${
+                  selectedStop.gateCode ? 'border-amber-400 text-amber-300' : 'border-emerald-500/40 text-emerald-300'
+                } flex items-center justify-center font-black transition-all"
               >
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="7.5" cy="12" r="3.5"></circle>
                   <path d="M11 12h10l-2 2.5m-2.5-2.5v2.5"></path>
                 </svg>
+                ${
+                  selectedStop.gateCode
+                    ? `<span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 border border-slate-950"></span>`
+                    : ''
+                }
               </button>
             </div>
           </div>
 
-          <!-- Fila inferior de acción: Botón grande "Start travel" + Botón "✓ Complete" + Botón cuadrado [↗] -->
-          <div class="mt-3 flex items-center gap-2">
-            <a
-              href="${getSingleStopMapsUrl(selectedStop)}"
-              target="_blank"
-              rel="noopener"
-              class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 font-black text-sm text-center shadow-lg transition-all"
-            >
-              ${tr('Start travel', 'Iniciar viaje')}
-            </a>
+          <!-- Dos opciones seleccionables (deseleccionadas por defecto): Evitar Highways y Evitar Tolls -->
+          <div class="mt-2.5 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onclick="toggleStopCompleted('${selectedStop.id}')"
+              onclick="toggleRouteAvoidOption('highways', event)"
+              class="py-1.5 px-2.5 rounded-xl text-xs font-extrabold border flex items-center justify-between transition-all ${
+                state.avoidHighways
+                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow'
+                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-800 text-slate-400'
+              }"
+            >
+              <span class="flex items-center gap-1.5 truncate">
+                <span>🛣️</span>
+                <span>${tr('Avoid Highways', 'Evitar Highways')}</span>
+              </span>
+              <span class="font-black text-xs">${state.avoidHighways ? '☑' : '☐'}</span>
+            </button>
+            <button
+              type="button"
+              onclick="toggleRouteAvoidOption('tolls', event)"
+              class="py-1.5 px-2.5 rounded-xl text-xs font-extrabold border flex items-center justify-between transition-all ${
+                state.avoidTolls
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow'
+                  : 'bg-slate-900/90 hover:bg-slate-800 border-slate-800 text-slate-400'
+              }"
+            >
+              <span class="flex items-center gap-1.5 truncate">
+                <span>💲</span>
+                <span>${tr('Avoid Tolls', 'Evitar Tolls')}</span>
+              </span>
+              <span class="font-black text-xs">${state.avoidTolls ? '☑' : '☐'}</span>
+            </button>
+          </div>
+
+          <!-- Fila inferior de acción: "Start travel" (Navegación interna en la app) + "✓ Complete" + [↗] (Abre Google Maps externo) -->
+          <div class="mt-2.5 flex items-center gap-2">
+            <button
+              type="button"
+              onclick="${isNavigatingHere ? 'stopInAppNavigation(event)' : `startInAppNavigation('${selectedStop.id}', event)`}"
+              class="flex-1 py-3 px-4 rounded-xl ${
+                isNavigatingHere
+                  ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 ring-2 ring-white/80'
+                  : 'bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950'
+              } font-black text-sm text-center shadow-lg transition-all"
+            >
+              ${
+                isNavigatingHere
+                  ? `🧭 ${tr('In-App Nav Active (Exit ✕)', 'Nav. Interna Activa (Salir ✕)')}`
+                  : `🧭 ${tr('Start travel', 'Iniciar viaje')}`
+              }
+            </button>
+            <button
+              type="button"
+              onclick="toggleStopCompleted('${selectedStop.id}', event)"
               title="${selectedStop.completed ? tr('Completed', 'Completada') : tr('Mark Delivered', 'Marcar Entregada')}"
               class="h-11 px-3 rounded-xl font-extrabold text-xs border transition-all ${
                 selectedStop.completed
@@ -4841,7 +5516,7 @@
               href="${getSingleStopMapsUrl(selectedStop)}"
               target="_blank"
               rel="noopener"
-              title="${tr('Open in Google Maps', 'Abrir en Google Maps')}"
+              title="${tr('Open in Google Maps ↗', 'Abrir en Google Maps ↗')}"
               class="w-11 h-11 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 flex items-center justify-center shadow-md shrink-0 transition-all"
             >
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -4853,6 +5528,7 @@
           </div>
         `;
       }
+      renderInAppNavHud();
     }
 
     function renderFlexSummaryView() {
@@ -5202,11 +5878,24 @@
       `;
 
       btnsEl.innerHTML = `
-        <button onclick="toggleStopCompleted('${nextStop.id}')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+        <button onclick="toggleStopCompleted('${nextStop.id}', event)" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
           ✓ ${tr('Delivered', 'Entregada')}
         </button>
-        <a href="${getSingleStopMapsUrl(nextStop)}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 text-xs font-black shadow-lg">
-          ${tr('Start travel', 'Iniciar viaje')} #${nextStop.originalNumber} ↗
+        <button
+          type="button"
+          onclick="startInAppNavigation('${nextStop.id}', event)"
+          class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 text-xs font-black shadow-lg"
+        >
+          🧭 ${tr('Start travel', 'Iniciar viaje')} #${nextStop.originalNumber}
+        </button>
+        <a
+          href="${getSingleStopMapsUrl(nextStop)}"
+          target="_blank"
+          rel="noopener"
+          title="${tr('Open in Google Maps ↗', 'Abrir en Google Maps ↗')}"
+          class="w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 flex items-center justify-center shadow shrink-0"
+        >
+          ↗
         </a>
       `;
     }
@@ -5253,7 +5942,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '07:43 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '08:03 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
@@ -5301,6 +5990,14 @@
               state.langInitializedV1 = true;
             }
             if (!state.lang) state.lang = 'en';
+            // Asegurar que Evitar Highways y Evitar Tolls estén deseleccionados por defecto
+            if (!state.avoidOptionsDefaultFalseV1) {
+              state.avoidHighways = false;
+              state.avoidTolls = false;
+              state.avoidOptionsDefaultFalseV1 = true;
+            }
+            if (typeof state.avoidHighways !== 'boolean') state.avoidHighways = false;
+            if (typeof state.avoidTolls !== 'boolean') state.avoidTolls = false;
             if (!Array.isArray(state.savedRoutes) || state.savedRoutes.length === 0) {
               state.savedRoutes = Array.isArray(vaultRoutes) ? vaultRoutes : [];
             }
@@ -5330,16 +6027,25 @@
           } else {
             state.lang = 'en';
             state.langInitializedV1 = true;
+            state.avoidHighways = false;
+            state.avoidTolls = false;
+            state.avoidOptionsDefaultFalseV1 = true;
             loadPresetRoute('dmi9-kendall');
           }
         } else {
           state.lang = 'en';
           state.langInitializedV1 = true;
+          state.avoidHighways = false;
+          state.avoidTolls = false;
+          state.avoidOptionsDefaultFalseV1 = true;
           loadPresetRoute('dmi9-kendall');
         }
       } catch (e) {
         state.lang = 'en';
         state.langInitializedV1 = true;
+        state.avoidHighways = false;
+        state.avoidTolls = false;
+        state.avoidOptionsDefaultFalseV1 = true;
         loadPresetRoute('dmi9-kendall');
       }
 
