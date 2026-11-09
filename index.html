@@ -455,7 +455,8 @@
             </div>
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-1.5">
-                <span id="i18n-station-title" class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">Departure Station (Pickup)</span>
+                <span id="i18n-station-title" class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">Initial Location &amp; Station</span>
+                <span id="start-origin-active-pill" class="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-extrabold text-emerald-300">📍 Live GPS</span>
                 <span id="pickup-time-badge" class="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-bold text-cyan-300">11/08/2026 • 10:00 AM – 12:00 PM</span>
               </div>
               <p id="pickup-address-display" class="text-xs font-bold text-white truncate">1125 SE 8th Street, Suite 700, Hialeah, FL</p>
@@ -471,8 +472,35 @@
           </button>
         </div>
 
-        <!-- CUERPO DESPLEGABLE DE ESTACIÓN DE SALIDA, HORARIO Y LIVE TIME -->
+        <!-- CUERPO DESPLEGABLE DE UBICACIÓN INICIAL, ESTACIÓN DE SALIDA, HORARIO Y LIVE TIME -->
         <div id="departure-station-collapsible-body" class="hidden pt-3 mt-3 border-t border-slate-800/90 space-y-3">
+          <!-- SELECTOR DE UBICACIÓN INICIAL (OPTIMIZA AUTOMÁTICAMENTE DESDE EL INICIO HACIA EL FINAL) -->
+          <div class="space-y-2 pb-2.5 border-b border-slate-800/90">
+            <div class="flex items-center justify-between gap-2">
+              <label id="i18n-start-origin-label" class="block text-xs text-amber-300 font-bold">
+                📍 Initial Location (Start Point for Route Optimization):
+              </label>
+              <span class="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                ⚡ Start → End Optimizer
+              </span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              <button id="startmode-gps" type="button" onclick="setStartMode('gps')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">📍 Live GPS</button>
+              <button id="startmode-station" type="button" onclick="setStartMode('station')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">🏢 Station P1</button>
+              <button id="startmode-home" type="button" onclick="setStartMode('home')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">🏠 Home</button>
+              <button id="startmode-custom" type="button" onclick="setStartMode('custom')" class="py-2 px-2 rounded-xl text-[11px] font-bold border">✏️ Custom Start</button>
+            </div>
+            <div id="custom-start-wrapper" class="mt-2 hidden">
+              <input
+                id="custom-start-input"
+                type="text"
+                placeholder="Ex: 1125 SE 8th St, Hialeah, FL"
+                oninput="updateCustomStartAddress(this.value)"
+                class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          </div>
+
           <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="text-[11px] font-semibold text-slate-400" id="i18n-station-actions-label">Station Quick Actions:</span>
             <div class="flex items-center gap-2">
@@ -964,7 +992,7 @@
     </div>
     <div class="max-w-7xl mx-auto flex justify-end pt-1">
       <button onclick="forceReloadApp()" title="Tap to force immediate update" class="text-[10px] text-slate-500/90 hover:text-cyan-400 font-mono transition-colors">
-        Actualizado: 07:11 PM - 11/08/2026 ↻
+        Actualizado: 07:17 PM - 11/08/2026 ↻
       </button>
     </div>
   </div>
@@ -1091,6 +1119,8 @@
       belleIsleMode: '11-10-9',
       pickupAddress: PRESET_ROUTES['dmi9-kendall'].pickupAddress,
       pickupTime: PRESET_ROUTES['dmi9-kendall'].pickupTime,
+      startMode: 'gps',
+      customStartAddress: '',
       endMode: 'home',
       customEndAddress: '',
       tacticalNotes: PRESET_ROUTES['dmi9-kendall'].tacticalNotes,
@@ -1364,7 +1394,12 @@
       setTxt('i18n-cal-modal-subtitle', 'Select a date to view and open routes scheduled for that day', 'Selecciona un día para ver y abrir las rutas programadas en esa fecha');
 
       // Cockpit Left Column
-      setTxt('i18n-station-title', 'Departure Station (Pickup)', 'Estación de Salida (Recogida)');
+      setTxt('i18n-station-title', 'Initial Location & Station', 'Ubicación Inicial y Estación');
+      setTxt('i18n-start-origin-label', '📍 Initial Location (Start Point for Route Optimization):', '📍 Ubicación Inicial (Punto de Partida para Optimizar):');
+      setTxt('startmode-gps', '📍 Live GPS', '📍 GPS en Vivo');
+      setTxt('startmode-station', '🏢 Station P1', '🏢 Estación P1');
+      setTxt('startmode-home', '🏠 Home', '🏠 Home');
+      setTxt('startmode-custom', '✏️ Custom Start', '✏️ Otra Salida');
       setTxt('i18n-station-actions-label', 'Station Quick Actions:', 'Acciones Rápidas de Estación:');
       setTxt('i18n-btn-copy-p1', 'Copy P1', 'Copiar P1');
       setTxt('pickup-maps-link', 'Go to P1', 'Ir a P1');
@@ -1963,6 +1998,10 @@
       const lng = Number(pos.coords.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
+      const wasActive = liveGpsState.active;
+      const prevOptLat = liveGpsState.lastOptOriginLat;
+      const prevOptLng = liveGpsState.lastOptOriginLng;
+
       liveGpsState.lat = lat;
       liveGpsState.lng = lng;
       liveGpsState.accuracy = Number(pos.coords.accuracy) || null;
@@ -1974,6 +2013,31 @@
         liveGpsState.lastOsrmOriginLat !== null && liveGpsState.lastOsrmOriginLng !== null
           ? haversineMiles(liveGpsState.lastOsrmOriginLat, liveGpsState.lastOsrmOriginLng, lat, lng)
           : 999;
+
+      const movedOptMiles =
+        Number.isFinite(prevOptLat) && Number.isFinite(prevOptLng)
+          ? haversineMiles(prevOptLat, prevOptLng, lat, lng)
+          : 999;
+
+      // Si el modo de origen es Live GPS y es la primera lectura GPS o el conductor se desplazó significativamente (> 0.20 mi),
+      // re-optimizar automáticamente el orden de paradas desde la ubicación inicial real hacia la ubicación final
+      if (
+        (state.startMode || 'gps') === 'gps' &&
+        (!wasActive || movedOptMiles > 0.20) &&
+        Array.isArray(state.stops) &&
+        state.stops.length > 1
+      ) {
+        liveGpsState.lastOptOriginLat = lat;
+        liveGpsState.lastOptOriginLng = lng;
+        liveGpsState.lastOsrmOriginLat = lat;
+        liveGpsState.lastOsrmOriginLng = lng;
+        state.stops = autoOptimizeStopsList(state.stops);
+        const firstActive = state.stops.find((s) => !s.completed) || state.stops[0];
+        if (firstActive) state.selectedStopId = firstActive.id;
+        Object.keys(osrmRouteCache).forEach((k) => delete osrmRouteCache[k]);
+        renderAll();
+        return;
+      }
 
       if (movedMiles > 0.015) {
         liveGpsState.lastOsrmOriginLat = lat;
@@ -2034,33 +2098,42 @@
       };
     }
 
-    function getActiveWaypointsList(includeClosing = false) {
-      const completedStops = state.stops.filter((s) => s.completed);
-      const activeStops = state.stops.filter((s) => !s.completed);
+    function getStartOriginCoordinates(completedStops = []) {
       const stationCoords = getStationCoordinates();
+      const sMode = state.startMode || 'gps';
 
-      let originPt = {
-        lat: stationCoords.lat,
-        lng: stationCoords.lng,
-        label: stationCoords.label,
-        originalNumber: 1,
-        isLiveGps: false
-      };
-      if (completedStops.length > 0) {
-        const lastDone = completedStops[completedStops.length - 1];
-        originPt = {
-          lat: lastDone.lat,
-          lng: lastDone.lng,
-          originalNumber: lastDone.originalNumber,
-          label: `Parada ${lastDone.originalNumber} (Última entregada)`,
+      if (sMode === 'station') {
+        return {
+          lat: stationCoords.lat,
+          lng: stationCoords.lng,
+          originalNumber: 1,
+          label: tr('Station P1', 'Estación P1'),
+          isLiveGps: false
+        };
+      }
+      if (sMode === 'home') {
+        return {
+          lat: HOME_CLOSING_COORDS.lat,
+          lng: HOME_CLOSING_COORDS.lng,
+          originalNumber: 1,
+          label: 'Home',
+          isLiveGps: false
+        };
+      }
+      if (sMode === 'custom' && state.customStartAddress && state.customStartAddress.trim().length >= 3) {
+        const est = estimateCoordinatesFromAddress(state.customStartAddress.trim(), 'Miami, FL', 0);
+        return {
+          lat: est.lat,
+          lng: est.lng,
+          originalNumber: 1,
+          label: state.customStartAddress.trim(),
           isLiveGps: false
         };
       }
 
-      // Si el dispositivo móvil reporta ubicación GPS en tiempo real, usamos la ubicación actual en tiempo real
-      // como punto de partida hacia la siguiente parada (Going to stop #)
+      // Por defecto ('gps'): usar la ubicación GPS en tiempo real del móvil si está disponible
       if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
-        originPt = {
+        return {
           lat: liveGpsState.lat,
           lng: liveGpsState.lng,
           originalNumber: completedStops.length > 0 ? completedStops[completedStops.length - 1].originalNumber : 1,
@@ -2068,6 +2141,30 @@
           isLiveGps: true
         };
       }
+      if (completedStops.length > 0) {
+        const lastDone = completedStops[completedStops.length - 1];
+        return {
+          lat: lastDone.lat,
+          lng: lastDone.lng,
+          originalNumber: lastDone.originalNumber,
+          label: `${tr('Stop', 'Parada')} ${lastDone.originalNumber}`,
+          isLiveGps: false
+        };
+      }
+      return {
+        lat: stationCoords.lat,
+        lng: stationCoords.lng,
+        originalNumber: 1,
+        label: stationCoords.label,
+        isLiveGps: false
+      };
+    }
+
+    function getActiveWaypointsList(includeClosing = false) {
+      const completedStops = state.stops.filter((s) => s.completed);
+      const activeStops = state.stops.filter((s) => !s.completed);
+      const stationCoords = getStationCoordinates();
+      const originPt = getStartOriginCoordinates(completedStops);
 
       const waypoints = [originPt];
       const closedBarriers = [];
@@ -2603,7 +2700,7 @@
       state.endMode = found.endMode || state.endMode;
       state.customEndAddress = found.customEndAddress || state.customEndAddress;
       state.tacticalNotes = found.tacticalNotes || state.tacticalNotes;
-      state.stops = JSON.parse(JSON.stringify(found.stops || []));
+      state.stops = autoOptimizeStopsList(JSON.parse(JSON.stringify(found.stops || [])));
       state.selectedStopId = state.stops[0] ? state.stops[0].id : null;
       state.scheduleAnchoredAt = Date.now();
       state.currentLegStartedAt = Date.now();
@@ -2779,7 +2876,8 @@
       state.currentLegStartedAt = Date.now();
 
       const stopMap = new Map(preset.stops.map((s) => [s.originalNumber, { ...s, completed: false }]));
-      state.stops = preset.defaultOrder.map((num) => stopMap.get(num)).filter(Boolean);
+      const rawStops = preset.defaultOrder.map((num) => stopMap.get(num)).filter(Boolean);
+      state.stops = autoOptimizeStopsList(rawStops);
       state.selectedStopId = state.stops[0] ? state.stops[0].id : null;
       switchTab('cockpit');
       renderAll();
@@ -2857,6 +2955,28 @@
     }
 
     let customEndOptimizeTimer = null;
+    let customStartOptimizeTimer = null;
+
+    function setStartMode(mode) {
+      state.startMode = mode;
+      if (mode !== 'custom' || (state.customStartAddress && state.customStartAddress.trim().length >= 3)) {
+        autoOptimizeCurrentStops(true);
+      } else {
+        renderAll();
+      }
+    }
+
+    function updateCustomStartAddress(val) {
+      state.customStartAddress = val.trim();
+      if (customStartOptimizeTimer) clearTimeout(customStartOptimizeTimer);
+      customStartOptimizeTimer = setTimeout(() => {
+        if (state.startMode === 'custom' && state.customStartAddress.length >= 3) {
+          autoOptimizeCurrentStops(true);
+        } else {
+          renderAll();
+        }
+      }, 280);
+    }
 
     function setEndMode(mode) {
       state.endMode = mode;
@@ -3508,55 +3628,76 @@
     }
 
     function autoOptimizeStopsList(stopsArray) {
-      if (stopsArray.length <= 2) return stopsArray;
+      if (!Array.isArray(stopsArray) || stopsArray.length <= 1) return stopsArray || [];
       const urgentStops = stopsArray.filter((s) => s.urgent && !s.completed);
       const normalStops = stopsArray.filter((s) => !s.urgent && !s.completed);
       const completedStops = stopsArray.filter((s) => s.completed);
 
-      const stationCoords = getStationCoordinates();
-      let originPt = { lat: stationCoords.lat, lng: stationCoords.lng, originalNumber: 1 };
-      if (completedStops.length > 0) {
-        const lastDone = completedStops[completedStops.length - 1];
-        originPt = { lat: lastDone.lat, lng: lastDone.lng, originalNumber: lastDone.originalNumber };
-      } else if (liveGpsState.active && Number.isFinite(liveGpsState.lat) && Number.isFinite(liveGpsState.lng)) {
-        const refStop = stopsArray[0] || stationCoords;
-        if (haversineMiles(liveGpsState.lat, liveGpsState.lng, refStop.lat, refStop.lng) <= 120) {
-          originPt = { lat: liveGpsState.lat, lng: liveGpsState.lng, originalNumber: 1 };
-        }
-      }
-
+      // 1. Obtener Ubicación Inicial (GPS en tiempo real, Estación P1, Home o Dirección Inicial personalizada)
+      const originPt = getStartOriginCoordinates(completedStops);
+      // 2. Obtener Ubicación Final (Home, Regresar a P1, Brickell, Dirección Final personalizada o null)
       const closingTarget = getClosingTargetCoordinates();
 
-      const stepCost = (lat1, lng1, num1, lat2, lng2, num2) => {
-        let d = Math.hypot(lat2 - lat1, lng2 - lng1);
-        // Penalizar fuertemente calles clausuradas (ej. 8 ↔ 6) para nunca encadenarlas directo
-        if (num1 && num2 && isClosedStreetBetweenNumbers(num1, num2)) {
-          d = d * 6.5 + 0.04;
+      // Distancia vial inteligente en millas (considerando el único acceso abierto norte a Venezia Lakes y calles clausuradas)
+      const roadMilesBetween = (p1, p2) => {
+        const inV1 = isInsideVeneziaLakes(p1);
+        const inV2 = isInsideVeneziaLakes(p2);
+        let miles;
+        if (inV1 !== inV2) {
+          miles =
+            haversineMiles(p1.lat, p1.lng, VENEZIA_LAKES_NORTH_GATE.lat, VENEZIA_LAKES_NORTH_GATE.lng) +
+            haversineMiles(VENEZIA_LAKES_NORTH_GATE.lat, VENEZIA_LAKES_NORTH_GATE.lng, p2.lat, p2.lng);
+        } else {
+          miles = haversineMiles(p1.lat, p1.lng, p2.lat, p2.lng);
         }
-        return d;
+        if (p1.originalNumber && p2.originalNumber && isClosedStreetBetweenNumbers(p1.originalNumber, p2.originalNumber)) {
+          miles = miles * 4.5 + 2.8;
+        }
+        return miles;
       };
 
-      const orderSublist = (list, startLat, startLng, startNum, endTarget) => {
+      const orderSublist = (list, startPt, endTarget) => {
         if (list.length <= 1) return [...list];
+
+        // Costo total del camino anclado en Ubicación Inicial (startPt) y Ubicación Final (endTarget)
+        const seqCost = (arr) => {
+          // Peso completo desde la Ubicación Inicial hasta la primera parada de la sublista
+          let total = 1.35 * roadMilesBetween(startPt, arr[0]);
+          for (let i = 0; i < arr.length - 1; i++) {
+            total += roadMilesBetween(arr[i], arr[i + 1]);
+          }
+          if (endTarget) {
+            const last = arr[arr.length - 1];
+            // Peso completo desde la última parada hasta la Ubicación Final
+            total += 1.35 * roadMilesBetween(last, endTarget);
+            // Término de progresión direccional Inicio → Final para evitar retrocesos
+            const n = Math.max(1, arr.length - 1);
+            for (let i = 0; i < arr.length; i++) {
+              const u = i / n;
+              const dStart = haversineMiles(startPt.lat, startPt.lng, arr[i].lat, arr[i].lng);
+              const dEnd = haversineMiles(arr[i].lat, arr[i].lng, endTarget.lat, endTarget.lng);
+              total += 0.08 * ((1 - u) * dStart + u * dEnd);
+            }
+          }
+          return total;
+        };
 
         const buildGreedyFromSeed = (seedIdx) => {
           const remaining = [...list];
           const first = remaining.splice(seedIdx, 1)[0];
           const ordered = [first];
-          let curLat = first.lat;
-          let curLng = first.lng;
-          let curNum = first.originalNumber;
+          let cur = first;
           while (remaining.length > 0) {
             let bestIdx = 0;
             let bestScore = Infinity;
             for (let i = 0; i < remaining.length; i++) {
               const cand = remaining[i];
-              const dCur = stepCost(curLat, curLng, curNum, cand.lat, cand.lng, cand.originalNumber);
+              const dCur = roadMilesBetween(cur, cand);
               const dEnd =
                 endTarget && remaining.length > 1
-                  ? Math.hypot(cand.lat - endTarget.lat, cand.lng - endTarget.lng)
+                  ? roadMilesBetween(cand, endTarget)
                   : 0;
-              const score = dCur - 0.32 * dEnd;
+              const score = dCur - 0.28 * dEnd;
               if (score < bestScore) {
                 bestScore = score;
                 bestIdx = i;
@@ -3564,43 +3705,38 @@
             }
             const next = remaining.splice(bestIdx, 1)[0];
             ordered.push(next);
-            curLat = next.lat;
-            curLng = next.lng;
-            curNum = next.originalNumber;
+            cur = next;
           }
           return ordered;
         };
 
-        const seqCost = (arr) => {
-          const startWeight = endTarget ? 0.25 : 1.0;
-          let total = startWeight * stepCost(startLat, startLng, startNum, arr[0].lat, arr[0].lng, arr[0].originalNumber);
-          for (let i = 0; i < arr.length - 1; i++) {
-            total += stepCost(
-              arr[i].lat,
-              arr[i].lng,
-              arr[i].originalNumber,
-              arr[i + 1].lat,
-              arr[i + 1].lng,
-              arr[i + 1].originalNumber
-            );
-          }
-          if (endTarget) {
-            const last = arr[arr.length - 1];
-            total += 1.65 * Math.hypot(last.lat - endTarget.lat, last.lng - endTarget.lng);
-          }
-          return total;
-        };
+        // Semilla adicional proyectada directamente sobre el vector Ubicación Inicial → Ubicación Final
+        const projectionSeed = [...list].sort((a, b) => {
+          const scoreA =
+            roadMilesBetween(startPt, a) - (endTarget ? roadMilesBetween(a, endTarget) : 0);
+          const scoreB =
+            roadMilesBetween(startPt, b) - (endTarget ? roadMilesBetween(b, endTarget) : 0);
+          return scoreA - scoreB;
+        });
+
+        const candidateSeeds = [projectionSeed];
+        for (let sIdx = 0; sIdx < list.length; sIdx++) {
+          candidateSeeds.push(buildGreedyFromSeed(sIdx));
+        }
 
         let bestOverall = null;
         let bestOverallCost = Infinity;
-        for (let sIdx = 0; sIdx < list.length; sIdx++) {
-          const candidateSeq = buildGreedyFromSeed(sIdx);
+
+        for (const seedSeq of candidateSeeds) {
+          const candidateSeq = [...seedSeq];
           let improved = true;
           let iter = 0;
-          while (improved && iter < 25) {
+          while (improved && iter < 30) {
             improved = false;
             iter++;
             let currentBest = seqCost(candidateSeq);
+
+            // 1. 2-opt: inversión de cualquier subsegmento i..k
             for (let i = 0; i < candidateSeq.length - 1; i++) {
               for (let k = i + 1; k < candidateSeq.length; k++) {
                 const rev = [
@@ -3616,7 +3752,24 @@
                 }
               }
             }
+
+            // 2. Or-opt: reubicación de una parada individual a cualquier posición óptima
+            for (let i = 0; i < candidateSeq.length; i++) {
+              for (let j = 0; j < candidateSeq.length; j++) {
+                if (i === j) continue;
+                const copy = [...candidateSeq];
+                const [moved] = copy.splice(i, 1);
+                copy.splice(j, 0, moved);
+                const cCost = seqCost(copy);
+                if (cCost + 1e-6 < currentBest) {
+                  candidateSeq.splice(0, candidateSeq.length, ...copy);
+                  currentBest = cCost;
+                  improved = true;
+                }
+              }
+            }
           }
+
           const finalC = seqCost(candidateSeq);
           if (finalC < bestOverallCost) {
             bestOverallCost = finalC;
@@ -3628,40 +3781,40 @@
 
       const orderedUrgent = orderSublist(
         urgentStops,
-        originPt.lat,
-        originPt.lng,
-        originPt.originalNumber,
+        originPt,
         normalStops.length === 0 ? closingTarget : null
       );
       const lastUrgent = orderedUrgent[orderedUrgent.length - 1];
-      const orderedNormal = orderSublist(
-        normalStops,
-        lastUrgent ? lastUrgent.lat : originPt.lat,
-        lastUrgent ? lastUrgent.lng : originPt.lng,
-        lastUrgent ? lastUrgent.originalNumber : originPt.originalNumber,
-        closingTarget
-      );
+      const normalStartPt = lastUrgent
+        ? { lat: lastUrgent.lat, lng: lastUrgent.lng, originalNumber: lastUrgent.originalNumber }
+        : originPt;
+      const orderedNormal = orderSublist(normalStops, normalStartPt, closingTarget);
 
       return [...orderedUrgent, ...orderedNormal, ...completedStops];
     }
 
-    function autoOptimizeCurrentStops(fromClosingChange = false) {
+    function autoOptimizeCurrentStops(fromOriginOrDestChange = false) {
       state.stops = autoOptimizeStopsList(state.stops);
       if (state.stops.length > 0) {
         const firstActive = state.stops.find((s) => !s.completed) || state.stops[0];
         state.selectedStopId = firstActive.id;
       }
+      const originInfo = getStartOriginCoordinates(state.stops.filter((s) => s.completed));
       const seqStr = state.stops.map((s) => s.originalNumber).join(' → ');
       const destLabel = getFinalDestinationVisualLabel() || tr('No extra closing', 'Sin cierre extra');
-      state.tacticalNotes = `Auto-Optimized Sequence (${seqStr}) → Closing: ${destLabel}. Avoids closed street (8 ↔ 6) & prioritizes urgent stops.`;
-      state.tacticalNotesEs = `Secuencia Auto-Optimizada (${seqStr}) → Cierre: ${destLabel}. Evita calle clausurada (8 ↔ 6) y prioriza paradas urgentes.`;
+      state.tacticalNotes = `Optimized (${originInfo.label} → ${seqStr} → ${destLabel}). Anchored to your initial & final locations avoiding closed streets.`;
+      state.tacticalNotesEs = `Optimizada (${originInfo.label} → ${seqStr} → ${destLabel}). Calculada según tu ubicación inicial y final evitando calles clausuradas.`;
       Object.keys(osrmRouteCache).forEach((k) => delete osrmRouteCache[k]);
       renderAll();
       showToast(
-        fromClosingChange
-          ? tr(`⚡ Route auto-optimized for closing: ${destLabel}`, `⚡ Ruta optimizada automáticamente hacia: ${destLabel}`)
-          : tr('⚡ Route optimized avoiding closed streets', '⚡ Ruta optimizada evitando calles clausuradas')
+        fromOriginOrDestChange
+          ? tr(`⚡ Route optimized: ${originInfo.label} → ${destLabel}`, `⚡ Ruta optimizada: ${originInfo.label} → ${destLabel}`)
+          : tr('⚡ Route optimized from Initial to Final Location', '⚡ Ruta optimizada desde Ubicación Inicial a Final')
       );
+    }
+
+    function autoOptimizeRoute(silent = false) {
+      autoOptimizeCurrentStops(silent);
     }
 
     function handleAddStopSubmit(e) {
@@ -3973,6 +4126,47 @@
     }
 
     function renderStrategyControls() {
+      const startMap = {
+        gps: 'startmode-gps',
+        station: 'startmode-station',
+        home: 'startmode-home',
+        custom: 'startmode-custom'
+      };
+      const curStart = state.startMode || 'gps';
+      Object.entries(startMap).forEach(([mode, btnId]) => {
+        const el = document.getElementById(btnId);
+        if (!el) return;
+        if (curStart === mode) {
+          el.className = 'py-2 px-2 rounded-xl text-[11px] font-bold border bg-amber-500/20 border-amber-400 text-amber-300';
+        } else {
+          el.className = 'py-2 px-2 rounded-xl text-[11px] font-bold border bg-slate-900 border-slate-800 text-slate-400 hover:text-white';
+        }
+      });
+
+      const startPill = document.getElementById('start-origin-active-pill');
+      if (startPill) {
+        const startLabels = {
+          gps: tr('📍 Live GPS', '📍 GPS en Vivo'),
+          station: tr('🏢 Station P1', '🏢 Estación P1'),
+          home: '🏠 Home',
+          custom: `✏️ ${state.customStartAddress || tr('Custom Start', 'Otra Salida')}`
+        };
+        startPill.textContent = startLabels[curStart] || tr('📍 Live GPS', '📍 GPS en Vivo');
+      }
+
+      const customStartWrapper = document.getElementById('custom-start-wrapper');
+      const customStartInput = document.getElementById('custom-start-input');
+      if (customStartWrapper && customStartInput) {
+        if (curStart === 'custom') {
+          customStartWrapper.classList.remove('hidden');
+          if (customStartInput.value !== (state.customStartAddress || '')) {
+            customStartInput.value = state.customStartAddress || '';
+          }
+        } else {
+          customStartWrapper.classList.add('hidden');
+        }
+      }
+
       const modeMap = {
         return_to_start: 'endmode-return',
         brickell: 'endmode-brickell',
@@ -4964,7 +5158,7 @@
       return false;
     }
 
-    const CURRENT_BUILD_TIMESTAMP = '07:11 PM - 11/08/2026';
+    const CURRENT_BUILD_TIMESTAMP = '07:17 PM - 11/08/2026';
 
     async function forceReloadApp(newVersionId) {
       try {
